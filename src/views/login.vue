@@ -185,9 +185,9 @@
                 round 
                 class="form-card__submit"
                 @click="getVerificationCode"
-                :disabled="isCodeSending || codeCountdown > 0"
+                :disabled="isCodeSending || countdown > 0"
               >
-                {{ codeCountdown > 0 ? `${codeCountdown}s后重新获取` : '获取验证码' }}
+                {{ countdown > 0 ? `${countdown}s后重新获取` : '获取验证码' }}
               </el-button>
             </el-col>
           </el-row>
@@ -250,9 +250,9 @@
                 round 
                 class="form-card__submit"
                 @click="getVerificationCode"
-                :disabled="isCodeSending || codeCountdown > 0"
+                :disabled="isCodeSending || countdown > 0"
               >
-                {{ codeCountdown > 0 ? `${codeCountdown}s后重新获取` : '获取验证码' }}
+                {{ countdown > 0 ? `${countdown}s后重新获取` : '获取验证码' }}
               </el-button>
             </el-col>
           </el-row>
@@ -400,8 +400,9 @@ const forgotRules = reactive({
 });
 
 // 验证码倒计时控制
-const codeCountdown = ref(0);
 const isCodeSending = ref(false);
+const countdown = ref(0);
+const timer = ref(null);
 
 // 初始化：页面加载时默认隐藏所有表单
 onMounted(() => {
@@ -475,7 +476,7 @@ const getVerificationCode = async () => {
   try {
     // 调用API发送验证码
     const response = await sendEmailCode(email)
-    if (response.data.success) {
+    if (response.code === 200) {
       isCodeSending.value = true;
       ElMessage.success('验证码已发送，请查收')
     } else {
@@ -484,28 +485,19 @@ const getVerificationCode = async () => {
     }
 
     // 开始倒计时
-    countdown.value = 60
+    countdown.value = 10
     timer.value = window.setInterval(() => {
       countdown.value--
       if (countdown.value <= 0 && timer.value) {
         clearInterval(timer.value)
         timer.value = null
+        isCodeSending.value = false; // 倒计时结束，重置发送状态
       }
     }, 1000)
   } catch (error) {
     ElMessage.error('验证码发送失败，请稍后重试')
     console.error('发送验证码失败:', error)
   }
-
-  // 倒计时60秒
-  codeCountdown.value = 60;
-  const timer = setInterval(() => {
-    codeCountdown.value--;
-    if (codeCountdown.value <= 0) {
-      clearInterval(timer);
-      isCodeSending.value = false;
-    }
-  }, 1000);
 };
 
 // 登录处理

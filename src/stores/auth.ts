@@ -119,7 +119,7 @@ export const useAuthStore = defineStore('auth', () => {
   const sendEmailCodeAction = async (email: string) => {
     try {
       const response = await sendEmailCode(email)
-      return response.data?.success || false
+      return response.code === 200;
     } catch (error) {
       console.error('发送验证码失败:', error)
       throw error

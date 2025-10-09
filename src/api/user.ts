@@ -60,12 +60,12 @@ export const sendEmailCode = (email: string): Promise<{
   code: number;
   message: string;
   data: {
-    success: boolean;
+    CodeId: number;
   };
 }> => {
   return request({
     url: '/getCode',
-    method: 'post',
+    method: 'get',
     data: { 
       email,
       //type: 0 // 0: 验证码邮件
