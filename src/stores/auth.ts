@@ -82,7 +82,6 @@ export const useAuthStore = defineStore('auth', () => {
     email: string
     password: string
     userAvatar: string
-    role: "user"
   }) => {
     try {
       // 处理角色映射（前端mentor对应后端tutor）
@@ -90,7 +89,6 @@ export const useAuthStore = defineStore('auth', () => {
         username: data.username,
         email: data.email,
         password: data.password,
-        role: data.role,
         userAvatar: data.userAvatar,
       }
 
@@ -126,7 +124,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const verifyEmailCodeAction = async (email: string, Code: string) => {
+  const verifyEmailCodeAction = async (email: string, Code: number) => {
     try {
       const response = await verifyEmailCode(email, Code)
       return (response as any).data?.success || false
