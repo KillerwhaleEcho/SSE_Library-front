@@ -16,9 +16,17 @@ export interface AdminProfile {
   createTime: string
 }
 
-export const fetchAdminProfile = (): Promise<ApiResponse<AdminProfile>> => {
+export interface AdminSearchParams {
+  username?: string
+  userId?: number
+}
+
+export const searchAdminProfiles = (
+  params: AdminSearchParams
+): Promise<ApiResponse<AdminProfile[]>> => {
   return request({
-    url: '/admin/info',
+    url: '/admin/users',
     method: 'get',
+    params,
   })
 }

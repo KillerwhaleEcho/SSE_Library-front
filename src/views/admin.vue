@@ -24,9 +24,9 @@
       <!-- 用户列表 -->
       <UserList v-if="activeTab === 'users'" />
       <!-- 待审核文件列表 -->
-       <doucument-list v-if="activeTab === 'files'" />
+       <DocumentList v-if="activeTab === 'files'" />
       <!-- 评论列表 --> 
-      <comment-list v-if="activeTab === 'comments'" />
+      <CommentList v-if="activeTab === 'comments'" />
     </section>
   </div>
 </template>
@@ -35,6 +35,8 @@
 import { ref } from 'vue'
 import AdminInfo from '../components/admin/adminInfo.vue'
 import UserList from '../components/admin/userList.vue'
+import CommentList from '../components/admin/commentList.vue'
+import DocumentList from '../components/admin/documentList.vue'
 
 // 左侧菜单激活项（同 view 中不同栏目）
 const activeTab = ref<'admin' | 'users'|'files'|'comments'>('admin')
