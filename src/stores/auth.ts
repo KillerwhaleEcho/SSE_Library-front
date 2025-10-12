@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { loginAPI, registerAPI, sendEmailCode, verifyEmailCode } from '../api/user'
+import { loginAPI, registerAPI, sendEmailCode, verifyEmailCode, resetPasswordAPI } from '../api/user'
 
 
 
@@ -82,7 +82,6 @@ export const useAuthStore = defineStore('auth', () => {
     email: string
     password: string
     userAvatar: string
-    role: "user"
   }) => {
     try {
       // 处理角色映射（前端mentor对应后端tutor）
@@ -90,7 +89,6 @@ export const useAuthStore = defineStore('auth', () => {
         username: data.username,
         email: data.email,
         password: data.password,
-        role: data.role,
         userAvatar: data.userAvatar,
       }
 
@@ -126,13 +124,40 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const verifyEmailCodeAction = async (email: string, Code: string) => {
+  const verifyEmailCodeAction = async (email: string, Code: number) => {
     try {
       const response = await verifyEmailCode(email, Code)
       return (response as any).data?.success || false
     } catch (error) {
       console.error('验证码验证失败:', error)
       throw error
+    }
+  }
+
+  // 在useAuthStore中添加
+  const resetPasswordAction = async (data: {
+    email: string;
+    newPassword: string;
+  }) => {
+    try {
+      const response = await resetPasswordAPI(data)
+      if (response.code === 200) {
+        return {
+          success: true,
+          message: '密码重置成功'
+        }
+      } else {
+        return {
+          success: false,
+          message: response.message || '密码重置失败'
+        }
+      }
+    } catch (error) {
+      console.error('密码重置失败:', error)
+      return {
+        success: false,
+        message: '请稍后重试'
+      }
     }
   }
 
@@ -155,6 +180,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     sendEmailCode: sendEmailCodeAction,
     verifyEmailCode: verifyEmailCodeAction,
+    resetPassword: resetPasswordAction,
     logout,
     clearToken
   }

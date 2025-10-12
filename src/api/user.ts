@@ -17,7 +17,6 @@ interface RegisterParams {
   email: string
   password: string
   userAvatar: string
-  role: "user"
 }
 
 export const loginAPI = (data: LoginParams): Promise<ApiResponse<{
@@ -65,7 +64,7 @@ export const sendEmailCode = (email: string): Promise<{
 }> => {
   return request({
     url: '/getCode',
-    method: 'get',
+    method: 'post',
     data: { 
       email,
       //type: 0 // 0: 验证码邮件
@@ -73,14 +72,27 @@ export const sendEmailCode = (email: string): Promise<{
   })
 }
 
-export const verifyEmailCode = (email: string, code: string): Promise<{
+export const verifyEmailCode = (email: string, Code: number): Promise<{
   code: number;
   message: string;
-  data: null;
+  data:{
+    success: boolean;
+  };
 }> => {
   return request({
     url: '/verifyCode',
     method: 'post',
-    data: { email, code }
+    data: { email, Code }
+  })
+}
+
+export const resetPasswordAPI = (data: {
+  email: string;
+  newPassword: string;
+}): Promise<ApiResponse<{ success: boolean }>> => {
+  return request({
+    url: '/modifyPassword',
+    method: 'put',
+    data
   })
 }
