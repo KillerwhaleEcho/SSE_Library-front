@@ -665,7 +665,7 @@ const handlePasswordReset = async () => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: #f7f4fdff;/*#f9fbfc;*/
+  background: #ffffffff;/*#f9fbfc;*/
   display: flex;
   flex-direction: column;
   align-items: center;
