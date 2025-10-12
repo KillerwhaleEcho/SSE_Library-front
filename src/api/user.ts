@@ -85,3 +85,14 @@ export const verifyEmailCode = (email: string, Code: number): Promise<{
     data: { email, Code }
   })
 }
+
+export const resetPasswordAPI = (data: {
+  email: string;
+  newPassword: string;
+}): Promise<ApiResponse<{ success: boolean }>> => {
+  return request({
+    url: '/modifyPassword',
+    method: 'put',
+    data
+  })
+}

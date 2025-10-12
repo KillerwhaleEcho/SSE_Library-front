@@ -309,7 +309,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElForm, ElUpload } from 'element-plus';
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { sendEmailCode, verifyEmailCode } from '@/api/user'
+import { sendEmailCode, verifyEmailCode, resetPassword } from '@/api/user'
 
 // 状态控制变量
 const hasInteracted = ref(false); // 是否已点击屏幕
@@ -561,7 +561,7 @@ const verifyCode = async () => {
     // 调用验证码验证接口（替换为实际接口地址）
     const response = await userStore.verifyEmailCode(email,Code)
     // 返回接口响应结果
-    console.log("response=",response)
+    console.log("验证成功response=",response)
     return response;
   } catch (error) {
     // 处理接口调用异常
@@ -617,22 +617,38 @@ const handleRegister = async () => {
 };
 
 // 密码重置处理
-const handlePasswordReset = () => {
-  forgotFormRef.value?.validate((valid) => {
+const handlePasswordReset = async () => {
+  forgotFormRef.value?.validate(async (valid) => {
     if (valid) {
       if (!forgotForm.email || !forgotForm.verificationCode || !forgotForm.newPassword) {
         ElMessage.warning('请填写完整的修改信息');
         return;
       }
-      if (forgotForm.newPassword !== forgotForm.confirmNewPassword) {
-        ElMessage.warning('两次输入的新密码不一致');
-        return;
-      }
       // 这里可以添加密码重置接口调用逻辑
-      ElMessage.success('密码修改成功，请登录');
-      console.log('密码重置信息:', forgotForm);
-      // 修改成功后切换到登录页
-      switchToLogin();
+      try {
+        // 先验证验证码
+        const verifyRes = await verifyCode();
+        console.log("密码重置verifyRes =",verifyRes)
+        if (verifyRes) {
+          // 调用密码重置接口
+          const resetRes = await userStore.resetPassword({
+            email: forgotForm.email,
+            newPassword: forgotForm.newPassword
+          });
+
+          if (resetRes.success) {
+            ElMessage.success('密码修改成功，请使用新密码登录');
+            // 重置表单并切换到登录页
+            switchToLogin();
+            forgotFormRef.value?.resetFields();
+          } else {
+            ElMessage.error(resetRes.message || '密码重置失败，请稍后重试');
+          } 
+        }
+      } catch (error) {
+        console.error('密码重置过程出错:', error);
+        ElMessage.error('网络异常，请检查网络连接后重试');
+      }
     } else {
       ElMessage.warning('修改密码表单验证失败');
       return false;
