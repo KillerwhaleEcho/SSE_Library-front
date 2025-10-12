@@ -665,7 +665,7 @@ const handlePasswordReset = async () => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: #f9fbfc;
+  background: #f7f4fdff;/*#f9fbfc;*/
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -681,6 +681,7 @@ const handlePasswordReset = async () => {
   top: 50%;
   left: 50%;
   width:100%;
+  height:20%;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
@@ -694,17 +695,18 @@ const handlePasswordReset = async () => {
 
 /* 欢迎界面上移动画 */
 .welcome-box--moved {
-  top: 15%;
+  top: 10%;
   transform: translate(-50%, -50%);
   opacity: 0.9;
 }
 
 .welcome-box__title {
-  font-size: 3rem;
+  font-size: 4rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+  height:70%;
+  margin-bottom: 0rem;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  background: linear-gradient(135deg, #84db9dff 0%, #4ba264ff 100%);
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -727,7 +729,7 @@ const handlePasswordReset = async () => {
 /* 表单容器样式 */
 .form-container {
   position: absolute;
-  top: 50%;
+  top: 47%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 100%;
@@ -787,7 +789,7 @@ const handlePasswordReset = async () => {
 }
 
 .form-card__link:hover {
-  color: #4ba264ff;
+  color:  #5b247f;
 }
 
 /* 核心样式：设置表单项占90%宽度并水平居中 */
@@ -820,15 +822,15 @@ const handlePasswordReset = async () => {
   width: 100%;
   padding: 0.8rem;
   font-size: 1rem;
-  background: linear-gradient(135deg, #84db9dff 0%, #4ba264ff 100%);
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
   border: none;
   transition: all 0.3s ease;
 }
 
 .form-card__submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(111,186,133, 0.3);
-  background: linear-gradient(135deg, #75c68cff 0%, #42965aff 100%);
+  box-shadow: 0 5px 15px rgba(91,36,127, 0.3);
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
 }
 
 /* 头像上传行样式 */
@@ -849,10 +851,10 @@ const handlePasswordReset = async () => {
   width: 100px;
   height: 100px;
   border-radius: 8px;
-  border: 1px dashed #dcdfe6;
+  border: 1px dashed #b994fe;
   overflow: hidden;
   position: relative;
-  background-color: #f5f7fa;
+  background-color: #ffffffff;
 }
 
 .avatar-img {
@@ -883,9 +885,14 @@ const handlePasswordReset = async () => {
   width: 100%;
   padding: 0.8rem;
   font-size: 1rem;
-  background: linear-gradient(135deg, #84db9dff 0%, #4ba264ff 100%);
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
   border: none;
   transition: all 0.3s ease;
+}
+.upload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(91,36,127, 0.3);
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
 }
 
 .upload-hint {
