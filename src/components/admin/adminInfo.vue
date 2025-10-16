@@ -1,9 +1,9 @@
 <template>
   <div class="admin-info">
-    <el-card class="admin-card" shadow="hover">
-      <div v-if="adminInfo" class="admin-card__layout">
-        <div class="admin-card__avatar-block">
-          <figure class="admin-card__avatar">
+    <el-card class="admin-card" shadow="never">
+      <div v-if="adminInfo" class="profile-layout">
+        <aside class="profile-sidebar">
+          <figure class="profile-avatar">
             <img :src="avatarUrl" alt="管理员头像" />
           </figure>
           <el-upload
@@ -14,25 +14,70 @@
             accept="image/*"
             @change="handleAvatarChange"
           >
-            <!-- accept="image/*": 接受的文件类型，这里为所有图片类型。action="#"：上传的地址，这里设置为"#"表示不上传到默认的地址 -->
-            <el-button size="small" type="primary" round>上传头像</el-button>
-            <!-- type="primary" 是 Element Plus 按钮的类型属性，用于定义按钮的视觉样式和语义含义。 -->
+            <el-button size="small" type="primary">上传头像</el-button>
           </el-upload>
-        </div>
-        <div class="admin-card__content">
-          <header class="admin-card__header">
-            <h3 class="admin-card__name">{{ displayName }}</h3>
-          </header>
-          <ul class="admin-card__meta">
-            <li v-for="item in infoList" :key="item.label">
-              <span class="admin-card__label">{{ item.label }}</span>
-              <span class="admin-card__value">{{ item.value }}</span>
+          <ul class="profile-summary">
+            <li>
+              <span class="profile-summary__label">角色</span>
+              <span class="profile-summary__value">{{ profileForm.role }}</span>
+            </li>
+            <li>
+              <span class="profile-summary__label">用户 ID</span>
+              <span class="profile-summary__value">{{ profileForm.userId }}</span>
+            </li>
+            <li>
+              <span class="profile-summary__label">创建时间</span>
+              <span class="profile-summary__value">{{ profileForm.createTime }}</span>
             </li>
           </ul>
-          <div class="admin-card__actions">
-            <el-button type="primary" round @click="openEditDialog">修改信息</el-button>
+        </aside>
+
+        <section class="profile-main">
+          <div class="profile-section">
+            <h4 class="profile-section__title">基本信息</h4>
+            <div class="profile-fields">
+              <label class="profile-field">
+                <span class="profile-field__label">Email</span>
+                <el-input v-model="profileForm.email" placeholder="请输入邮箱" />
+              </label>
+              <label class="profile-field">
+                <span class="profile-field__label">昵称</span>
+                <el-input v-model="profileForm.username" placeholder="请输入昵称" />
+              </label>
+            </div>
+            <div class="profile-actions">
+              <el-button class="profile-actions__button" type="primary" @click="handleProfileSave">保存修改</el-button>
+            </div>
           </div>
-        </div>
+
+          <el-divider content-position="center" class="profile-divider">修改密码</el-divider>
+
+          <div class="profile-section">
+            <div class="profile-fields profile-fields--compact">
+              <label class="profile-field">
+                <span class="profile-field__label">新密码</span>
+                <el-input
+                  v-model="passwordForm.newPassword"
+                  type="password"
+                  show-password
+                  placeholder="请输入新密码"
+                />
+              </label>
+              <label class="profile-field">
+                <span class="profile-field__label">请重新输入密码</span>
+                <el-input
+                  v-model="passwordForm.confirmPassword"
+                  type="password"
+                  show-password
+                  placeholder="请再次输入新密码"
+                />
+              </label>
+            </div>
+            <div class="profile-actions">
+              <el-button type="primary" @click="handlePasswordSave">保存修改</el-button>
+            </div>
+          </div>
+        </section>
       </div>
       <div v-else class="admin-card__placeholder">
         <span v-if="loading">加载中...</span>
@@ -40,36 +85,11 @@
         <span v-else>没有管理员信息</span>
       </div>
     </el-card>
-
-    <el-dialog
-      v-model="isEditDialogVisible"
-      title="修改管理员信息"
-      width="420px"
-      destroy-on-close
-    >
-      <el-form label-width="90px" :model="editForm" class="admin-edit-form">
-        <el-form-item label="用户 ID">
-          <el-input v-model="editForm.userId" type="number" />
-        </el-form-item>
-        <el-form-item label="用户名">
-          <el-input v-model="editForm.username" />
-        </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input v-model="editForm.email" type="email" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="isEditDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleEditSave">保存</el-button>
-        </span>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
@@ -78,47 +98,96 @@ import { useAdminStore } from '../../stores/admin'
 const adminStore = useAdminStore()
 const { adminInfo, loading, error } = storeToRefs(adminStore)
 
-const displayName = computed(() => adminInfo.value?.username )
+const displayName = computed(() => adminInfo.value?.username ?? '管理员')
 const avatarUrl = computed(
   () => adminInfo.value?.userAvatar || 'https://placehold.co/120x120?text=Avatar'
 )
 
-const infoList = computed(() => {
-  if (!adminInfo.value) return []
-  return [
-    { label: '角色', value: adminInfo.value.role  },
-    { label: '用户 ID', value: adminInfo.value.userId?.toString() },
-    { label: '创建时间', value: adminInfo.value.createTime  },
-    { label: '邮箱', value: adminInfo.value.email },
-  ]
-})
-
-const isEditDialogVisible = ref(false)
-const editForm = reactive({
-  userId: '',
-  username: '',
+const profileForm = reactive({
   email: '',
+  username: '',
+  role: '',
+  userId: '',
+  createTime: '',
 })
 
-const openEditDialog = () => {
-  if (!adminInfo.value) return
-  editForm.userId = adminInfo.value.userId?.toString() ?? ''
-  editForm.username = adminInfo.value.username ?? ''
-  editForm.email = adminInfo.value.email ?? ''
-  isEditDialogVisible.value = true
+const passwordForm = reactive({
+  newPassword: '',
+  confirmPassword: '',
+})
+
+const profileSaving = ref(false)
+const passwordSaving = ref(false)
+const avatarUploading = ref(false)
+
+watch(
+  () => adminInfo.value,
+  (info) => {
+    if (!info) return
+    profileForm.email = info.email ?? ''
+    profileForm.username = info.username ?? ''
+    profileForm.role = info.role ?? ''
+    profileForm.userId = info.userId?.toString() ?? ''
+    profileForm.createTime = info.createTime ?? ''
+  },
+  { immediate: true },
+)
+
+const handleProfileSave = async () => {
+  if (profileSaving.value) return
+  if (!profileForm.email.trim()) {
+    ElMessage.warning('邮箱不能为空')
+    return
+  }
+  profileSaving.value = true
+  try {
+    await adminStore.updateAdminInfo({
+      email: profileForm.email.trim(),
+      userName: profileForm.username.trim() || displayName.value || '',
+    })
+    ElMessage.success('资料已更新')
+  } catch (err: any) {
+    ElMessage.error(err?.message || '资料更新失败')
+  } finally {
+    profileSaving.value = false
+  }
 }
 
-const handleEditSave = () => {
-  adminStore.updateAdminInfo({
-    userId: Number(editForm.userId) || 0,
-    username: editForm.username.trim() || '未命名管理员',
-    email: editForm.email.trim(),
+const handlePasswordSave = async () => {
+  if (passwordSaving.value) return
+  if (!passwordForm.newPassword) {
+    ElMessage.warning('请填写新密码')
+    return
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    ElMessage.error('两次输入的密码不一致')
+    return
+  }
+  passwordSaving.value = true
+  try {
+    await adminStore.updateAdminInfo({
+      password: passwordForm.newPassword,
+    })
+    ElMessage.success('密码已更新')
+    passwordForm.newPassword = ''
+    passwordForm.confirmPassword = ''
+  } catch (err: any) {
+    ElMessage.error(err?.message || '密码更新失败')
+  } finally {
+    passwordSaving.value = false
+  }
+}
+
+const readFileAsDataURL = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('读取文件失败'))
+    reader.readAsDataURL(file)
   })
-  isEditDialogVisible.value = false
-  ElMessage.success('管理员信息已更新')
-}
 
-const handleAvatarChange = (uploadFile: UploadFile) => {
+const handleAvatarChange = async (uploadFile: UploadFile) => {
+  if (avatarUploading.value) return
   const file = uploadFile.raw
   if (!file) return
   if (!file.type.startsWith('image/')) {
@@ -130,15 +199,16 @@ const handleAvatarChange = (uploadFile: UploadFile) => {
     return
   }
 
-  const reader = new FileReader()
-  reader.onload = () => {
-    adminStore.updateAdminInfo({ userAvatar: String(reader.result) })
+  avatarUploading.value = true
+  try {
+    const base64 = await readFileAsDataURL(file)
+    await adminStore.updateAdminInfo({ userAvatar: base64 })
     ElMessage.success('头像已更新')
+  } catch (err: any) {
+    ElMessage.error(err?.message || '头像更新失败，请重试')
+  } finally {
+    avatarUploading.value = false
   }
-  reader.onerror = () => {
-    ElMessage.error('头像读取失败，请重试')
-  }
-  reader.readAsDataURL(file)
 }
 
 onMounted(() => {
@@ -148,136 +218,216 @@ onMounted(() => {
 })
 </script>
 
+
 <style scoped lang="css">
 .admin-info {
-  padding: 24px 20px;
+  padding: 0;
+  border-radius: 5px;
 }
 
 .admin-card {
-  border-radius: 22px;
+  border-radius: 10px;
+  border: none;
   overflow: hidden;
-  background: linear-gradient(140deg, rgba(64, 158, 255, 0.12) 0%, rgba(64, 158, 255, 0.04) 100%);
-  backdrop-filter: blur(6px);
+  background: #fff;
+  /* box-shadow: 0 18px 36px rgba(91, 36, 127, 0.16); */
 }
 
-.admin-card__layout {
+.profile-layout {
   display: flex;
-  align-items: center;
-  gap: 28px;
-  padding: 28px;
+  gap: 40px;
+  padding: 36px 40px;
 }
 
-.admin-card__avatar-block {
+.profile-sidebar {
+  width: 240px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 22px;
+  padding-right: 32px;
+  border-right: 1px solid #ece4f6;
 }
 
-.admin-card__avatar {
+.profile-avatar {
   margin: 0;
   width: 118px;
   height: 118px;
   border-radius: 50%;
-  border: 4px solid #fff;
+  border: 4px solid rgba(185, 148, 254, 0.4);
   overflow: hidden;
-  box-shadow: 0 24px 38px rgba(31, 45, 61, 0.16);
+  box-shadow: 0 15px 28px rgba(91, 36, 127, 0.18);
 }
 
-.admin-card__avatar img {
+.profile-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
 .avatar-upload :deep(.el-button) {
-  padding: 6px 16px;
+  width: 140px;
+  border: none;
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bd 100%);
+  color: #fff;
+  transition: all 0.3s ease;
 }
 
-.admin-card__content {
+.avatar-upload :deep(.el-button:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(91, 36, 127, 0.3);
+}
+
+.profile-summary {
+  width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-summary li {
+  border: 1px solid rgba(185, 148, 254, 0.28);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: rgba(249, 245, 255, 0.8);
+}
+
+.profile-summary__label {
+  font-size: 13px;
+  color: #6c558d;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.profile-summary__value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3f2458;
+  word-break: break-all;
+}
+
+.profile-main {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-section__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #311a45;
+}
+
+.profile-fields {
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-.admin-card__header {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+.profile-fields--compact {
+  gap: 16px;
 }
 
-.admin-card__name {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 700;
-  color: #1f2d3d;
-}
-
-.admin-card__meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.admin-card__meta li {
+.profile-field {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 16px 20px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 16px 32px rgba(31, 45, 61, 0.08);
-  min-height: 96px;
-  overflow: hidden;
+  gap: 8px;
 }
 
-.admin-card__label {
-  font-size: 13px;
-  color: #909399;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.profile-field__label {
+  font-size: 14px;
+  color: #5d4d74;
 }
 
-.admin-card__value {
-  font-size: 17px;
-  font-weight: 600;
-  color: #303133;
-  word-break: break-word;
+.profile-field :deep(.el-input__wrapper) {
+  background: #fff;
+  box-shadow: none;
+  border: 1px solid #dcd7f0;
+  border-radius: 8px;
+  padding: 6px 12px;
 }
 
-.admin-card__actions {
+.profile-field :deep(.el-input__wrapper:focus),
+.profile-field :deep(.is-focus .el-input__wrapper) {
+  border-color: #b994fe;
+  box-shadow: 0 0 0 2px rgba(185, 148, 254, 0.18);
+}
+
+.profile-field :deep(.el-input__inner) {
+  color: #311a45;
+}
+
+.profile-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
+}
+
+.profile-actions :deep(.el-button) {
+  min-width: 150px;
+  border: none;
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bd 100%);
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.profile-actions :deep(.el-button:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(91, 36, 127, 0.3);
+}
+
+.profile-actions__button {
+  margin-top: 5px;
+}
+.profile-divider {
+  margin: 8px 0 16px;
+  font-size: 13px;
+  color: #7a6598;
+}
+
+.profile-divider :deep(.el-divider__text) {
+  background: #fff;
 }
 
 .admin-card__placeholder {
   padding: 48px 0;
   text-align: center;
-  color: #909399;
+  color: #8f6fb2;
 }
 
-.admin-edit-form .el-input {
-  width: 100%;
-}
-
-@media (max-width: 768px) {
-  .admin-card__layout {
+@media (max-width: 1024px) {
+  .profile-layout {
     flex-direction: column;
-    align-items: flex-start;
+    padding: 28px;
   }
 
-  .admin-card__avatar {
-    width: 96px;
-    height: 96px;
+  .profile-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #ece4f6;
+    padding-right: 0;
+    padding-bottom: 28px;
   }
 
-  .admin-card__meta {
-    grid-template-columns: 1fr;
+  .profile-main {
+    width: 100%;
+    padding-top: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-actions :deep(.el-button) {
+    width: 100%;
   }
 }
 </style>

@@ -67,21 +67,21 @@ const handleSelect = (index: string) => {
   font-weight: 700;
   padding: 16px;
   border-bottom: 1px solid #ebeef5;
-  margin-bottom: 1rem;
+ margin :1rem 1rem;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  background: linear-gradient(135deg, #84db9dff 0%, #4ba264ff 100%);
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .admin-panel__sidebar {
-  width: 240px;
+  width: 200px;
   border-right: none;
-  border-radius: 20px;
+  border-radius: 10px;
   border: 1px solid rgba(235, 238, 245, 0.7);
   background: #fff;
-  box-shadow: 0 16px 36px rgba(31, 45, 61, 0.08);
+  /* box-shadow: 0 16px 36px rgba(31, 45, 61, 0.08); */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -96,26 +96,29 @@ const handleSelect = (index: string) => {
 
 .admin-panel__content {
   flex: 1;
-  padding: 24px;
-  border-radius: 24px;
+  padding: 0px;
+  border-radius: 10px;
   background: #fff;
-  box-shadow: 0 16px 36px rgba(31, 45, 61, 0.08);
+  /* box-shadow: 0 16px 36px rgba(31, 45, 61, 0.08); */
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .admin-panel__menu :deep(.el-menu-item) {
-  border-radius: 12px;
-  margin: 4px 0;
+  border-radius: 5px;
+  margin: 4px 0px;
   transition: all 0.2s ease;
 }
 
-.admin-panel__menu :deep(.el-menu-item:hover) {
+/* .admin-panel__menu :deep(.el-menu-item:hover) {
   background: rgba(64, 158, 255, 0.08);
-}
+} */
 
 .admin-panel__menu :deep(.el-menu-item.is-active) {
   color: #409eff;
   background: linear-gradient(135deg, rgba(64, 158, 255, 0.18), rgba(64, 158, 255, 0.08));
-  box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.25);
+  /* box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.25); */
 }
 </style>
