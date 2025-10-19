@@ -1,9 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { searchAdminProfiles, type AdminProfile } from '../api/admin'
+import {
+  getAdminDetail,
+  updateAdminProfile,
+  type AdminProfile,
+  type AdminDetailResponse,
+  type AdminUpdatePayload,
+} from '../api/admin'
 
 const STORAGE_KEY = 'adminInfo'
 const storage = typeof window === 'undefined' ? null : window.localStorage
+// typeof window === 'undefined' - 检查 window 对象是否存在，在 浏览器环境 中，window 对象存在
+
 
 const fallbackAdminInfo: AdminProfile = {
   userId: 0,
@@ -13,13 +21,15 @@ const fallbackAdminInfo: AdminProfile = {
   createTime: '2024-01-01',
   email: 'admin@example.com',
   role: 'admin',
-
 }
 
 export const useAdminStore = defineStore('admin', () => {
   const adminInfo = ref<AdminProfile | null>(null)
   const loading = ref(false)
   const error = ref('')
+  const password = ref('')
+  const collectionList = ref<AdminDetailResponse['collectionList']>([])
+  const historyList = ref<AdminDetailResponse['historyList']>([])
 
   const hydrateFromStorage = () => {
     if (!storage) return
@@ -55,32 +65,40 @@ export const useAdminStore = defineStore('admin', () => {
     return Number.isNaN(parsed) ? null : parsed
   }
 
+  const applyDetail = (detail: AdminDetailResponse) => {
+    adminInfo.value = detail.userBrief
+    password.value = detail.password ?? ''
+    collectionList.value = detail.collectionList ?? []
+    historyList.value = detail.historyList ?? []
+    persist()
+  }
+
   const fetchAdminInfo = async (force = false) => {
     if (adminInfo.value && !force) return adminInfo.value
 
     const userId = ensureUserId()
     if (!userId) {
-      error.value = '未找到管理员账号，请重新登录'
-      adminInfo.value = null
-      return Promise.reject(new Error(error.value))
+      error.value = ''
+      adminInfo.value = fallbackAdminInfo
+      password.value = ''
+      collectionList.value = []
+      historyList.value = []
+      persist()
+      return adminInfo.value
     }
 
     startFetch()
     try {
-      const response = await searchAdminProfiles({ userId })
-      const profile = response.data?.[0]
-
-      if (!profile) {
-        throw new Error('未获取到管理员信息')
-      }
-
-      adminInfo.value = profile
-      persist()
-      return profile
+      const response = await getAdminDetail(userId)
+      applyDetail(response.data)
+      return adminInfo.value
     } catch (err: any) {
       error.value = err?.message || '获取管理员信息失败'
       if (!adminInfo.value) {
         adminInfo.value = fallbackAdminInfo
+        password.value = ''
+        collectionList.value = []
+        historyList.value = []
         persist()
       }
       throw err
@@ -91,22 +109,43 @@ export const useAdminStore = defineStore('admin', () => {
 
   const clearAdminInfo = () => {
     adminInfo.value = null
+    password.value = ''
+    collectionList.value = []
+    historyList.value = []
     storage?.removeItem(STORAGE_KEY)
   }
 
-  const updateAdminInfo = (payload: Partial<AdminProfile>) => {
-    if (!adminInfo.value) {
-      adminInfo.value = { ...fallbackAdminInfo, ...payload }
-    } else {
-      adminInfo.value = { ...adminInfo.value, ...payload }
+  const updateAdminInfo = async (payload: AdminUpdatePayload) => {
+    const userId = adminInfo.value?.userId ?? ensureUserId()
+    if (!userId) {
+      throw new Error('未获取到有效的用户ID')
     }
+
+    const response = await updateAdminProfile(userId, payload)
+    const current = adminInfo.value ?? fallbackAdminInfo
+
+    adminInfo.value = {
+      ...current,//对象展开语法 ... 的作用：复制 current 对象的所有属性到新对象
+      username: response.data.userName ?? current.username,
+      userAvatar: response.data.userAvatar ?? current.userAvatar,
+      email: response.data.email ?? current.email,
+    }
+
+    if (response.data.password) {
+      password.value = response.data.password
+    }
+
     persist()
+    return response.data
   }
 
   hydrateFromStorage()
 
   return {
     adminInfo,
+    password,
+    collectionList,
+    historyList,
     loading,
     error,
     fetchAdminInfo,
