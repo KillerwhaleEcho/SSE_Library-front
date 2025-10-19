@@ -55,16 +55,16 @@ const handleSelect = (selectedCategory: allApi.Category) => {
 }
 
 .parent-item {
-  width: 15%;
+  width: 18%;
 }
 
 .parent-item .category-item {
-  width: 80px; 
+  width: 100px; 
   height: 60px;
 }
 
 .child-items {
-  width: 85%;
+  width: 80%;
   gap: 8px;
   flex-wrap: wrap;
   display: flex; /* 关键：启用 Flex 布局，子元素默认水平排列 */
@@ -72,7 +72,7 @@ const handleSelect = (selectedCategory: allApi.Category) => {
 }
 
 .child-items .category-item {
-  width: 80px; 
+  width: 100px; 
   height: 60px;
 }
 </style>

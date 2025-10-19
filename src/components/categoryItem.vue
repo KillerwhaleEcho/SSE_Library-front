@@ -4,11 +4,11 @@
     <hr />
     <div class="category-stats">
       <div class="category-count">
-        <el-icon><OfficeBuilding /></el-icon>
+        <img src="@/assets/147_阅读.png" alt="File Icon" style="width:25px; height:25px; margin-right:4px;" />
         {{ category.file_counts }}
       </div>
       <div class="category-count">
-        <el-icon><Collection /></el-icon>
+        <img src="@/assets/Fire (火热).png" alt="Collection Icon" style="width:20px; height:20px; margin-right:4px;" />
         {{ category.read_counts }}
       </div>
     </div>
@@ -16,18 +16,6 @@
 </template>
 
 <script setup lang="ts">
-import {
-  Search,
-  Refresh,
-  OfficeBuilding,
-  Collection,
-  Calendar,
-  Money,
-  Plus,
-  User,
-  Timer,
-  ChatDotRound
-} from '@element-plus/icons-vue'
 import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
 
 // 接收父组件传入的单个分类数据

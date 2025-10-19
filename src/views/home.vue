@@ -1,6 +1,6 @@
 <template>
   <div class="home-container">
-    <topbar class="topbar"></topbar>
+    <topbar class="topbar" @open-upload-modal="showUploadModal = true"></topbar>
 
     <!-- 搜索表单 -->
     <div class="searchForm">
@@ -94,7 +94,7 @@
                 <BookItem 
                   v-for="book in hotBooks" 
                   :key="book.document_id" 
-                  :book="book"
+                  :document="book"
                 />
               </div>
             </div>
@@ -109,7 +109,7 @@
               <BookListItem 
                 v-for="book in fileList" 
                 :key="book.document_id" 
-                :book="book"
+                :document="book"
               />
             </div>
           </div>
@@ -119,6 +119,24 @@
 
     <!-- 分类弹窗 -->
     <el-dialog v-model="showCategoryDialog" title="选择分类" :modal="false">
+      <div class="search-cat">
+        <el-input 
+          v-model="searchCatKeyword" 
+          placeholder="搜索分类" 
+          class="search-input"
+          append-to-body
+          @keyup.enter.native="handleCatSearch"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <div>
+          <el-button type="primary" @click="handleAddCategory">添加分类或课程</el-button>
+        </div>
+      </div>
+
+
       <div class="category-guide">
         <div class="parent-word">分类</div>
         <div class="child-word">课程</div>
@@ -137,6 +155,141 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 上传文件弹窗（通过 showUploadModal 控制显示） -->
+    <el-dialog 
+      v-model="showUploadModal" 
+      title="上传文件" 
+      width="600px"
+      class="upload-dialog"
+      @close="resetForm"
+    >
+      <el-form 
+        ref="uploadFormRef" 
+        :model="uploadForm" 
+        label-width="100px"
+      >
+        <!-- 文件上传 -->
+        <el-form-item label="要上传的文件" prop="file">
+          <el-upload
+            action="#"
+            :on-change="handleFileChange"
+            :auto-upload="false"
+            accept=".pdf,.doc,.docx,.txt,.mp4"
+          >
+            <el-button type="primary">点击上传文件</el-button>
+          </el-upload>
+          <div v-if="uploadForm.file" class="uploaded-file">
+            {{ uploadForm.file.name }}
+          </div>
+        </el-form-item>
+
+        <!-- 封面图片上传（带预览功能） -->
+        <el-form-item label="封面图片" prop="cover">
+          <el-upload
+            action="#" 
+            :on-change="handleCoverChange"
+            :auto-upload="false"
+            accept="image/*"
+            :show-file-list="true"
+          >
+            <el-button type="primary">点击上传封面</el-button>
+          </el-upload>
+
+          <!-- 上传后显示文件名和图片预览 -->
+          <div v-if="uploadForm.cover" class="cover-preview">
+            <!-- 文件名 -->
+            <div class="uploaded-file">{{ uploadForm.cover.name }}</div>
+            <!-- 图片预览（使用 FileReader 读取本地文件） -->
+            <img 
+              :src="coverPreviewUrl" 
+              alt="封面预览" 
+              class="preview-img"
+            >
+          </div>
+        </el-form-item>
+
+        <!-- 分类 -->
+        <el-form-item label="分类" prop="category">
+          <button class="category-select-btn" @click="showCategoryDialog = true">{{ selectedUploadCategoryName || 'category' }}</button>
+        </el-form-item>
+
+        <!-- 资料类型 -->
+        <el-form-item label="资料类型" prop="type">
+          <el-select v-model="uploadForm.type" placeholder="请选择">
+            <el-option label="书籍" value="book"></el-option>
+            <el-option label="文件" value="file"></el-option>
+            <el-option label="视频" value="video"></el-option>
+          </el-select>
+        </el-form-item>
+
+        <!-- 名称 -->
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="uploadForm.name" />
+        </el-form-item>
+
+        <!-- ISBN -->
+        <el-form-item label="ISBN" prop="ISBN">
+          <el-input v-model="uploadForm.ISBN" />
+        </el-form-item>
+
+        <!-- 关键词 -->
+        <el-form-item label="关键词" prop="tags">
+          <el-tag
+            v-for="(tag, index) in uploadForm.tags"
+            :key="index"
+            closable
+            @close="uploadForm.tags.splice(index, 1)"
+          >
+            {{ tag }}
+          </el-tag>
+          <el-input
+            v-model="inputTag"
+            @keyup.enter.native="addTag"
+            placeholder="输入关键词，按回车添加"
+            style="width: 200px; margin-top: 5px;"
+          />
+        </el-form-item>
+
+        <!-- 作者 -->
+        <el-form-item label="作者" prop="author">
+          <el-input v-model="uploadForm.author" />
+        </el-form-item>
+
+        <!-- 上传者ID -->
+        <el-form-item label="上传者ID" prop="uploaderId">
+          <el-input v-model.number="uploadForm.uploaderId" type="number" />
+        </el-form-item>
+
+        <!-- 上传时间（自动生成，可隐藏） -->
+        <el-form-item label="上传时间" prop="uploadTime">
+          <el-date-picker
+            v-model="uploadForm.uploadTime"
+            type="datetime"
+            placeholder="选择上传时间"
+          />
+        </el-form-item>
+
+        <!-- 介绍 -->
+        <el-form-item label="介绍" prop="introduction">
+          <el-input v-model="uploadForm.introduction" type="textarea" />
+        </el-form-item>
+
+        <!-- 视频URL（类型为video时显示） -->
+        <el-form-item 
+          label="视频URL" 
+          prop="videoURL" 
+          v-if="uploadForm.type === 'video'"
+        >
+          <el-input v-model="uploadForm.videoURL" />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showUploadModal = false">取消</el-button>
+        <el-button type="primary" @click="submitUpload">提交上传</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -150,22 +303,25 @@ import {
   Search,
   Star,
 } from '@element-plus/icons-vue'
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, reactive  } from 'vue'
 import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
 import CategoryItem from '@/components/categoryItem.vue';
 import ParentCategoryItem from '@/components/parentCategoryItem.vue';
 import BookItem from '@/components/bookItem.vue';
 import BookListItem from '@/components/bookListItem.vue';
-import type { ElMention } from 'element-plus'
+import type { ElMention, ElMessage, UploadFile } from 'element-plus'
 
 // 状态管理
 const activeTab = ref('recommend') // 默认显示推荐标签页
 const showCategoryDialog = ref(false)
+const showUploadModal = ref(false);
 const selectedCategory = ref<allApi.Category | null>(null)
 const selectedCategoryName = ref<string | null>(null)
 const selectedCategoryId = ref<number | null>(null)
+const selectedUploadCategoryName = ref<string | null>(null)
 const selectedDocument = ref<allApi.Document | null>(null)
 const searchKeyword = ref('')
+const searchCatKeyword = ref('')
 
 const year_value = ref('')
 const year_options = ref([
@@ -397,18 +553,19 @@ const getHotDocuments = async () => {
 // 处理选中的分类数据
 const onCategorySelected = (selected: allApi.Category) => {
   console.log('选中的分类：', selected); 
+  showCategoryDialog.value = false
   selectedCategoryId.value = selected.id;
-  selectedCategoryName.value = selected.name;
   selectedCategory.value = selected;
-  confirmCategory();
+  if (showUploadModal.value === false) {
+    selectedCategoryName.value = selected.name;
+    confirmCategory();
+  } else {
+    selectedUploadCategoryName.value = selected.name;
+  }
 };
 
-const handleSearch = () => {
-  
-}
-
+// 确认分类后获取对应资料列表
 const confirmCategory = async () => {
-  showCategoryDialog.value = false
   activeTab.value = 'fileList'
   if (selectedCategoryId.value) {
     try {
@@ -428,6 +585,116 @@ const confirmCategory = async () => {
     }
   }
 }
+
+const handleSearch = () => {
+  
+};
+
+const handleCatSearch = () => {
+  
+};
+
+const handleAddCategory = () => {
+  
+};
+
+// 表单数据
+const uploadForm = reactive({
+  file: null,
+  cover: null,
+  categoryId: null,
+  type: '',
+  name: '',
+  ISBN: '',
+  tags: [],
+  author: '默认佚名',
+  createYear: '',
+  uploaderId: null,
+  uploadTime: new Date(),
+  introduction: '',
+  videoURL: ''
+});
+
+// 关键词输入框临时变量
+const inputTag = ref('');
+const coverPreviewUrl = ref('');
+// 表单引用
+const uploadFormRef = ref();
+
+// 文件上传变更事件（文件）
+const handleFileChange = (uploadFile: UploadFile) => {
+  uploadForm.file = uploadFile.raw;
+};
+
+// 封面上传变更事件
+const handleCoverChange = (uploadFile: UploadFile) => {
+  uploadForm.cover = uploadFile.raw;
+  // 生成预览图（仅针对图片文件）
+  if (uploadFile.raw.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      coverPreviewUrl.value = e.target.result; // 赋值为本地临时 URL
+    };
+    reader.readAsDataURL(uploadFile.raw); // 读取文件为 DataURL
+  }
+};
+
+// 添加关键词
+const addTag = () => {
+  if (inputTag.value.trim()) {
+    uploadForm.tags.push(inputTag.value.trim());
+    inputTag.value = '';
+  }
+};
+
+// 提交上传
+const submitUpload = () => {
+  uploadFormRef.value.validate((valid) => {
+    if (valid) {
+      // 构造 FormData 用于文件上传
+      const formData = new FormData();
+      for (const key in uploadForm) {
+        if (key === 'file' || key === 'cover') {
+          if (uploadForm[key]) {
+            formData.append(key, uploadForm[key]);
+          }
+        } else if (key === 'tags') {
+          // 关键词数组转成逗号分隔字符串
+          formData.append(key, uploadForm[key].join(','));
+        } else {
+          formData.append(key, uploadForm[key]);
+        }
+      }
+
+      // 这里替换为实际的上传接口请求
+      console.log('提交的表单数据：', formData);
+      // 示例：axios.post('/api/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      //   .then(res => {
+      //     ElMessage.success('上传成功');
+      //     showUploadModal.value = false;
+      //     resetForm();
+      //   })
+      //   .catch(err => {
+      //     ElMessage.error('上传失败');
+      //     console.error(err);
+      //   });
+
+      ElMessage.success('模拟上传成功（实际需对接接口）');
+      showUploadModal.value = false;
+      resetForm();
+    }
+  });
+};
+
+// 重置表单
+const resetForm = () => {
+  uploadFormRef.value.resetFields();
+  uploadForm.file = null;
+  uploadForm.cover = null;
+  uploadForm.tags = [];
+  uploadForm.uploadTime = new Date();
+  inputTag.value = '';
+};
 </script>
 
 <style scoped>
@@ -634,6 +901,19 @@ const confirmCategory = async () => {
   color: #333;
 }
 
+.search-cat {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.search-cat .el-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
+}
+
 .category-guide {
   width: 100%;
   display: flex;
@@ -642,7 +922,7 @@ const confirmCategory = async () => {
 }
 
 .parent-word{
-  width: 13.3%;
+  width: 16.5%;
   font-size: 16px;
   color: #888;
   display: flex;
@@ -688,5 +968,28 @@ const confirmCategory = async () => {
 .dialog-category-item.selected {
   background-color: #d885a3;
   color: white;
+}
+
+.uploaded-file {
+  margin-top: 5px;
+  color: #606266;
+}
+
+.cover-preview {
+  margin-top: 10px;
+}
+
+.preview-img {
+  width: 150px; /* 预览图宽度 */
+  height: auto; /* 自适应高度 */
+  margin-top: 5px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.upload-dialog .el-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
 }
 </style>

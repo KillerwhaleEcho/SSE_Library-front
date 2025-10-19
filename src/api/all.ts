@@ -53,6 +53,22 @@ export interface Document {
   createYear?: string;
 }
 
+export interface UploadFile {
+  file: File,
+  cover: File,
+  categoryId: number,
+  type: 'book' | 'file' | 'video',
+  name: string,
+  ISBN: string,
+  tags: string[],
+  author: string | '默认佚名',
+  createYear: string | '未知',
+  uploaderId: number | null,
+  uploadTime: Date | null,
+  introduction: string | '无',
+  videoURL: string | '无'
+}
+
 // 分类相关类型
 export interface Category {
   id: number;
@@ -63,14 +79,6 @@ export interface Category {
   description?: string;
   parent_id?: number;
   children?: Category[];
-}
-
-// 上传资料相关类型
-export interface UploadFile {
-  file: File;
-  name: string;
-  description?: string;
-  categoryId?: string;
 }
 
 // 1. 获取对某本书的评论
@@ -104,8 +112,8 @@ export const getAllCategories = () => {
 };
 //3.4 获取热门书籍/文件
 export const getHotDocuments = () => {
-  return service.get<ApiResponse<{ documents: Document[] }>>('/books', {
-    params: { is_suggest: true,category: '' }
+  return service.get<ApiResponse<{ documents: Document[] }>>('/documents', {
+    params: { is_suggest: true, categoryId: undefined }
   });
 };
 
@@ -125,9 +133,9 @@ export const uploadFile = (data: UploadFile) => {
 };
 
 // 5. 获取书籍列表
-export const getBookList = (is_suggest: boolean, category?: string) => {
-  return service.get<ApiResponse<{  documents: Document[] }>>('/books', {
-    params: { is_suggest, category }
+export const getBookList = (is_suggest: boolean, categoryId?: number) => {
+  return service.get<ApiResponse<{  documents: Document[] }>>('/documents', {
+    params: { is_suggest, categoryId  },
   });
 };
 

@@ -12,11 +12,11 @@
       <h4 class="book-title">{{ document?.name }}</h4>
       <div class="book-stats">
         <div class="book-count">
-            <el-icon><OfficeBuilding /></el-icon>
+            <img src="@/assets/147_喜欢.png" alt="File Icon" style="width:30px; height:30px; margin-right:4px;" />
             {{ document?.collections }}
         </div>
         <div class="book-count">
-            <el-icon><OfficeBuilding /></el-icon>
+            <img src="@/assets/Fire (火热).png" alt="Office Building Icon" style="width:20px; height:20px; margin-right:4px;vertical-align: bottom;" />
             {{ document?.readCounts }}
         </div>
       </div>
@@ -27,18 +27,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import defaultCover from '@/assets/coverexp.png'; // 引入默认封面图
-import {
-  Search,
-  Refresh,
-  OfficeBuilding,
-  Collection,
-  Calendar,
-  Money,
-  Plus,
-  User,
-  Timer,
-  ChatDotRound
-} from '@element-plus/icons-vue'
 import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
 
 // 接收父组件传入的图书数据
@@ -78,8 +66,11 @@ const handleImgError = (e: Event) => {
 
 /* 图书信息区 */
 .book-info {
-  flex: 1; /* 占满剩余空间 */
+  width: 100%;
   min-width: 0; /* 解决文字过长溢出问题 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .book-title {
@@ -104,5 +95,12 @@ const handleImgError = (e: Event) => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.book-count {
+  font-size: 14px;
+  color: #666;
+  display: flex;
+  align-items: center;
 }
 </style>
