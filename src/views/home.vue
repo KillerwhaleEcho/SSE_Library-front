@@ -17,7 +17,7 @@
           </el-select>
         </el-col>
         <el-col :span="6"><div class="grid-content ep-bg-purple" />
-          <button class="category-select-btn" @click="showCategoryDialog = true">{{ selectedCategory || 'category' }}</button>
+          <button class="category-select-btn" @click="showCategoryDialog = true">{{ selectedCategoryName || 'category' }}</button>
         </el-col>
         <el-col :span="6"><div class="grid-content ep-bg-purple" />
           <el-mention
@@ -81,6 +81,7 @@
                   v-for="category in hotCategories" 
                   :key="category.id" 
                   :category="category"
+                  @click="onCategorySelected(category)"
                 />
               </div>
             </div>
@@ -118,20 +119,22 @@
 
     <!-- 分类弹窗 -->
     <el-dialog v-model="showCategoryDialog" title="选择分类" :modal="false">
+      <div class="category-guide">
+        <div class="parent-word">分类</div>
+        <div class="child-word">课程</div>
+      </div>
       <div class="category-dialog">
-        <div 
-          class="dialog-category-item" 
+        <ParentCategoryItem 
           v-for="category in allCategories" 
           :key="category.id"
-          @click="selectCategory(category)"
-          :class="{ 'selected': selectedCategoryId === category.id }"
-        >
-          {{ category.name }}
-        </div>
+          @category-selected="onCategorySelected"
+          :category="category"
+        />
       </div>
       <template #footer>
-        <el-button @click="showCategoryDialog = false">取消</el-button>
-        <el-button type="primary" @click="confirmCategory">确定</el-button>
+        <el-button type="primary" @click="showCategoryDialog = false,selectedCategoryName=''">
+          重置分类
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -150,6 +153,7 @@ import {
 import { ref, onMounted, nextTick } from 'vue'
 import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
 import CategoryItem from '@/components/categoryItem.vue';
+import ParentCategoryItem from '@/components/parentCategoryItem.vue';
 import BookItem from '@/components/bookItem.vue';
 import BookListItem from '@/components/bookListItem.vue';
 import type { ElMention } from 'element-plus'
@@ -158,7 +162,8 @@ import type { ElMention } from 'element-plus'
 const activeTab = ref('recommend') // 默认显示推荐标签页
 const showCategoryDialog = ref(false)
 const selectedCategory = ref<allApi.Category | null>(null)
-const selectedCategoryId = ref('')
+const selectedCategoryName = ref<string | null>(null)
+const selectedCategoryId = ref<number | null>(null)
 const selectedDocument = ref<allApi.Document | null>(null)
 const searchKeyword = ref('')
 
@@ -389,42 +394,38 @@ const getHotDocuments = async () => {
   }
 };
 
-const fetchBookList = async () => {
-  // 切换到文件列表标签页
-  activeTab.value = 'fileList'
-  
-  // 构建请求参数
-  const params = {
-    type: type_value.value,
-    category: selectedCategoryId.value,
-    year: year_value.value,
-    keyword: searchKeyword.value
-  }
-  
-  // 实际项目中这里会发起API请求
-  console.log('请求书籍列表:', params)
-  
-  // 模拟请求结果
-  fileList.value = [...hotBooks.value] // 实际项目中替换为接口返回数据
-}
+// 处理选中的分类数据
+const onCategorySelected = (selected: allApi.Category) => {
+  console.log('选中的分类：', selected); 
+  selectedCategoryId.value = selected.id;
+  selectedCategoryName.value = selected.name;
+  selectedCategory.value = selected;
+  confirmCategory();
+};
 
 const handleSearch = () => {
-  fetchBookList()
+  
 }
 
-const handleTypeChange = () => {
-  fetchBookList()
-}
-
-const selectCategory = (category) => {
-  selectedCategoryId.value = category.id
-  selectedCategory.value = category.name
-}
-
-const confirmCategory = () => {
+const confirmCategory = async () => {
   showCategoryDialog.value = false
+  activeTab.value = 'fileList'
   if (selectedCategoryId.value) {
-    fetchBookList()
+    try {
+      const response = await allApi.getBookList(false, selectedCategoryName.value || '');
+      console.log('热门资料响应:', response);
+      if (response.data) {
+        hotBooks.value = response.data; 
+      } else {
+        hotBooks.value = [];
+        console.warn('获取热门资料数据格式不正确');
+      }
+      return hotBooks.value;
+    } catch (error) {
+      console.error('获取热门资料失败:', error);
+      hotBooks.value = [];
+      throw error;
+    }
   }
 }
 </script>
@@ -626,9 +627,55 @@ const confirmCategory = () => {
 }
 
 /* 分类弹窗样式 */
+::v-deep .el-dialog__title {
+  font-family: "Microsoft YaHei", "SimHei", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.category-guide {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 10px;
+}
+
+.parent-word{
+  width: 13.3%;
+  font-size: 16px;
+  color: #888;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  border-bottom-color: #b994fe; 
+  color: #b994fe; 
+  font-weight: 500;
+  margin-right: 2.2%;
+}
+
+.child-word {
+  width: 80%;
+  font-size: 16px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  padding-left: 30px;
+  border-bottom: 2px solid transparent;
+  border-bottom-color: #b994fe; 
+  color: #b994fe; 
+  font-weight: 500;
+}
+
 .category-dialog {
   max-height: 300px;
   overflow-y: auto;
+  gap: 5px;
+}
+
+.category-dialog::-webkit-scrollbar {
+  display: none; 
 }
 
 .dialog-category-item {

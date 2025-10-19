@@ -125,8 +125,10 @@ export const uploadFile = (data: UploadFile) => {
 };
 
 // 5. 获取书籍列表
-export const getBookList = (params?: { page?: number; pageSize?: number; categoryId?: string }) => {
-  return service.get<ApiResponse<{ books: Document[]; total: number }>>('/books', { params });
+export const getBookList = (is_suggest: boolean, category?: string) => {
+  return service.get<ApiResponse<{  documents: Document[] }>>('/books', {
+    params: { is_suggest, category }
+  });
 };
 
 // 6. 修改资料信息

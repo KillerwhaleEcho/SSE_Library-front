@@ -2,14 +2,14 @@
   <div class="book-item">
     <!-- 图书封面 -->
     <img 
-      :src="document.cover || defaultCover" 
+      :src="document?.cover || defaultCover" 
       alt="book cover" 
       class="book-cover"
       @error="handleImgError"
     >
     <!-- 图书信息 -->
     <div class="book-info">
-      <h4 class="book-title">{{ document.name }}</h4>
+      <h4 class="book-title">{{ document?.name }}</h4>
       <div class="book-stats">
         <div class="book-count">
             <el-icon><OfficeBuilding /></el-icon>
