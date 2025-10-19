@@ -37,7 +37,7 @@ const handleUserClick = () => {
   height: 60px;
   box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.10);
   position: sticky;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .header-title h1 {
