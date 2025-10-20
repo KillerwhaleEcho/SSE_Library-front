@@ -42,8 +42,8 @@
         </el-col>
       </el-row>
       <div class="input">
-        <input type="text" placeholder="请输入文件名字、关键字">
-        <div class="search-button">搜索</div>
+        <input v-model="key_value" type="text" placeholder="请输入文件名字、关键字">
+        <div class="search-button" @click="handleSearch">搜索</div>
       </div>
     </div>
 
@@ -118,7 +118,7 @@
     </div>
 
     <!-- 分类弹窗 -->
-    <el-dialog v-model="showCategoryDialog" title="选择分类" :modal="false">
+    <el-dialog v-model="showCategoryDialog" title="选择分类" :modal="false" append-to-body :z-index="2000">
       <div class="search-cat">
         <el-input 
           v-model="searchCatKeyword" 
@@ -132,7 +132,107 @@
           </template>
         </el-input>
         <div>
-          <el-button type="primary" @click="handleAddCategory">添加分类或课程</el-button>
+          <el-popover
+            class="box-item"
+            placement="right-start"
+            width="350"
+            trigger="click"
+            v-model:visible="popoverVisible"
+          >
+            <!-- 表单内容 -->
+            <el-form 
+              ref="categoryFormRef"
+              :model="categoryFormData"
+              label-width="50px"
+              size="small"
+              class="add-form"
+            >
+              <!-- 1. 类型选择（分类/课程） -->
+              <el-form-item 
+                label="类型" 
+                prop="type"
+                :rules="[{ required: true, message: '请选择类型', trigger: 'change' }]"
+              >
+                <el-radio-group v-model="categoryFormData.type" @change="handleTypeChange">
+                  <el-radio label="category">添加分类</el-radio>
+                  <el-radio label="course">添加课程</el-radio>
+                </el-radio-group>
+              </el-form-item>
+
+              <!-- 2. 动态内容（根据类型显示） -->
+              <!-- 2.1 分类名称（选择“分类”时显示） -->
+              <el-form-item 
+                label="名称" 
+                prop="name"
+                :rules="[{ required: true, message: '请输入名称', trigger: 'blur' }]"
+              >
+                <el-input 
+                  v-model="categoryFormData.name" 
+                  placeholder="请输入名称"
+                  maxlength="50"
+                />
+              </el-form-item>
+
+              <!-- 2.2 所属分类（选择“课程”时显示） -->
+              <el-form-item 
+                v-if="categoryFormData.type === 'course'"
+                label="所属分类" 
+                prop="parentId"
+                :rules="[{ required: true, message: '请选择所属分类', trigger: 'change' }]"
+              >
+                <el-select 
+                  v-model="categoryFormData.parentId" 
+                  placeholder="请选择分类"
+                  clearable
+                >
+                  <el-option 
+                    v-for="category in allCategories" 
+                    :key="category.id"
+                    :label="category.name"
+                    :value="category.id"
+                  />
+                </el-select>
+              </el-form-item>
+
+              <!-- 3. 描述信息（通用项） -->
+              <el-form-item 
+                label="描述" 
+                prop="description"
+              >
+                <el-input 
+                  v-model="categoryFormData.description" 
+                  placeholder="请输入描述信息（可选）"
+                  type="textarea"
+                  rows="3"
+                  maxlength="200"
+                />
+              </el-form-item>
+
+              <!-- 操作按钮 -->
+              <el-form-item style="margin-bottom: 0;">
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                  <el-button 
+                    size="small" 
+                    @click="resetCategoryForm"
+                  >
+                    取消
+                  </el-button>
+                  <el-button 
+                    size="small" 
+                    type="primary" 
+                    @click="submitCategoryForm"
+                  >
+                    确认添加
+                  </el-button>
+                </div>
+              </el-form-item>
+            </el-form>
+
+            <!-- 触发按钮 -->
+            <template #reference>
+              <el-button>添加分类或课程</el-button>
+            </template>
+          </el-popover>
         </div>
       </div>
 
@@ -163,6 +263,9 @@
       width="600px"
       class="upload-dialog"
       @close="resetForm"
+      :modal="false"
+      append-to-body
+      :z-index="1000"
     >
       <el-form 
         ref="uploadFormRef" 
@@ -296,14 +399,9 @@
 <script setup lang="ts">
 import topbar from '@/layout/topbar.vue'
 import {
-  Check,
-  Delete,
-  Edit,
-  Message,
-  Search,
-  Star,
+  Search
 } from '@element-plus/icons-vue'
-import { ref, onMounted, nextTick, reactive  } from 'vue'
+import { ref, onMounted, nextTick, reactive, watch } from 'vue'
 import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
 import CategoryItem from '@/components/categoryItem.vue';
 import ParentCategoryItem from '@/components/parentCategoryItem.vue';
@@ -322,6 +420,16 @@ const selectedUploadCategoryName = ref<string | null>(null)
 const selectedDocument = ref<allApi.Document | null>(null)
 const searchKeyword = ref('')
 const searchCatKeyword = ref('')
+
+// 同时监视两个数据，变化时触发同一个回调
+watch(
+  [showCategoryDialog, showUploadModal], // 要监视的数据源数组
+  ([newCategoryVal, newUploadVal], [oldCategoryVal, oldUploadVal]) => {
+    console.log('弹窗状态变化：');
+    console.log('showCategoryDialog：', { 旧值: oldCategoryVal, 新值: newCategoryVal });
+    console.log('showUploadModal：', { 旧值: oldUploadVal, 新值: newUploadVal });
+  }
+);
 
 const year_value = ref('')
 const year_options = ref([
@@ -344,7 +452,6 @@ const year_options = ref([
 ])
 // 获取el-mention组件实例
 const mentionRef = ref<InstanceType<typeof ElMention> | null>(null);
-
 // 聚焦时手动显示选项列表
 const handleFocus = async (): Promise<void> => {
   await nextTick()
@@ -353,7 +460,7 @@ const handleFocus = async (): Promise<void> => {
   }
 }
 
-const type_value = ref('')
+const type_value = ref<'book' | 'file' | 'video' | 'null'>('null')
 const type_options = [
   {
     value: 'book',
@@ -362,6 +469,10 @@ const type_options = [
   {
     value: 'file',
     label: '文件',
+  },
+  {
+    value: 'video',
+    label: '视频',
   },
   {
     value: 'null',
@@ -392,85 +503,70 @@ const key_type_options = [
     label: '不限',
   },
 ]
+const key_value = ref('')
 
 // 分类数据
 const hotCategories = ref<allApi.Category[]>([])
 
 const allCategories = ref<allApi.Category[]>([])
 
+// 控制弹出框显示/隐藏
+const popoverVisible = ref(false);
+
+// 表单引用
+const categoryFormRef = ref();
+
+// 表单数据
+const categoryFormData = reactive({
+  type: '',               // 类型：category（分类）/ course（课程）
+  name: '',               // 名称（分类名或课程名）
+  parentId: null,         // 所属分类ID（仅课程需要）
+  description: ''         // 描述（通用）
+});
+
+// 切换类型时重置相关字段
+const handleTypeChange = () => {
+  categoryFormData.name = '';          // 清空名称
+  if (categoryFormData.type === 'category') {
+    categoryFormData.parentId = null;  // 切换到分类时，清空所属分类
+  }
+};
+
+// 重置表单
+const resetCategoryForm = () => {
+  categoryFormRef.value?.resetFields();
+  popoverVisible.value = false;
+};
+
+// 提交表单
+const submitCategoryForm = () => {
+  categoryFormRef.value.validate((valid) => {
+    if (valid) {
+      // 构造提交数据
+      const submitData = {
+        type: categoryFormData.type,
+        name: categoryFormData.name,
+        description: categoryFormData.description,
+        ...(categoryFormData.type === 'course' && { parentId: categoryFormData.parentId })
+      };
+
+      // 调用接口提交（示例）
+      console.log('提交数据：', submitData);
+      // 实际项目中替换为接口请求
+      // await addCategoryOrCourse(submitData);
+
+      ElMessage.success(`${categoryFormData.type === 'category' ? '分类' : '课程'}添加成功`);
+      resetCategoryForm();
+      // 可在此处刷新分类列表
+      // fetchCategories();
+    }
+  });
+};
+
 // 书籍数据
 const hotBooks = ref<allApi.Document[]>([])
 
-const fileList = ref<allApi.Document[]>([
-  {
-    name: "理建国",
-    document_id: 22,
-    type: "book",
-    uploadTime: "2026-01-04 08:23:07",
-    status: "available",
-    category: "enim fugiat",
-    course: "laboris mollit nisi",
-    collections: 61,
-    readCounts: 97,
-    URL: "https://different-majority.org/",
-    bookISBN: "978-1-7005-2655-7",
-    author: "quis irure magna deserunt",
-    cover: "elit reprehenderit aliqua eiusmod ullamco",
-    introduction: "sed exercitation ipsum esse do",
-    createYear: "2025"
-  },
-  {
-    name: "操秀兰",
-    document_id: 12,
-    type: "book",
-    uploadTime: "2026-05-27 08:41:17",
-    status: "available",
-    category: "cupidatat sunt",
-    course: "irure Excepteur",
-    collections: 85,
-    readCounts: 51,
-    URL: "https://super-fellow.info/",
-    bookISBN: "978-1-01-365479-4",
-    author: "ut ea Lorem nostrud",
-    cover: "exercitation id",
-    introduction: "elit Lorem ullamco est culpa",
-    createYear: "2025"
-  },
-  {
-    name: "理建国",
-    document_id: 22,
-    type: "book",
-    uploadTime: "2026-01-04 08:23:07",
-    status: "available",
-    category: "enim fugiat",
-    course: "laboris mollit nisi",
-    collections: 61,
-    readCounts: 97,
-    URL: "https://different-majority.org/",
-    bookISBN: "978-1-7005-2655-7",
-    author: "quis irure magna deserunt",
-    cover: "elit reprehenderit aliqua eiusmod ullamco",
-    introduction: "sed exercitation ipsum esse do",
-    createYear: "2025"
-  },
-  {
-    name: "操秀兰",
-    document_id: 12,
-    type: "book",
-    uploadTime: "2026-05-27 08:41:17",
-    status: "available",
-    category: "cupidatat sunt",
-    course: "irure Excepteur",
-    collections: 85,
-    readCounts: 51,
-    URL: "https://super-fellow.info/",
-    bookISBN: "978-1-01-365479-4",
-    author: "ut ea Lorem nostrud",
-    cover: "exercitation id",
-    introduction: "elit Lorem ullamco est culpa",
-    createYear: "2025"
-  }
-])
+const fileList = ref<allApi.Document[]>([])
 
 // 生命周期
 onMounted(() => {
@@ -535,7 +631,6 @@ const getAllCategories = async () => {
 const getHotDocuments = async () => {
   try {
     const response = await allApi.getHotDocuments();
-    console.log('热门资料响应:', response);
     if (response.data) {
       hotBooks.value = response.data; 
     } else {
@@ -569,25 +664,77 @@ const confirmCategory = async () => {
   activeTab.value = 'fileList'
   if (selectedCategoryId.value) {
     try {
-      const response = await allApi.getBookList(false, selectedCategoryName.value || '');
-      console.log('热门资料响应:', response);
+      const response = await allApi.getBookList(false, selectedCategoryId.value);
+      console.log('资料响应:', response);
       if (response.data) {
-        hotBooks.value = response.data; 
+        fileList.value = response.data; 
       } else {
-        hotBooks.value = [];
-        console.warn('获取热门资料数据格式不正确');
+        fileList.value = [];
+        console.warn('获取资料数据格式不正确');
       }
-      return hotBooks.value;
+      return fileList.value;
     } catch (error) {
-      console.error('获取热门资料失败:', error);
-      hotBooks.value = [];
+      console.error('获取资料失败:', error);
+      fileList.value = [];
       throw error;
     }
   }
 }
 
-const handleSearch = () => {
-  
+const handleSearch = async () => {
+  // 定义表单项校验规则（键名对应表单项，值为提示文本）
+  const validations = [
+    {
+      value: type_value.value,
+      message: '请选择资料类型（书籍or文件）'
+    },
+    {
+      value: selectedCategoryName.value,
+      message: '请选择分类'
+    },
+    {
+      value: year_value.value,
+      message: '请选择年份'
+    },
+    {
+      value: key_type_value.value,
+      message: '请选择关键词类型'
+    },
+    {
+      value: key_value.value.trim(),
+      message: '请输入文件名字或关键字'
+    }
+  ];
+
+  // 遍历校验所有项，遇到第一个未填写的项立即提示
+  //for (const item of validations) {
+  //  if (!item.value) { // 检查值是否为空（空字符串、null、undefined）
+  //    ElMessage.warning(item.message);
+  //   return; // 终止后续校验，确保"挨个提示"的顺序性
+  //  }
+  //}
+  try {
+    const response = await allApi.searchBooksOrFiles(
+      type_value.value,
+      selectedCategoryId.value,
+      year_value.value,
+      key_type_value.value,
+      key_value.value.trim()
+    );
+    activeTab.value = 'fileList'
+    console.log('搜索资料响应:', response);
+    if (response.data) {
+      fileList.value = response.data; 
+    } else {
+      fileList.value = [];
+      console.warn('获取搜索资料数据格式不正确');
+    }
+    return fileList.value;
+  } catch (error) {
+    console.error('获取搜索资料失败:', error);
+    fileList.value = [];
+    throw error;
+  }
 };
 
 const handleCatSearch = () => {
@@ -914,6 +1061,18 @@ const resetForm = () => {
   border: none;
 }
 
+.el-popover .el-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
+}
+
+.el-dialog .el-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
+}
+
 .category-guide {
   width: 100%;
   display: flex;
@@ -991,5 +1150,18 @@ const resetForm = () => {
   background-color: #b994fe;
   color: white;
   border: none;
+}
+
+.add-form {
+  padding: 10px 0;
+}
+
+.el-radio-group {
+  display: flex;
+  gap: 15px;
+}
+
+.el-textarea__inner {
+  resize: none;
 }
 </style>

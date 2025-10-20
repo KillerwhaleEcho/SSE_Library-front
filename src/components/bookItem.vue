@@ -9,15 +9,15 @@
     >
     <!-- 图书信息 -->
     <div class="book-info">
-      <h4 class="book-title">{{ document?.name }}</h4>
+      <h4 class="book-title">{{ document.infoBrief.name }}</h4>
       <div class="book-stats">
         <div class="book-count">
             <img src="@/assets/147_喜欢.png" alt="File Icon" style="width:30px; height:30px; margin-right:4px;" />
-            {{ document?.collections }}
+            {{ document.infoBrief.collections }}
         </div>
         <div class="book-count">
             <img src="@/assets/Fire (火热).png" alt="Office Building Icon" style="width:20px; height:20px; margin-right:4px;vertical-align: bottom;" />
-            {{ document?.readCounts }}
+            {{ document.infoBrief.readCounts }}
         </div>
       </div>
     </div>

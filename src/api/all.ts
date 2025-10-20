@@ -31,19 +31,21 @@ export interface Comment {
   create_at: string;
 }
 
-// 书籍/文件相关类型
-export interface Document {
-  document_id: number;
+export interface InfoBrief {
+  documentId: number;
   name: string;
-  type: 'book' | 'file' | null;
+  type: 'book' | 'file' | 'video' | null;
   uploadTime: string;
   status: 'available' | 'processing' | 'failed';
   category?: string;
-  course?: string;
   collections: number;
   readCounts: number;
   URL: string;
+}
 
+// 书籍/文件相关类型
+export interface Document {
+  infoBrief: InfoBrief;
   bookISBN?: string;
   author?: string;
   uploader?: User;
@@ -74,8 +76,8 @@ export interface Category {
   id: number;
   name: string;
   is_course: boolean;
-  file_counts: number;
-  read_counts: number;
+  fileCounts: number;
+  readCounts: number;
   description?: string;
   parent_id?: number;
   children?: Category[];
@@ -145,9 +147,15 @@ export const updateFileInfo = (fileId: string, data: { name?: string; descriptio
 };
 
 // 7. 搜索书籍或文件
-export const searchBooksOrFiles = (keyword: string, params?: { categoryId?: string; page?: number; pageSize?: number }) => {
-  return service.get<ApiResponse<{ results: (Document | any)[]; total: number }>>('/search', {
-    params: { keyword, ...params },
+export const searchBooksOrFiles = (
+  type: 'book' | 'file' | 'video' | 'null',
+  categoryId: number | null,
+  year: string | null,
+  keyType: string | null,
+  keyword: string | null,
+) => {
+  return service.get<ApiResponse<{  documents: Document[] }>>('/searchdoc', {
+    params: { type, categoryId, year, keyType, keyword },
   });
 };
 

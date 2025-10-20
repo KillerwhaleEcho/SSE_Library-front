@@ -5,11 +5,11 @@
     <div class="category-stats">
       <div class="category-count">
         <img src="@/assets/147_阅读.png" alt="File Icon" style="width:25px; height:25px; margin-right:4px;" />
-        {{ category.file_counts }}
+        {{ category.fileCounts }}
       </div>
       <div class="category-count">
         <img src="@/assets/Fire (火热).png" alt="Collection Icon" style="width:20px; height:20px; margin-right:4px;" />
-        {{ category.read_counts }}
+        {{ category.readCounts }}
       </div>
     </div>
   </div>
