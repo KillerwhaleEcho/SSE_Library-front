@@ -55,7 +55,8 @@ const handleSelect = (selectedCategory: allApi.Category) => {
 }
 
 .parent-item {
-  width: 18%;
+  width: 120px;
+  margin-right: 16px;
 }
 
 .parent-item .category-item {

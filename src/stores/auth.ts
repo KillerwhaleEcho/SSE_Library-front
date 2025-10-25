@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { loginAPI, registerAPI, sendEmailCode, verifyEmailCode, resetPasswordAPI } from '../api/user'
+import { loginAPI, registerAPI, sendEmailCode,  resetPasswordAPI } from '../api/user'
 
 
 
@@ -124,16 +124,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const verifyEmailCodeAction = async (email: string, Code: number) => {
-    try {
-      const response = await verifyEmailCode(email, Code)
-      return (response as any).data?.success || false
-    } catch (error) {
-      console.error('验证码验证失败:', error)
-      throw error
-    }
-  }
-
   // 在useAuthStore中添加
   const resetPasswordAction = async (data: {
     email: string;
@@ -179,7 +169,6 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     sendEmailCode: sendEmailCodeAction,
-    verifyEmailCode: verifyEmailCodeAction,
     resetPassword: resetPasswordAction,
     logout,
     clearToken

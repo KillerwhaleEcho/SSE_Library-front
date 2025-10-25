@@ -7,7 +7,7 @@
       <div class="search-guide">请选择资料类型、分类、年份、关键词类型以搜索资料</div>
       <el-row :gutter="20">
         <el-col :span="6"><div class="grid-content ep-bg-purple" />
-          <el-select v-model="type_value" placeholder="书籍or文件" style="width: 240px" placement="top-start" class="purple-border-select">
+          <el-select v-model="type_value" placeholder="书籍or文件" style="width: 100%" placement="top-start" class="purple-border-select">
             <el-option
               v-for="item in type_options"
               :key="item.value"
@@ -23,7 +23,7 @@
           <el-mention
             v-model="year_value"
             :options="year_options"
-            style="width: 240px"
+            style="width: width: 100%"
             placeholder="选择xx年以后"
             trigger=""
             ref="mentionRef"
@@ -31,7 +31,7 @@
           />
         </el-col>
         <el-col :span="6"><div class="grid-content ep-bg-purple" />
-          <el-select v-model="key_type_value" placeholder="关键词类型" style="width: 240px" placement="top-start" class="purple-border-select">
+          <el-select v-model="key_type_value" placeholder="关键词类型" style="width: 100%" placement="top-start" class="purple-border-select">
             <el-option
               v-for="item in key_type_options"
               :key="item.value"
@@ -118,6 +118,15 @@
     </div>
 
     <!-- 分类弹窗 -->
+    <CategoryDialog 
+      v-model:visible="showCategoryDialog"
+      :all-categories="allCategories"
+      :selected-category-name="selectedCategoryName"
+      @category-selected="onCategorySelected"
+      @reset-category="resetCategory"
+    />
+
+    <!-- 上传文件弹窗（通过 showUploadModal 控制显示） -->
     <el-dialog v-model="showCategoryDialog" title="选择分类" :modal="false" append-to-body :z-index="2000">
       <div class="search-cat">
         <el-input 
@@ -706,13 +715,6 @@ const handleSearch = async () => {
     }
   ];
 
-  // 遍历校验所有项，遇到第一个未填写的项立即提示
-  //for (const item of validations) {
-  //  if (!item.value) { // 检查值是否为空（空字符串、null、undefined）
-  //    ElMessage.warning(item.message);
-  //   return; // 终止后续校验，确保"挨个提示"的顺序性
-  //  }
-  //}
   try {
     const response = await allApi.searchBooksOrFiles(
       type_value.value,
@@ -737,6 +739,10 @@ const handleSearch = async () => {
   }
 };
 
+// 修改分类重置方法
+const resetCategory = () => {
+   selectedCategoryName.value = ''
+}
 const handleCatSearch = () => {
   
 };
@@ -875,7 +881,7 @@ const resetForm = () => {
 .searchForm {
   position: absolute;
   top: 15%;
-  left: 15%;
+  left: 15%; 
   width: 70%;  
   height: 25%;
   border-radius: 10px; 
@@ -890,7 +896,7 @@ const resetForm = () => {
 }
 
 .el-row {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .el-col {
@@ -909,17 +915,8 @@ const resetForm = () => {
   --el-select-focus-border-color: #b994fe; /* 聚焦/选中时边框色 */
 }
 
-/* 1. 父容器样式：固定高度+内边距，确保按钮有足够空间 */
-.category-btn-wrapper {
-  /* 可根据页面布局调整高度，也可使用 min-height 适应内容 */
-  height: 40px; 
-  padding: 0 8px; /* 可选：添加左右内边距，避免按钮贴边 */
-  display: flex; /* 开启 Flex 布局，让子元素（按钮）自动填充满 */
-  align-items: center; /* 垂直居中按钮内容 */
-}
-
 .category-select-btn {
-  width: 240px;
+  width: 100%;
   height: 32px;
   background-color: #ffffff; 
   border: 1.4px solid #ddd; 
@@ -940,7 +937,7 @@ const resetForm = () => {
 
 .input {
   position: absolute;
-  top: 60%;
+  margin-top: 15px;
   width: 100%; 
   height: 30%;
   border: 2px solid #ddd;  /* 容器边框 */
@@ -1081,7 +1078,7 @@ const resetForm = () => {
 }
 
 .parent-word{
-  width: 16.5%;
+  width: 125px;
   font-size: 16px;
   color: #888;
   display: flex;
@@ -1091,7 +1088,7 @@ const resetForm = () => {
   border-bottom-color: #b994fe; 
   color: #b994fe; 
   font-weight: 500;
-  margin-right: 2.2%;
+  margin-right: 16px;
 }
 
 .child-word {
@@ -1108,9 +1105,9 @@ const resetForm = () => {
 }
 
 .category-dialog {
+  width: 100%;
   max-height: 300px;
   overflow-y: auto;
-  gap: 5px;
 }
 
 .category-dialog::-webkit-scrollbar {
