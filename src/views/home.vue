@@ -411,7 +411,7 @@ import {
   Search
 } from '@element-plus/icons-vue'
 import { ref, onMounted, nextTick, reactive, watch } from 'vue'
-import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
+import * as allApi from '@/api/all.ts'
 import CategoryItem from '@/components/categoryItem.vue';
 import ParentCategoryItem from '@/components/parentCategoryItem.vue';
 import BookItem from '@/components/bookItem.vue';

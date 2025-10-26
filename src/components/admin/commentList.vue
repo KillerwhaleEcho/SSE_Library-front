@@ -320,23 +320,29 @@ onMounted(fetchComments)
   flex-direction: column;
 }
 
+
+
 .comment-card {
   border-radius: 10px;
   background: #fff;
-  border: none;
-  box-shadow: none;
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+}
 
-  :deep(.el-card__body) {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-  }
+:deep(.el-card.comment-card) {
+  border: none;
+  box-shadow: none;
+}
+
+
+.comment-card :deep(.el-card__body) {
+  flex: 1;
+  min-height: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .comment-card__header {

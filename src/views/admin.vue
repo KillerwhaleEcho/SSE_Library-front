@@ -55,10 +55,8 @@ const handleSelect = (index: string) => {
   align-items: stretch;
   width: 100%;
   min-height: 100vh;
-  padding: 24px;
   gap: 24px;
   box-sizing: border-box;
-  background: linear-gradient(135deg, #f5f7fa 0%, #eef1f8 100%);
 }
 
 
@@ -77,11 +75,9 @@ const handleSelect = (index: string) => {
 
 .admin-panel__sidebar {
   width: 200px;
-  border-right: none;
-  border-radius: 10px;
-  border: 1px solid rgba(235, 238, 245, 0.7);
+  border: none;
+  border-right: 1px solid #ebeef5;
   background: #fff;
-  /* box-shadow: 0 16px 36px rgba(31, 45, 61, 0.08); */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -96,14 +92,13 @@ const handleSelect = (index: string) => {
 
 .admin-panel__content {
   flex: 1;
-  padding: 0px;
   border-radius: 10px;
   background: #fff;
-  /* box-shadow: 0 16px 36px rgba(31, 45, 61, 0.08); */
   overflow: auto;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding: 20px;
 }
 
 .admin-panel__menu :deep(.el-menu-item) {
