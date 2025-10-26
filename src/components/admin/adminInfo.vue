@@ -39,7 +39,7 @@
             <div class="profile-fields">
               <label class="profile-field">
                 <span class="profile-field__label">Email</span>
-                <el-input v-model="profileForm.email" placeholder="请输入邮箱" />
+                <el-input v-model="profileForm.email" placeholder="请输入邮箱"  ></el-input>
               </label>
               <label class="profile-field">
                 <span class="profile-field__label">昵称</span>
@@ -47,7 +47,7 @@
               </label>
             </div>
             <div class="profile-actions">
-              <el-button class="profile-actions__button" type="primary" @click="handleProfileSave">保存修改</el-button>
+              <el-button class="profile__button" type="primary" @click="handleProfileSave">保存修改</el-button>
             </div>
           </div>
 
@@ -73,10 +73,26 @@
                   show-password
                   placeholder="请再次输入新密码"
                 />
+              </label> 
+               <label class="profile-ver">
+                <span class="profile-ver__label">验证码</span>
+                <div class="profile-ver-form">
+                <el-input v-model="verificationCode"
+                placeholder="请输入验证码"></el-input>
+                 <el-button 
+                type="primary" 
+                round 
+                class="profile-ver__button"
+                @click="getVerificationCode"
+                :disabled="isCodeSending || countdown > 0"
+              >
+                {{ countdown > 0 ? `${countdown}s后重新获取` : '获取验证码' }}
+              </el-button>
+                </div>
               </label>
             </div>
             <div class="profile-actions">
-              <el-button type="primary" @click="handlePasswordSave">保存修改</el-button>
+              <el-button type="primary" @click="handlePasswordSave" class="profile__button">保存修改</el-button>
             </div>
           </div>
         </section>
@@ -96,6 +112,19 @@ import { storeToRefs } from 'pinia'
 import { ElMessage } from 'element-plus'
 import type { UploadFile } from 'element-plus'
 import { useAdminStore } from '../../stores/admin'
+import { sendEmailCode } from '../../api/user'
+
+const verificationCode = ref('')
+const isCodeSending = ref(false)
+const countdown = ref(0)
+const timer=ref<number|null>(null)
+
+const profileSaving = ref(false)
+const passwordSaving = ref(false)
+const avatarUploading = ref(false)
+// 这三个变量是在做“防止重复提交”的保护
+// 如果用户点击了提交按钮，函数还在执行中就又点击了一次按钮那就直接让处理函数return掉防止重复提交
+
 
 const adminStore = useAdminStore()
 const { adminInfo, loading, error } = storeToRefs(adminStore)
@@ -117,11 +146,6 @@ const passwordForm = reactive({
   confirmPassword: '',
 })
 
-const profileSaving = ref(false)
-const passwordSaving = ref(false)
-const avatarUploading = ref(false)
-// 这三个变量是在做“防止重复提交”的保护
-// 如果用户点击了提交按钮，函数还在执行中就又点击了一次按钮那就直接让处理函数return掉防止重复提交
 
 watch(
   () => adminInfo.value,
@@ -178,6 +202,7 @@ const handlePasswordSave = async () => {
     await adminStore.updatePassword({
       email,
       newPassword: passwordForm.newPassword,
+      code:verificationCode.value,
     })
     ElMessage.success('密码已更新')
     passwordForm.newPassword = ''
@@ -223,6 +248,39 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
   }
 }
 
+const getVerificationCode= async() => {
+  if (!passwordForm.newPassword.trim() || !passwordForm.confirmPassword.trim()) {
+    ElMessage.warning("请先输入新密码和确认密码之后再获取验证码")
+  return
+  }
+
+  try {
+    const response = await sendEmailCode(profileForm.email)
+    if (response.code === 200) {
+      isCodeSending.value = true
+      ElMessage.success('验证码已发送，请查收')
+    } else {
+      ElMessage.error('验证码发送失败')
+      return 
+    }
+
+    countdown.value = 10;
+
+    timer.value = window.setInterval(() => {
+      countdown.value--
+      if (countdown.value < 0 && timer.value) {
+        clearInterval(timer.value)
+        timer.value = null
+        isCodeSending.value = false; // 倒计时结束，重置发送状态
+      }
+    },1000)
+
+  } catch(error) {
+    ElMessage.error('验证码发送失败，请稍后重试')
+    console.log('验证码发送失败，请稍后重试')
+  }
+}
+
 onMounted(() => {
   adminStore.fetchAdminInfo().catch((err) => {
     console.error('加载管理员信息失败', err)
@@ -239,7 +297,6 @@ onMounted(() => {
 }
 
 .admin-card {
-  border-radius: 10px;
   border: none;
   overflow: hidden;
   background: #fff;
@@ -249,7 +306,7 @@ onMounted(() => {
 .profile-layout {
   display: flex;
   gap: 40px;
-  padding: 36px 40px;
+  padding: 5px 40px 5px 0px;
 }
 
 .profile-sidebar {
@@ -353,7 +410,7 @@ onMounted(() => {
 .profile-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+
 }
 
 .profile-field__label {
@@ -365,8 +422,7 @@ onMounted(() => {
   background: #fff;
   box-shadow: none;
   border: 1px solid #dcd7f0;
-  border-radius: 8px;
-  padding: 6px 12px;
+  border-radius: 5px;
 }
 
 .profile-field :deep(.el-input__wrapper:focus),
@@ -385,23 +441,46 @@ onMounted(() => {
 }
 
 .profile-actions :deep(.el-button) {
-  min-width: 150px;
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
   border: none;
-  background: linear-gradient(135deg, #b994fe 0%, #8e47bd 100%);
-  color: #fff;
   transition: all 0.3s ease;
 }
 
 .profile-actions :deep(.el-button:hover) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 18px rgba(91, 36, 127, 0.3);
+  box-shadow: 0 5px 15px rgba(91,36,127, 0.3);
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
 }
 
-.profile-actions__button {
-  margin-top: 5px;
+
+.profile-ver{
+  display: flex;
+  flex-direction: column;
 }
+
+.profile-ver__label{
+    font-size: 14px;
+  color: #5d4d74;
+}
+
+.profile-ver__button{
+  margin-left: 10px;
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.profile-ver-form{
+  display: flex;
+}
+
+/* .profile-verification__ */
+
 .profile-divider {
-  margin: 8px 0 16px;
+  margin: 8px 0 0px;
   font-size: 13px;
   color: #7a6598;
 }
@@ -436,9 +515,5 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 640px) {
-  .profile-actions :deep(.el-button) {
-    width: 100%;
-  }
-}
+
 </style>

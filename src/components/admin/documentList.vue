@@ -676,11 +676,18 @@ onMounted(fetchDocuments)
   flex-direction: column;
 }
 
+
+
+:deep(.el-card.document-card) {
+  border: none;
+  box-shadow: none;
+  /* --el-card-border-color: transparent;
+  --el-card-shadow: none; */
+}
+
 .document-card {
   border-radius: 10px;
   background: #fff;
-  border: none;
-  box-shadow: none;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -692,6 +699,8 @@ onMounted(fetchDocuments)
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  box-shadow: none;
+  border: none;
 }
 
 .document-card__header {

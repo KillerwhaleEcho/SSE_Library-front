@@ -31,6 +31,8 @@ export const useAdminStore = defineStore('admin', () => {
   const error = ref('')
   const collectionList = ref<AdminDetailResponse['collectionList']>([])
   const historyList = ref<AdminDetailResponse['historyList']>([])
+// <AdminDetailResponse['collectionList']> 是 TypeScript 的泛型，它使用了索引访问类型（indexed access type）来获取 AdminDetailResponse 类型中的 collectionList 属性的类型。
+
 
   //从存储中水合/激活
   const hydrateFromStorage = () => {
@@ -60,12 +62,14 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
+  //从存储中回去ID,getItem会返回一个string||null的值
   const ensureUserId = (): string | null => {
     const cachedUserId = storage?.getItem('userId')
     if (!cachedUserId) return null
     return cachedUserId
   }
 
+  // 把后端返回的信息应用
   const applyDetail = (detail: AdminDetailResponse) => {
     adminInfo.value = detail.userBrief//两个是一样的
     collectionList.value = detail.collectionList ?? []
@@ -81,8 +85,8 @@ export const useAdminStore = defineStore('admin', () => {
     if (!userId) {
       error.value = ''
       adminInfo.value = fallbackAdminInfo
-      collectionList.value = []
-      historyList.value = []
+      // collectionList.value = []  感觉是多余的
+      // historyList.value = []
       persist()
       return adminInfo.value
     }
@@ -123,7 +127,10 @@ export const useAdminStore = defineStore('admin', () => {
       throw new Error('未获取到有效的用户ID')
     }
 
+    //如果是从adminInfo里取出来的ID就是number类型，如果从ensureUserId中获得的就是string类型，所以这段代码是有用的
     const userId = String(sourceUserId)
+
+    //规范化处理，只处理不为空的字段，undefined和null一律置为null
     const normalized: AdminUpdatePayload = {}
     if ('userName' in payload) {
       normalized.userName = payload.userName ?? null
@@ -134,6 +141,7 @@ export const useAdminStore = defineStore('admin', () => {
     if ('email' in payload) {
       normalized.email = payload.email ?? null
     }
+
 
     const response = await updateAdminProfile(userId, normalized)
     const updated = response.data.userBrief

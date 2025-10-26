@@ -56,6 +56,7 @@ export interface AdminUpdateResponse {
 export interface AdminPasswordPayload {
   email: string
   newPassword: string
+  code:string
 }
 
 export interface AdminPasswordResponse {
@@ -93,7 +94,7 @@ export const updateAdminPassword = (
   data: AdminPasswordPayload,
 ): Promise<ApiResponse<AdminPasswordResponse>> => {
   return request({
-    url: '/user/Password',
+    url: '/Password',
     method: 'put',
     data,
   })
