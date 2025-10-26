@@ -49,14 +49,14 @@
           <el-table-column :label="TEXT.status" width="120">
             <template #default="{ row }">
               <el-tag :type="row.status === 'active' ? 'success' : 'info'">
-                {{ row.status === 'active' ? TEXT.normal : TEXT.inactive }}
+                {{ row.status === 'active' ? TEXT.normal : TEXT.disabled }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column :label="TEXT.action" width="140">
-            <template #default="{ row }">
+             <template #default="{ row }">
               <el-button type="primary" link size="small" @click="toggleStatus(row)">
-                {{ row.status === 'active' ? TEXT.setInactive : TEXT.setActive }}
+                {{ row.status === 'active' ? TEXT.setDisabled : TEXT.setActive }}
               </el-button>
             </template>
           </el-table-column>
@@ -69,14 +69,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import request from '../../utils/request'
-import type { AdminProfile } from '../../api/admin'
-
-interface ApiResponse<T = unknown> {
-  code: number
-  message?: string
-  data: T
-}
+import { getAdminUserList, updateUserStatus, type UserBrief } from '../../api/admin'
 
 type UserRow = {
   id: number
@@ -86,34 +79,41 @@ type UserRow = {
 }
 
 const TEXT = {
-  title: '\u7528\u6237\u5217\u8868',
-  refresh: '\u5237\u65B0',
-  loading: '\u6B63\u5728\u52A0\u8F7D\u7528\u6237\u6570\u636E...',
-  empty: '\u6682\u65E0\u7528\u6237\u6570\u636E',
-  name: '\u59D3\u540D',
-  email: '\u90AE\u7BB1',
-  status: '\u72B6\u6001',
-  action: '\u64CD\u4F5C',
-  setInactive: '\u8BBE\u4E3A\u505C\u7528',
-  setActive: '\u8BBE\u4E3A\u6B63\u5E38',
-  normal: '\u6B63\u5E38',
-  inactive: '\u505C\u7528',
-  fetchError: '\u83B7\u53D6\u7528\u6237\u6570\u636E\u5931\u8D25',
-  successActivate: '\u5DF2\u542F\u7528\u7528\u6237',
-  successDeactivate: '\u5DF2\u505C\u7528\u7528\u6237',
-  search: '\u641C\u7D22',
-  searchPlaceholder: '\u8BF7\u8F93\u5165\u641C\u7D22\u5185\u5BB9',
-  searchSelect: '\u8BF7\u9009\u62E9\u641C\u7D22\u7C7B\u578B',
-  searchByName: '\u6839\u636E\u59D3\u540D',
-  searchById: '\u6839\u636E ID',
-  mockFallback: '\u672A\u8FDE\u63A5\u540E\u7AEF\uFF0C\u6B63\u5728\u4F7F\u7528\u793A\u4F8B\u6570\u636E\u5C55\u793A',
+  title: '用户列表',
+  refresh: '刷新',
+  loading: '正在加载用户数据...',
+  empty: '暂无用户数据',
+  name: '姓名',
+  email: '邮箱',
+  status: '状态',
+  action: '操作',
+  setDisabled: '设为停用',
+  setActive: '设为正常',
+  normal: '正常',
+  disabled: '停用',
+  fetchError: '获取用户数据失败',
+  successActivate: '已启用用户',
+  successDeactivate: '已停用用户',
+  updateError: '更新用户状态失败，请重试',
+  search: '搜索',
+  searchPlaceholder: '请输入搜索内容',
+  searchSelect: '请选择搜索类型',
+  searchByName: '根据姓名',
+  searchById: '根据 ID',
+  mockFallback: '未连接后端，正在使用示例数据展示',
 } as const
 
 const DEMO_USERS: UserRow[] = [
   {
     id: 1,
-    name: '\u5F20\u4E09',
+    name: '张三',
     email: 'zhangsan@example.com',
+    status: 'active',
+  },
+  {
+    id: 2,
+    name: '王五',
+    email: 'wangwu@example.com',
     status: 'active',
   },
 ]
@@ -124,13 +124,17 @@ const searchKey = ref<'name' | 'id'>('name')
 const searchInput = ref('')
 const appliedKeyword = ref('')
 
+
 const normalizeStatus = (status: string) => {
   if (status === 'active' || status === TEXT.normal) return 'active'
-  if (status === 'inactive' || status === TEXT.inactive) return 'inactive'
+  if (status === 'disabled' || status === TEXT.disabled) return 'disabled'
   return status
 }
 
-const mapToRows = (list: AdminProfile[]): UserRow[] =>
+const mapToPayloadStatus = (status: string): 'active' | 'disabled' =>
+  status === 'active' ? 'active' : 'disabled'
+
+const mapToRows = (list: UserBrief[]): UserRow[] =>
   [...list]
     .sort((a, b) => a.userId - b.userId)
     .slice(0, 10)
@@ -144,10 +148,7 @@ const mapToRows = (list: AdminProfile[]): UserRow[] =>
 const fetchUsers = async () => {
   loading.value = true
   try {
-    const response = await request<ApiResponse<AdminProfile[]>, ApiResponse<AdminProfile[]>>({
-      url: '/admin/users',
-      method: 'get',
-    })
+    const response = await getAdminUserList()
     users.value = mapToRows(response.data || [])
   } catch (error: any) {
     console.warn(TEXT.fetchError, error)
@@ -157,8 +158,6 @@ const fetchUsers = async () => {
     loading.value = false
   }
 }
-
-
 
 const filteredUsers = computed(() => {
   const keyword = appliedKeyword.value
@@ -172,7 +171,9 @@ const filteredUsers = computed(() => {
 
   const normalizedKeyword = keyword.trim().toLowerCase()
   if (!normalizedKeyword) return users.value
-  return users.value.filter((user) => user.name.trim().toLowerCase() === normalizedKeyword)
+  return users.value.filter((user) =>
+    user.name.trim().toLowerCase().includes(normalizedKeyword),
+  )
 })
 
 const handleSearch = () => {
@@ -184,12 +185,31 @@ const resetSearch = () => {
   appliedKeyword.value = ''
 }
 
-const toggleStatus = (user: UserRow) => {
+const toggleStatus = async (user: UserRow) => {
   // 切换当前状态
-  user.status = user.status === 'active' ? 'inactive' : 'active'
-  const message = user.status === 'active' ? TEXT.successActivate : TEXT.successDeactivate
-  ElMessage.success(message)
+  const previousStatus = user.status
+  const targetStatus = user.status === 'active' ? 'disabled' : 'active'
+  user.status = targetStatus
+
+  try {
+    const { data } = await updateUserStatus({
+      userId: user.id,
+      status: mapToPayloadStatus(targetStatus),
+    })
+    if (data?.status) {
+      user.status = normalizeStatus(data.status)
+    }
+    const message = user.status === 'active' ? TEXT.successActivate : TEXT.successDeactivate
+    ElMessage.success(message)
+  } catch (error) {
+    console.error(TEXT.updateError, error)
+    user.status = previousStatus
+    ElMessage.error(TEXT.updateError)
+  }
 }
+
+
+
 
 onMounted(fetchUsers)
 </script>
@@ -203,7 +223,7 @@ onMounted(fetchUsers)
     display: flex;
     flex-direction: column;
   }
-  
+
   .user-card {
     border-radius: 10px;
     background: #fff;
@@ -213,7 +233,7 @@ onMounted(fetchUsers)
     flex: 1;
     display: flex;
     flex-direction: column;
-  
+
     :deep(.el-card__body) {
       height: 100%;
       display: flex;
@@ -221,13 +241,16 @@ onMounted(fetchUsers)
       flex: 1;
       min-height: 0;
     }
-  
+
     .user-card__header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 18px;
     }
+    /* space-between 会让左右元素贴边，中间均匀分布；
+       space-around 会让元素两侧都留间距；
+       space-evenly 会让所有间距一致。 */
 
     .user-card__toolbar {
       display: flex;
@@ -243,56 +266,56 @@ onMounted(fetchUsers)
     .user-card__search-input {
       max-width: 260px;
     }
-  
+
     .user-card__title {
       margin: 0;
-      font-size: 16px;
+      font-size: 20px;
       font-weight: 700;
       color: #311a45;
     }
-  
+
     .user-card__header :deep(.el-button) {
       border: none;
       background: linear-gradient(135deg, #b994fe 0%, #8e47bd 100%);
       color: #fff;
       transition: all 0.3s ease;
     }
-  
+
     .user-card__header :deep(.el-button:hover) {
       transform: translateY(-2px);
       box-shadow: 0 8px 18px rgba(91, 36, 127, 0.35);
     }
-  
+
     .user-card__table {
       flex: 1;
       min-height: 0;
       display: flex;
       flex-direction: column;
     }
-  
+
     .user-card__table :deep(.el-table) {
       flex: 1;
       --el-table-border-color: rgba(185, 148, 254, 0.2);
       background-color: #fff;
       border-radius: 0;
     }
-  
+
     .user-card__table :deep(.el-table__body-wrapper) {
       flex: 1;
       min-height: 0;
       overflow-y: auto;
     }
-  
+
     :deep(.el-table th) {
       background-color: rgba(185, 148, 254, 0.18);
       color: #3f2458;
       font-weight: 600;
     }
-  
+
     :deep(.el-table tr:hover > td) {
       background-color: rgba(185, 148, 254, 0.18);
     }
-  
+
     :deep(.el-tag) {
       border: none;
       background: linear-gradient(135deg, #b994fe 0%, #8e47bd 100%);

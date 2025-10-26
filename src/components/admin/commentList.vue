@@ -102,7 +102,6 @@ interface CommentDocument {
   uploadTime: string
   status: string
   category: string
-  course: string
   collections: number
   readCounts: number
   URL: string
@@ -164,7 +163,6 @@ const createMockComments = (): CommentItem[] => [
       uploadTime: '2024-03-10 18:32:00',
       status: 'published',
       category: '教育学',
-      course: '教育技术',
       collections: 87,
       readCounts: 423,
       URL: '#',
@@ -190,7 +188,6 @@ const createMockComments = (): CommentItem[] => [
       uploadTime: '2024-02-26 11:48:00',
       status: 'published',
       category: '计算机科学',
-      course: '人工智能',
       collections: 132,
       readCounts: 1024,
       URL: '#',
@@ -216,7 +213,6 @@ const createMockComments = (): CommentItem[] => [
       uploadTime: '2024-03-15 09:05:00',
       status: 'published',
       category: '数学',
-      course: '高等数学',
       collections: 65,
       readCounts: 358,
       URL: '#',

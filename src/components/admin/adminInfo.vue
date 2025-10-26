@@ -14,6 +14,7 @@
             accept="image/*"
             @change="handleAvatarChange"
           >
+          <!-- 默认情况下：组件会把选择的文件传给内置的 HTTP 上传逻辑 + handle 函数 ；所以需要禁用自动上传-->
             <el-button size="small" type="primary">上传头像</el-button>
           </el-upload>
           <ul class="profile-summary">
@@ -53,7 +54,7 @@
           <el-divider content-position="center" class="profile-divider">修改密码</el-divider>
 
           <div class="profile-section">
-            <div class="profile-fields profile-fields--compact">
+            <div class="profile-fields ">
               <label class="profile-field">
                 <span class="profile-field__label">新密码</span>
                 <el-input
@@ -62,6 +63,7 @@
                   show-password
                   placeholder="请输入新密码"
                 />
+                <!-- show-password属性可以让用户选择是否显示密码文本 -->
               </label>
               <label class="profile-field">
                 <span class="profile-field__label">请重新输入密码</span>
@@ -98,12 +100,11 @@ import { useAdminStore } from '../../stores/admin'
 const adminStore = useAdminStore()
 const { adminInfo, loading, error } = storeToRefs(adminStore)
 
-const displayName = computed(() => adminInfo.value?.username ?? '管理员')
 const avatarUrl = computed(
-  () => adminInfo.value?.userAvatar || 'https://placehold.co/120x120?text=Avatar'
+  () => adminInfo.value?.userAvatar || 'https://placehold.co/120x120?text=Avatar'//fallback中没有给出默认值所以加上了一个默认占位图
 )
 
-const profileForm = reactive({
+const profileForm = reactive({//要呈现的管理员信息，不包括头像
   email: '',
   username: '',
   role: '',
@@ -119,6 +120,8 @@ const passwordForm = reactive({
 const profileSaving = ref(false)
 const passwordSaving = ref(false)
 const avatarUploading = ref(false)
+// 这三个变量是在做“防止重复提交”的保护
+// 如果用户点击了提交按钮，函数还在执行中就又点击了一次按钮那就直接让处理函数return掉防止重复提交
 
 watch(
   () => adminInfo.value,
@@ -132,6 +135,7 @@ watch(
   },
   { immediate: true },
 )
+//这是一个watch监听器，用于监听adminInfo.value，当值发生变化时就把新值作为参数传入回调函数，并更新profileForm中的各个字段
 
 const handleProfileSave = async () => {
   if (profileSaving.value) return
@@ -143,8 +147,9 @@ const handleProfileSave = async () => {
   try {
     await adminStore.updateAdminInfo({
       email: profileForm.email.trim(),
-      userName: profileForm.username.trim() || displayName.value || '',
+      userName: profileForm.username.trim() || adminInfo.value?.username || '',
     })
+    // 邮箱为空会提示警告并return掉，但是昵称可以为空，会用原来的昵称作为回退值
     ElMessage.success('资料已更新')
   } catch (err: any) {
     ElMessage.error(err?.message || '资料更新失败')
@@ -163,10 +168,16 @@ const handlePasswordSave = async () => {
     ElMessage.error('两次输入的密码不一致')
     return
   }
+  const email = profileForm.email.trim()
+  if (!email) {
+    ElMessage.warning('邮箱不能为空')
+    return
+  }
   passwordSaving.value = true
   try {
-    await adminStore.updateAdminInfo({
-      password: passwordForm.newPassword,
+    await adminStore.updatePassword({
+      email,
+      newPassword: passwordForm.newPassword,
     })
     ElMessage.success('密码已更新')
     passwordForm.newPassword = ''
@@ -185,10 +196,11 @@ const readFileAsDataURL = (file: File) =>
     reader.onerror = () => reject(new Error('读取文件失败'))
     reader.readAsDataURL(file)
   })
+  //resolve和reject是Promise自动提供的的两个回调函数，分别用于处理成功和失败时改变promise的状态，这比较复杂，因为这是两个异步函数，可以在创建完成之后再调用
 
 const handleAvatarChange = async (uploadFile: UploadFile) => {
   if (avatarUploading.value) return
-  const file = uploadFile.raw
+  const file = uploadFile.raw//这样之后才拿到真正的File对象
   if (!file) return
   if (!file.type.startsWith('image/')) {
     ElMessage.error('请选择图片文件')
@@ -214,6 +226,7 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
 onMounted(() => {
   adminStore.fetchAdminInfo().catch((err) => {
     console.error('加载管理员信息失败', err)
+    //永远不会触发，因为fetchAminInfo至少会返回fallback数据
   })
 })
 </script>
@@ -332,12 +345,10 @@ onMounted(() => {
 .profile-fields {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-
-.profile-fields--compact {
   gap: 16px;
 }
+
+
 
 .profile-field {
   display: flex;

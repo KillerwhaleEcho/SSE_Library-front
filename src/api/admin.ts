@@ -16,9 +16,7 @@ export interface UserBrief {
   role: string
 }
 
-export interface AdminProfile extends UserBrief {}
-
-export interface AdminDocumentBrief {
+export interface DocumentBrief {
   infoBrief: {
     name: string
     document_id: number
@@ -26,7 +24,6 @@ export interface AdminDocumentBrief {
     uploadTime: string
     status: string
     category: string
-    course: string
     collections: number
     readCounts: number
     URL: string
@@ -42,27 +39,31 @@ export interface AdminDocumentBrief {
 
 export interface AdminDetailResponse {
   userBrief: UserBrief
-  password: string
-  collectionList: AdminDocumentBrief[]
-  historyList: AdminDocumentBrief[]
+  collectionList?: DocumentBrief[]
+  historyList?: DocumentBrief[]
 }
 
 export interface AdminUpdatePayload {
-  userName?: string
-  userAvatar?: string
-  email?: string
-  password?: string
+  userName?: string | null
+  userAvatar?: string | Blob | null
+  email?: string | null
 }
 
 export interface AdminUpdateResponse {
-  userName: string
-  userAvatar: string
+  userBrief: UserBrief
+}
+
+export interface AdminPasswordPayload {
   email: string
-  password: string
+  newPassword: string
+}
+
+export interface AdminPasswordResponse {
+  success: boolean
 }
 
 export const getAdminDetail = (
-  userId: number
+  userId: string
 ): Promise<ApiResponse<AdminDetailResponse>> => {
   return request({
     url: `/user/${userId}`,
@@ -70,13 +71,45 @@ export const getAdminDetail = (
   })
 }
 
+export const getAdminUserList = (): Promise<ApiResponse<UserBrief[]>> => {
+  return request({
+    url: '/admin/users',
+    method: 'get',
+  })
+}
+
 export const updateAdminProfile = (
-  userId: number,
+  userId: string,
   data: AdminUpdatePayload
 ): Promise<ApiResponse<AdminUpdateResponse>> => {
   return request({
-    url: `/user/${userId}/change`,
-    method: 'post',
+    url: `/user/${userId}`,
+    method: 'put',
     data,
+  })
+}
+
+export const updateAdminPassword = (
+  data: AdminPasswordPayload,
+): Promise<ApiResponse<AdminPasswordResponse>> => {
+  return request({
+    url: '/user/Password',
+    method: 'put',
+    data,
+  })
+}
+
+export interface UpdateUserStatusPayload {
+  userId: number
+  status: 'active' | 'disabled'
+}
+
+export const updateUserStatus = (
+  payload: UpdateUserStatusPayload
+): Promise<ApiResponse<UserBrief>> => {
+  return request({
+    url: '/admin/user',
+    method: 'put',
+    data: payload,
   })
 }

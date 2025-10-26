@@ -11,7 +11,7 @@
         <!-- Element Plus的el-menu组件在触发select事件时，会传递被选中的菜单项的index作为参数。 -->
         <el-menu-item index="admin">管理员信息</el-menu-item>
         <el-menu-item index="users">用户列表</el-menu-item>
-        <el-menu-item index="files" >文件</el-menu-item>
+        <el-menu-item index="files" >文件列表</el-menu-item>
         <el-menu-item index="comments">评论列表</el-menu-item>
       </el-menu>
     </aside>

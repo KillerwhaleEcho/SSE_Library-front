@@ -3,9 +3,11 @@ import { ref } from 'vue'
 import {
   getAdminDetail,
   updateAdminProfile,
-  type AdminProfile,
+  updateAdminPassword,
+  type UserBrief,
   type AdminDetailResponse,
   type AdminUpdatePayload,
+  type AdminPasswordPayload,
 } from '../api/admin'
 
 const STORAGE_KEY = 'adminInfo'
@@ -13,7 +15,7 @@ const storage = typeof window === 'undefined' ? null : window.localStorage
 // typeof window === 'undefined' - 检查 window 对象是否存在，在 浏览器环境 中，window 对象存在
 
 
-const fallbackAdminInfo: AdminProfile = {
+const fallbackAdminInfo: UserBrief = {
   userId: 0,
   username: 'Sample Admin',
   userAvatar: '',
@@ -24,19 +26,19 @@ const fallbackAdminInfo: AdminProfile = {
 }
 
 export const useAdminStore = defineStore('admin', () => {
-  const adminInfo = ref<AdminProfile | null>(null)
+  const adminInfo = ref<UserBrief | null>(null)
   const loading = ref(false)
   const error = ref('')
-  const password = ref('')
   const collectionList = ref<AdminDetailResponse['collectionList']>([])
   const historyList = ref<AdminDetailResponse['historyList']>([])
 
+  //从存储中水合/激活
   const hydrateFromStorage = () => {
     if (!storage) return
     const cached = storage.getItem(STORAGE_KEY)
     if (cached) {
       try {
-        adminInfo.value = JSON.parse(cached) as AdminProfile
+        adminInfo.value = JSON.parse(cached) as UserBrief
       } catch {
         storage.removeItem(STORAGE_KEY)
       }
@@ -58,16 +60,14 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
-  const ensureUserId = (): number | null => {
+  const ensureUserId = (): string | null => {
     const cachedUserId = storage?.getItem('userId')
     if (!cachedUserId) return null
-    const parsed = Number(cachedUserId)
-    return Number.isNaN(parsed) ? null : parsed
+    return cachedUserId
   }
 
   const applyDetail = (detail: AdminDetailResponse) => {
-    adminInfo.value = detail.userBrief
-    password.value = detail.password ?? ''
+    adminInfo.value = detail.userBrief//两个是一样的
     collectionList.value = detail.collectionList ?? []
     historyList.value = detail.historyList ?? []
     persist()
@@ -75,12 +75,12 @@ export const useAdminStore = defineStore('admin', () => {
 
   const fetchAdminInfo = async (force = false) => {
     if (adminInfo.value && !force) return adminInfo.value
+// 这个force是一个强制刷新开关。fetchAdminInfo的默认逻辑是如果adminInfo已经有数据那就直接返回缓存避免重复请求，但是如果传入true就会绕过这段缓存判断，强制请求最新数据
 
     const userId = ensureUserId()
     if (!userId) {
       error.value = ''
       adminInfo.value = fallbackAdminInfo
-      password.value = ''
       collectionList.value = []
       historyList.value = []
       persist()
@@ -96,7 +96,6 @@ export const useAdminStore = defineStore('admin', () => {
       error.value = err?.message || '获取管理员信息失败'
       if (!adminInfo.value) {
         adminInfo.value = fallbackAdminInfo
-        password.value = ''
         collectionList.value = []
         historyList.value = []
         persist()
@@ -109,33 +108,49 @@ export const useAdminStore = defineStore('admin', () => {
 
   const clearAdminInfo = () => {
     adminInfo.value = null
-    password.value = ''
     collectionList.value = []
     historyList.value = []
     storage?.removeItem(STORAGE_KEY)
   }
 
   const updateAdminInfo = async (payload: AdminUpdatePayload) => {
-    const userId = adminInfo.value?.userId ?? ensureUserId()
-    if (!userId) {
+    const sourceUserId = adminInfo.value?.userId ?? ensureUserId()
+    if (
+      sourceUserId === null ||
+      sourceUserId === undefined ||
+      (typeof sourceUserId === 'string' && sourceUserId.trim() === '')
+    ) {
       throw new Error('未获取到有效的用户ID')
     }
 
-    const response = await updateAdminProfile(userId, payload)
-    const current = adminInfo.value ?? fallbackAdminInfo
-
-    adminInfo.value = {
-      ...current,//对象展开语法 ... 的作用：复制 current 对象的所有属性到新对象
-      username: response.data.userName ?? current.username,
-      userAvatar: response.data.userAvatar ?? current.userAvatar,
-      email: response.data.email ?? current.email,
+    const userId = String(sourceUserId)
+    const normalized: AdminUpdatePayload = {}
+    if ('userName' in payload) {
+      normalized.userName = payload.userName ?? null
+    }
+    if ('userAvatar' in payload) {
+      normalized.userAvatar = payload.userAvatar ?? null
+    }
+    if ('email' in payload) {
+      normalized.email = payload.email ?? null
     }
 
-    if (response.data.password) {
-      password.value = response.data.password
+    const response = await updateAdminProfile(userId, normalized)
+    const updated = response.data.userBrief
+    if (!updated) {
+      throw new Error('资料更新失败：缺少返回的用户数据')
     }
 
+    adminInfo.value = updated
     persist()
+    return response.data
+  }
+
+  const updatePassword = async (payload: AdminPasswordPayload) => {
+    const response = await updateAdminPassword(payload)
+    if (!response.data?.success) {
+      throw new Error(response.message || '密码更新失败')
+    }
     return response.data
   }
 
@@ -143,7 +158,6 @@ export const useAdminStore = defineStore('admin', () => {
 
   return {
     adminInfo,
-    password,
     collectionList,
     historyList,
     loading,
@@ -151,5 +165,6 @@ export const useAdminStore = defineStore('admin', () => {
     fetchAdminInfo,
     clearAdminInfo,
     updateAdminInfo,
+    updatePassword,
   }
 })

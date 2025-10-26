@@ -1,20 +1,37 @@
-<template>
+﻿<template>
   <div class="document-list">
     <el-card class="document-card">
       <div class="document-card__header">
         <h3 class="document-card__title">{{ TEXT.title }}</h3>
-        <el-button
-          type="primary"
-          size="small"
-          :loading="loading"
-          @click="fetchDocuments"
-        >
-          {{ TEXT.refresh }}
-        </el-button>
+        <div class="document-card__actions">
+          <el-button
+            class="document-card__filter-btn"
+            :class="{ 'document-card__filter-btn--active': showReviewingOnly }"
+            size="medium"
+            :type="showReviewingOnly ? 'primary' : 'info'"
+            :plain="!showReviewingOnly"
+            @click="toggleReviewingFilter"
+          >
+            {{
+              showReviewingOnly
+                ? TEXT.showAllDocuments
+                : TEXT.filterReviewing
+            }}
+          </el-button>
+          <el-button
+            class="document-card__refresh-btn"
+            type="primary"
+            size="medium"
+            :loading="loading"
+            @click="fetchDocuments"
+          >
+            {{ TEXT.refresh }}
+          </el-button>
+        </div>
       </div>
 
       <el-table
-        :data="documents"
+        :data="filteredDocuments"
         border
         class="document-table"
         v-loading="loading"
@@ -50,7 +67,6 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="course" :label="TEXT.course" min-width="180" />
         <el-table-column prop="uploadTime" :label="TEXT.uploadTime" width="180" />
 
         <el-table-column :label="TEXT.status" width="160">
@@ -58,7 +74,7 @@
             <el-select
               v-model="row.status"
               size="small"
-              @change="(value) => handleStatusChange(row, value)"
+              @change="(value:any) => handleStatusChange(row, value)"
             >
               <el-option
                 v-for="option in STATUS_OPTIONS"
@@ -93,9 +109,6 @@
         </el-form-item>
         <el-form-item :label="TEXT.form.type">
           <el-input v-model="editForm.type" clearable />
-        </el-form-item>
-        <el-form-item :label="TEXT.form.course">
-          <el-input v-model="editForm.course" clearable />
         </el-form-item>
         <el-form-item :label="TEXT.form.name">
           <el-input v-model="editForm.name" clearable />
@@ -172,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import service from '../../utils/service'
@@ -192,7 +205,6 @@ interface BookItem {
   uploadTime: string
   status: string
   category: string
-  course: string
   collections: number
   readCounts: number
   URL: string
@@ -210,7 +222,6 @@ interface EditFormState {
   document_id: number | null
   type: string
   category: string
-  course: string
   name: string
   isbn: string
   tags: string
@@ -228,12 +239,13 @@ const router = useRouter()
 const TEXT = {
   title: '资料列表',
   refresh: '刷新',
+  filterReviewing: '查看审核中资料',
+  showAllDocuments: '查看全部资料',
   loading: '正在加载资料，请稍候…',
   empty: '暂无资料',
   cover: '封面',
   noCover: '暂无封面',
   name: '资料名称',
-  course: '所属课程',
   uploadTime: '上传时间',
   status: '资料状态',
   action: '操作',
@@ -253,7 +265,6 @@ const TEXT = {
   form: {
     category: '资料分类',
     type: '资料类型',
-    course: '所属课程',
     name: '资料名称',
     isbn: 'ISBN',
     author: '作者',
@@ -287,7 +298,6 @@ const MOCK_DOCUMENTS: DocumentRow[] = [
     uploadTime: '2024-05-12 09:30:00',
     status: '开放',
     category: '前端开发',
-    course: 'Web 前端基础',
     collections: 128,
     readCounts: 532,
     URL: 'https://example.com/docs/vue3',
@@ -305,7 +315,6 @@ const MOCK_DOCUMENTS: DocumentRow[] = [
     uploadTime: '2024-06-01 14:15:00',
     status: '审核中',
     category: '后端开发',
-    course: 'Spring Boot 项目开发',
     collections: 86,
     readCounts: 421,
     URL: 'https://example.com/docs/spring',
@@ -323,7 +332,6 @@ const MOCK_DOCUMENTS: DocumentRow[] = [
     uploadTime: '2024-04-22 16:45:00',
     status: '关闭',
     category: '数据科学',
-    course: 'Python 数据分析',
     collections: 64,
     readCounts: 308,
     URL: 'https://example.com/docs/data-analysis',
@@ -341,7 +349,6 @@ const MOCK_DOCUMENTS: DocumentRow[] = [
     uploadTime: '2024-07-08 10:20:00',
     status: '已撤回',
     category: '产品设计',
-    course: '交互原型设计',
     collections: 25,
     readCounts: 102,
     URL: 'https://example.com/docs/ux',
@@ -352,7 +359,7 @@ const MOCK_DOCUMENTS: DocumentRow[] = [
     createYear: '2020',
     tags: ['产品设计', '原型', '交互'],
   },
-]
+] as const
 
 const STATUS_OPTIONS: Array<{ label: string; value: DocumentStatus }> = [
   { label: '开放', value: '开放' },
@@ -367,12 +374,21 @@ const editVisible = ref(false)
 const saving = ref(false)
 const coverInput = ref<HTMLInputElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
+const showReviewingOnly = ref(false)
+
+const REVIEWING_STATUS =
+  STATUS_OPTIONS.find((option) => option.value.includes('审核'))?.value ?? ('审核中' as DocumentStatus)
+
+const filteredDocuments = computed(() =>
+  showReviewingOnly.value
+    ? documents.value.filter((item) => item.status === REVIEWING_STATUS)
+    : documents.value,
+)
 
 const editForm = reactive<EditFormState>({
   document_id: null,
   type: '',
   category: '',
-  course: '',
   name: '',
   isbn: '',
   tags: '',
@@ -392,7 +408,6 @@ const normalizeDocument = (doc: BookItem): DocumentRow => {
   return {
     ...doc,
     status,
-    course: doc.course || '',
     uploadTime: doc.uploadTime || '',
     cover: doc.cover || '',
     intruduction: doc.intruduction || '',
@@ -414,10 +429,9 @@ const fetchDocuments = async () => {
       return
     }
 
-    const res = await service.get<ApiResponse<BookItem[]>>('/books', {
+    const res = await service.get<ApiResponse<BookItem[]>>('/documents', {
       params: {
         isSuggest: false,
-        category: 'all',
       },
     })
 
@@ -449,6 +463,10 @@ const handleGoDetail = (row: DocumentRow) => {
       id: String(row.document_id),
     },
   })
+}
+
+const toggleReviewingFilter = () => {
+  showReviewingOnly.value = !showReviewingOnly.value
 }
 
 const handleStatusChange = async (row: DocumentRow, nextStatus: DocumentStatus) => {
@@ -492,7 +510,6 @@ const openEditDialog = (row: DocumentRow) => {
   editForm.document_id = row.document_id ?? null
   editForm.category = row.category || ''
   editForm.type = row.type || ''
-  editForm.course = row.course || ''
   editForm.name = row.name || ''
   editForm.isbn = row.bookISBN || ''
   editForm.tags = Array.isArray(row.tags) ? row.tags.join(', ') : ''
@@ -518,7 +535,6 @@ const resetEditForm = () => {
   editForm.document_id = null
   editForm.category = ''
   editForm.type = ''
-  editForm.course = ''
   editForm.name = ''
   editForm.isbn = ''
   editForm.tags = ''
@@ -563,7 +579,6 @@ const buildSubmitFormData = () => {
   formData.append('document_id', String(editForm.document_id))
   formData.append('type', editForm.type.trim())
   formData.append('category', editForm.category.trim())
-  formData.append('course', editForm.course.trim())
   formData.append('name', editForm.name.trim())
   formData.append('isbn', editForm.isbn.trim())
   formData.append('tags', editForm.tags.trim())
@@ -611,7 +626,6 @@ const handleSaveEdit = async () => {
 
       current.type = editForm.type.trim()
       current.category = editForm.category.trim()
-      current.course = editForm.course.trim()
       current.name = editForm.name.trim()
       current.bookISBN = editForm.isbn.trim()
       current.author = editForm.author.trim()
@@ -625,7 +639,6 @@ const handleSaveEdit = async () => {
       if (mockTarget) {
         mockTarget.type = current.type
         mockTarget.category = current.category
-        mockTarget.course = current.course
         mockTarget.name = current.name
         mockTarget.bookISBN = current.bookISBN
         mockTarget.author = current.author
@@ -690,19 +703,37 @@ onMounted(fetchDocuments)
 
 .document-card__title {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #311a45;
 }
 
-.document-card__header :deep(.el-button) {
+.document-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.document-card__filter-btn {
+  border: 1px solid rgba(255, 166, 183, 0.45);
+  background: #fff;
+  color: #ff6f91;
+  transition: all 0.3s ease;
+}
+
+.document-card__filter-btn:hover,
+.document-card__filter-btn--active {
+  background: rgba(255, 166, 183, 0.18);
+}
+
+.document-card__refresh-btn {
   border: none;
   background: linear-gradient(135deg, #ffa6b7 0%, #ff867f 100%);
   color: #fff;
   transition: all 0.3s ease;
 }
 
-.document-card__header :deep(.el-button:hover) {
+.document-card__refresh-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 18px rgba(255, 140, 148, 0.35);
 }
