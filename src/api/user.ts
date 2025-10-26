@@ -17,6 +17,7 @@ interface RegisterParams {
   email: string
   password: string
   userAvatar: string
+  Code: string
 }
 
 export const loginAPI = (data: LoginParams): Promise<ApiResponse<{
@@ -39,12 +40,12 @@ export const loginAPI = (data: LoginParams): Promise<ApiResponse<{
 }
 
 export const registerAPI = (data: RegisterParams): Promise<ApiResponse<{
+  email: string
   userId: number
   username: string
   userAvatar: string
   status: string
   createTime: string
-  email: string
   role: string
 }>> => {
   return request({
@@ -63,7 +64,7 @@ export const sendEmailCode = (email: string): Promise<{
   };
 }> => {
   return request({
-    url: '/getCode',
+    url: '/VCode',
     method: 'post',
     data: { 
       email,
@@ -72,26 +73,13 @@ export const sendEmailCode = (email: string): Promise<{
   })
 }
 
-export const verifyEmailCode = (email: string, Code: number): Promise<{
-  code: number;
-  message: string;
-  data:{
-    success: boolean;
-  };
-}> => {
-  return request({
-    url: '/verifyCode',
-    method: 'post',
-    data: { email, Code }
-  })
-}
-
 export const resetPasswordAPI = (data: {
   email: string;
   newPassword: string;
+  Code: string;
 }): Promise<ApiResponse<{ success: boolean }>> => {
   return request({
-    url: '/modifyPassword',
+    url: '/Password',
     method: 'put',
     data
   })

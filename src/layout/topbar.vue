@@ -8,7 +8,9 @@
     
     <!-- 右侧用户区域 -->
     <div class="header-user">
-      <!-- 个人主页图标按钮 -->
+      <div class="icon-container" data-tooltip="上传文件">
+        <img src="@/assets/147_添加.png" alt="上传文件" @click="handleUploadClick">
+      </div>
       <router-link to="/user" class="icon-container" data-tooltip="个人主页">
         <img src="@/assets/147_联系人.png" alt="个人主页">
       </router-link>
@@ -19,12 +21,17 @@
 <script setup lang="ts">
 import { ElButton } from 'element-plus';
 import { User } from '@element-plus/icons-vue';
+import { defineEmits } from 'vue';
 
-const handleUserClick = () => {
-  // 处理点击事件
-  console.log('用户图标被点击');
+// 定义事件发射器，用于向父组件发送事件
+const emit = defineEmits(['open-upload-modal']);
+
+// 点击图标时触发事件
+const handleUploadClick = () => {
+  emit('open-upload-modal'); // 触发事件，通知父组件打开弹窗
 };
 </script>
+
 <style scoped>
 .app-header {
   width: 100%;
@@ -37,7 +44,7 @@ const handleUserClick = () => {
   height: 60px;
   box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.10);
   position: sticky;
-  z-index: 1000;
+  z-index: 10000;
 }
 
 .header-title h1 {

@@ -76,8 +76,9 @@
         </el-form-item>
       </el-form>
     </div>
+
+    <!-- 注册表单 -->
     <div class="form-container-register">
-      <!-- 注册表单 -->
       <el-form
         class="form-card form-animate"
         v-if="isRegister && !isLogin && !isForgot"
@@ -173,7 +174,7 @@
           <el-row :gutter="12" class="verification-row">
             <el-col :span="16">
               <el-input
-                v-model="registerForm.verificationCode"
+                v-model="registerForm.Code"
                 placeholder="请输入验证码"
                 prefix-icon="Code"
                 clearable
@@ -213,8 +214,9 @@
         </el-form-item>
       </el-form>
     </div>
+
+    <!-- 忘记密码表单 -->
     <div class="form-container">
-      <!-- 忘记密码表单 -->
       <el-form
         class="form-card form-animate"
         v-if="isForgot && !isLogin && !isRegister"
@@ -238,7 +240,7 @@
           <el-row :gutter="12" class="verification-row">
             <el-col :span="16">
               <el-input
-                v-model="forgotForm.verificationCode"
+                v-model="forgotForm.Code"
                 placeholder="请输入验证码"
                 prefix-icon="Code"
                 clearable
@@ -309,7 +311,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElForm, ElUpload } from 'element-plus';
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { sendEmailCode, verifyEmailCode, resetPassword } from '@/api/user'
+import { sendEmailCode,  resetPassword } from '@/api/user'
 
 // 状态控制变量
 const hasInteracted = ref(false); // 是否已点击屏幕
@@ -331,12 +333,12 @@ const registerForm = reactive({
   password: '',
   confirmPassword: '',
   userAvatar: '',
-  verificationCode: ''
+  Code: ''
 });
 
 const forgotForm = reactive({
   email: '',
-  verificationCode: '',
+  Code: '',
   newPassword: '',
   confirmNewPassword: ''
 });
@@ -378,7 +380,7 @@ const forgotRules = reactive({
     { required: true, message: '请输入邮箱地址', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
   ],
-  verificationCode: [
+  Code: [
     { required: true, message: '请输入验证码', trigger: 'blur' }
   ],
   newPassword: [
@@ -539,39 +541,6 @@ const handleLogin = async () => {
   }
 };
 
-// 验证码验证函数
-const verifyCode = async () => {
-  // 根据当前表单类型获取对应的邮箱和验证码
-  const email = isRegister.value ? registerForm.email : forgotForm.email;
-  const Code = isRegister.value ? Number(registerForm.verificationCode) : Number(forgotForm.verificationCode);
-  
-  // 验证邮箱是否为空
-  if (!email) {
-    ElMessage.warning('请先输入邮箱地址');
-    return { success: false };
-  }
-  
-  // 验证验证码是否为空
-  if (!Code) {
-    ElMessage.warning('请先输入验证码');
-    return { success: false };
-  }
-  
-  try {
-    // 调用验证码验证接口（替换为实际接口地址）
-    const response = await userStore.verifyEmailCode(email,Code)
-    // 返回接口响应结果
-    console.log("验证成功response=",response)
-    return response;
-  } catch (error) {
-    // 处理接口调用异常
-    ElMessage.closeAll();
-    console.error('验证码验证失败:', error);
-    ElMessage.error('验证码验证失败，请稍后重试');
-    return { success: false, message: '网络异常或服务器错误' };
-  }
-};
-
 // 注册处理函数中调用方式调整
 const handleRegister = async () => {
   registerFormRef.value?.validate(async (valid) => {
@@ -581,32 +550,23 @@ const handleRegister = async () => {
     }
     console.log("注册表单：",registerForm);
     try {
-      const verifyRes = await verifyCode();
-      console.log("verifyRes =",verifyRes)
-      // 验证成功才继续注册流程
-      if (verifyRes) {
-        console.log("验证成功")
-        
-        const registerData = {
-          email: registerForm.email,
-          username: registerForm.username,
-          password: registerForm.password,
-          userAvatar: registerForm.userAvatar,
-        };
+      const registerData = {
+        email: registerForm.email,
+        username: registerForm.username,
+        password: registerForm.password,
+        userAvatar: registerForm.userAvatar,
+        code: registerForm.Code
+      };
 
-        const registerRes = await userStore.register(registerData);
-        ElMessage.closeAll();
-        console.log(" registerRes =", registerRes)
+      const registerRes = await userStore.register(registerData);
+      ElMessage.closeAll();
+      console.log(" registerRes =", registerRes)
 
-        if (registerRes.success) {
-          ElMessage.success('注册成功！即将跳转到登录页');
-          setTimeout(switchToLogin, 1500);
-        } else {
-          ElMessage.error(registerRes.message || '注册失败，请稍后重试');
-        }
-      } else{
-        // 显示接口返回的错误信息
-        ElMessage.error('验证失败');
+      if (registerRes.success) {
+        ElMessage.success('注册成功！即将跳转到登录页');
+        setTimeout(switchToLogin, 1500);
+      } else {
+        ElMessage.error(registerRes.message || '注册失败，请稍后重试');
       }
     } catch (error) {
       ElMessage.closeAll();
@@ -620,30 +580,26 @@ const handleRegister = async () => {
 const handlePasswordReset = async () => {
   forgotFormRef.value?.validate(async (valid) => {
     if (valid) {
-      if (!forgotForm.email || !forgotForm.verificationCode || !forgotForm.newPassword) {
+      if (!forgotForm.email || !forgotForm.Code || !forgotForm.newPassword) {
         ElMessage.warning('请填写完整的修改信息');
         return;
       }
       // 这里可以添加密码重置接口调用逻辑
       try {
-        // 先验证验证码
-        const verifyRes = await verifyCode();
-        console.log("密码重置verifyRes =",verifyRes)
-        if (verifyRes) {
-          // 调用密码重置接口
-          const resetRes = await userStore.resetPassword({
-            email: forgotForm.email,
-            newPassword: forgotForm.newPassword
-          });
+        // 调用密码重置接口
+        const resetRes = await userStore.resetPassword({
+          email: forgotForm.email,
+          newPassword: forgotForm.newPassword,
+          Code: forgotForm.Code
+        });
 
-          if (resetRes.success) {
-            ElMessage.success('密码修改成功，请使用新密码登录');
-            // 重置表单并切换到登录页
-            switchToLogin();
-            forgotFormRef.value?.resetFields();
-          } else {
-            ElMessage.error(resetRes.message || '密码重置失败，请稍后重试');
-          } 
+        if (resetRes.success) {
+          ElMessage.success('密码修改成功，请使用新密码登录');
+          // 重置表单并切换到登录页
+          switchToLogin();
+          forgotFormRef.value?.resetFields();
+        } else {
+          ElMessage.error(resetRes.message || '密码重置失败，请稍后重试');
         }
       } catch (error) {
         console.error('密码重置过程出错:', error);
@@ -651,7 +607,6 @@ const handlePasswordReset = async () => {
       }
     } else {
       ElMessage.warning('修改密码表单验证失败');
-      return false;
     }
   });
 };
