@@ -26,4 +26,21 @@
      userAvatar: string
      status: string
      createTime:string
-   }
+}
+   
+//修改书籍信息的数据接口
+ export interface DocumentEditForm {
+  documentId: number | null
+  type: string
+  category: string
+  name: string
+  isbn: string
+  tags: string
+  author: string
+  createYear: string
+  coverUrl: string
+  coverFile: File | null
+  introduction: string
+  file: File | null
+  vedioURL: string
+}

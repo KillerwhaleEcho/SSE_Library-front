@@ -1,4 +1,5 @@
 import request from '../utils/request'
+import { type InfoBrief, type User, type Document } from './all.ts'
 
 interface ApiResponse<T = any> {
   code: number
@@ -6,6 +7,7 @@ interface ApiResponse<T = any> {
   data: T
 }
 
+//all.ts中没有这个，但是获取管理员信息是需要使用故添加
 export interface UserBrief {
   userId: number
   username: string
@@ -16,51 +18,36 @@ export interface UserBrief {
   role: string
 }
 
-export interface DocumentBrief {
-  infoBrief: {
-    name: string
-    document_id: number
-    type: string
-    uploadTime: string
-    status: string
-    category: string
-    collections: number
-    readCounts: number
-    URL: string
-  }
-  bookISBN: string
-  author: string
-  uploader: UserBrief
-  Cover: string
-  tags: string[]
-  introduction: string
-  createYear: string
+
+// 呈现管理员信息时的数据接口
+export type UserRow = {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+};
+
+// 在呈现评论时document的类型是Infobrief而不是完整的资料信息,所以添加这个接口
+export interface CommentItem {
+  commentId: number;
+  content: string;
+  commenter: User;
+  document: InfoBrief;
+  create_at: string;
 }
 
+
+
+
+// 以下是接口部分
+
+
+
+//获取管理员信息相关
 export interface AdminDetailResponse {
   userBrief: UserBrief
-  collectionList?: DocumentBrief[]
-  historyList?: DocumentBrief[]
-}
-
-export interface AdminUpdatePayload {
-  userName?: string | null
-  userAvatar?: string | Blob | null
-  email?: string | null
-}
-
-export interface AdminUpdateResponse {
-  userBrief: UserBrief
-}
-
-export interface AdminPasswordPayload {
-  email: string
-  newPassword: string
-  code:string
-}
-
-export interface AdminPasswordResponse {
-  success: boolean
+  collectionList?: Document[]
+  historyList?: Document[]
 }
 
 export const getAdminDetail = (
@@ -72,11 +59,17 @@ export const getAdminDetail = (
   })
 }
 
-export const getAdminUserList = (): Promise<ApiResponse<UserBrief[]>> => {
-  return request({
-    url: '/admin/users',
-    method: 'get',
-  })
+
+
+//更新管理员信息相关
+export interface AdminUpdatePayload {
+  userName?: string | null
+  userAvatar?: string | Blob | null
+  email?: string | null
+}
+
+export interface AdminUpdateResponse {
+  userBrief: UserBrief
 }
 
 export const updateAdminProfile = (
@@ -90,6 +83,17 @@ export const updateAdminProfile = (
   })
 }
 
+//更新密码相关
+export interface AdminPasswordPayload {
+  email: string
+  newPassword: string
+  code:string
+}
+
+export interface AdminPasswordResponse {
+  success: boolean
+}
+
 export const updateAdminPassword = (
   data: AdminPasswordPayload,
 ): Promise<ApiResponse<AdminPasswordResponse>> => {
@@ -100,10 +104,12 @@ export const updateAdminPassword = (
   })
 }
 
+//更改用户状态相关
 export interface UpdateUserStatusPayload {
   userId: number
   status: 'active' | 'disabled'
 }
+
 
 export const updateUserStatus = (
   payload: UpdateUserStatusPayload
@@ -112,5 +118,37 @@ export const updateUserStatus = (
     url: '/admin/user',
     method: 'put',
     data: payload,
+  })
+}
+
+
+//管理员获取用户列表
+export const getUserList = (): Promise<ApiResponse<UserBrief[]>> => {
+  return request({
+    url: '/admin/usersList',
+    method: 'get',
+  })
+}
+
+//管理员获取评论列表
+export type CommentListResponse = ApiResponse<CommentItem[]>
+
+export const getAdminComments = (): Promise<CommentListResponse> => {
+  return request({
+    url: '/admin/comments',
+    method: 'get',
+  })
+}
+
+
+
+//管理员删除评论
+export const deleteAdminComment = (documentId: number): Promise<ApiResponse<unknown>> => {
+  return request({
+    url: '/admin/comment',
+    method: 'delete',
+    params: {
+      document_id: documentId,
+    },
   })
 }

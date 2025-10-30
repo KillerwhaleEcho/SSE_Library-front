@@ -7,6 +7,7 @@ export interface ApiResponse<T = any> {
   data: T
 }
 
+
 // 用户相关类型
 export interface User {
   userId: number;
@@ -24,7 +25,7 @@ export interface User {
 
 // 评论相关类型
 export interface Comment {
-  comment_id: number;
+  commentId: number;
   content: string;
   commenter: User;
   document: Document;
@@ -36,7 +37,7 @@ export interface InfoBrief {
   name: string;
   type: 'book' | 'file' | 'video' | null;
   uploadTime: string;
-  status: 'available' | 'processing' | 'failed';
+  status: '开放'|'审核中'|'关闭'|'已撤回'
   category?: string;
   collections: number;
   readCounts: number;

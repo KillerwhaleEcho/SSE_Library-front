@@ -53,10 +53,13 @@ const handleSelect = (index: string) => {
 .admin-panel {
   display: flex;
   align-items: stretch;
-  width: 100%;
-  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
   gap: 24px;
   box-sizing: border-box;
+  overflow-y: auto; /* 允许垂直滚动 */
+  scrollbar-width: none; /* Firefox：隐藏滚动条 */
+  -ms-overflow-style: none; /* IE/Edge：隐藏滚动条 */
 }
 
 
@@ -94,11 +97,18 @@ const handleSelect = (index: string) => {
   flex: 1;
   border-radius: 10px;
   background: #fff;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
   padding: 20px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-panel__content::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-panel__menu :deep(.el-menu-item) {

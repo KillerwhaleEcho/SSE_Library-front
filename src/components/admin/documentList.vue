@@ -2,7 +2,22 @@
   <div class="document-list">
     <el-card class="document-card">
       <div class="document-card__header">
-        <h3 class="document-card__title">{{ TEXT.title }}</h3>
+        <div class="documnet-card__search">
+          <el-input
+            placeholder="请按照书名或者作者搜索"
+            clearable
+            v-model="searchInput"
+            class="document-card__search-input"
+            @keyup.enter="handleSearch"
+            @clear="handleClear"
+          >
+            <template #append>
+              <el-button typr="primary" size="small" @click="handleSearch"
+                >搜索</el-button
+              >
+            </template>
+          </el-input>
+        </div>
         <div class="document-card__actions">
           <el-button
             class="document-card__filter-btn"
@@ -13,9 +28,7 @@
             @click="toggleReviewingFilter"
           >
             {{
-              showReviewingOnly
-                ? TEXT.showAllDocuments
-                : TEXT.filterReviewing
+              showReviewingOnly ? TEXT.showAllDocuments : TEXT.filterReviewing
             }}
           </el-button>
           <el-button
@@ -31,7 +44,7 @@
       </div>
 
       <el-table
-        :data="filteredDocuments"
+        :data="displayedDocuments"
         border
         class="document-table"
         v-loading="loading"
@@ -55,24 +68,32 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="TEXT.name" min-width="220">
+        <el-table-column :label="TEXT.name" min-width="180">
           <template #default="{ row }">
             <el-link
               type="primary"
               :underline="false"
               @click.prevent="handleGoDetail(row)"
             >
-              {{ row.name || TEXT.unknown }}
+              {{ row.infoBrief?.name || TEXT.unknown }}
             </el-link>
           </template>
         </el-table-column>
-
-        <el-table-column prop="uploadTime" :label="TEXT.uploadTime" width="180" />
+        <el-table-column label="作者" min-windth="180">
+          <template #default="{ row }">
+            {{ row.author || "未知作者" }}
+          </template>
+        </el-table-column>
+        <el-table-column :label="TEXT.uploadTime" width="150">
+          <template #default="{ row }">
+            {{ row.infoBrief?.uploadTime || TEXT.unknown }}
+          </template>
+        </el-table-column>
 
         <el-table-column :label="TEXT.status" width="160">
           <template #default="{ row }">
             <el-select
-              v-model="row.status"
+              v-model="row.infoBrief.status"
               size="small"
               @change="(value:any) => handleStatusChange(row, value)"
             >
@@ -86,16 +107,21 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="TEXT.action" width="160" fixed="right">
+        <el-table-column :label="TEXT.action" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link size="small" @click="openEditDialog(row)">
+            <el-button
+              type="primary"
+              link
+              size="small"
+              @click="openEditDialog(row)"
+            >
               {{ TEXT.edit }}
             </el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
-
+    <!-- 修改资料的弹窗 -->
     <el-dialog
       v-model="editVisible"
       :title="TEXT.editTitle"
@@ -185,498 +211,422 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import service from '../../utils/service'
-
-interface ApiResponse<T = unknown> {
-  code: number | string
-  message?: string
-  data: T
-}
-
-type DocumentStatus = '开放' | '审核中' | '关闭' | '已撤回'
-
-interface BookItem {
-  name: string
-  document_id: number
-  type: string
-  uploadTime: string
-  status: string
-  category: string
-  collections: number
-  readCounts: number
-  URL: string
-  bookISBN: string
-  author: string
-  cover: string
-  intruduction: string
-  createYear: string
-  tags?: string[]
-}
-
-type DocumentRow = BookItem & { status: DocumentStatus }
-
-interface EditFormState {
-  document_id: number | null
-  type: string
-  category: string
-  name: string
-  isbn: string
-  tags: string
-  author: string
-  createYear: string
-  coverUrl: string
-  coverFile: File | null
-  introduction: string
-  file: File | null
-  vedioURL: string
-}
-
-const router = useRouter()
+import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import service from "../../utils/service";
+import { type ApiResponse } from "../../api/all";
+import { type DocumentEditForm } from "../../types/api";
+import { type Document } from "@/api/all.ts";
+import { MOCK_DOCUMENTS } from "./mockData";
 
 const TEXT = {
-  title: '资料列表',
-  refresh: '刷新',
-  filterReviewing: '查看审核中资料',
-  showAllDocuments: '查看全部资料',
-  loading: '正在加载资料，请稍候…',
-  empty: '暂无资料',
-  cover: '封面',
-  noCover: '暂无封面',
-  name: '资料名称',
-  uploadTime: '上传时间',
-  status: '资料状态',
-  action: '操作',
-  edit: '修改资料',
-  editTitle: '编辑资料信息',
-  cancel: '取消',
-  save: '保存修改',
-  unknown: '未命名资料',
-  previewUnavailable: '暂无可展示的详情',
-  statusUpdated: '状态更新成功',
-  statusUpdateFailed: '状态更新失败，请重试',
-  editSuccess: '资料信息已更新',
-  editFailed: '保存失败，请稍后重试',
-  editMissingId: '缺少资料编号，无法保存',
-  mockFallback: '未获取到资料数据，列表为空',
-  mockUsingDemo: '当前展示为模拟数据',
+  title: "资料列表",
+  refresh: "刷新",
+  filterReviewing: "查看审核中资料",
+  showAllDocuments: "查看全部资料",
+  loading: "正在加载资料，请稍候…",
+  empty: "暂无资料",
+  cover: "封面",
+  noCover: "暂无封面",
+  name: "资料名称",
+  uploadTime: "上传时间",
+  status: "资料状态",
+  action: "操作",
+  edit: "修改资料",
+  editTitle: "编辑资料信息",
+  cancel: "取消",
+  save: "保存修改",
+  unknown: "未命名资料",
+  previewUnavailable: "暂无可展示的详情",
+  statusUpdated: "状态更新成功",
+  statusUpdateFailed: "状态更新失败，请重试",
+  editSuccess: "资料信息已更新",
+  editFailed: "保存失败，请稍后重试",
+  editMissingId: "缺少资料编号，无法保存",
+  mockFallback: "未获取到资料数据，列表为空",
+  mockUsingDemo: "当前展示为模拟数据",
   form: {
-    category: '资料分类',
-    type: '资料类型',
-    name: '资料名称',
-    isbn: 'ISBN',
-    author: '作者',
-    tags: '标签',
-    tagsPlaceholder: '多个标签请使用逗号分隔',
-    createYear: '出版年份',
-    createYearPlaceholder: '请选择年份',
-    vedioURL: '视频链接',
-    coverUrl: '封面地址',
-    coverFile: '上传封面',
-    coverHint: '若选择新封面，将优先使用本地文件',
-    file: '上传资料文件',
-    introduction: '简介',
-    introductionPlaceholder: '请输入资料简介，最多 500 字',
+    category: "资料分类",
+    type: "资料类型",
+    name: "资料名称",
+    isbn: "ISBN",
+    author: "作者",
+    tags: "标签",
+    tagsPlaceholder: "多个标签请使用逗号分隔",
+    createYear: "出版年份",
+    createYearPlaceholder: "请选择年份",
+    vedioURL: "视频链接",
+    coverUrl: "封面地址",
+    coverFile: "上传封面",
+    coverHint: "若选择新封面，将优先使用本地文件",
+    file: "上传资料文件",
+    introduction: "简介",
+    introductionPlaceholder: "请输入资料简介，最多 500 字",
   },
-} as const
+} as const;
 
-const USE_MOCK = true
-let hasMockNotice = false
+const router = useRouter();
+const searchInput = ref("");
+const appliedKeyword = ref("");
+
+const USE_MOCK = true;
+const documents = ref<Document[]>([]);
+const loading = ref(false);
+const editVisible = ref(false);
+const saving = ref(false);
+const coverInput = ref<HTMLInputElement | null>(null);
+const fileInput = ref<HTMLInputElement | null>(null);
+const showReviewingOnly = ref(false); //控制是否只展示待审核数据
 
 const delay = (ms: number) =>
   new Promise<void>((resolve) => {
-    setTimeout(resolve, ms)
-  })
+    setTimeout(resolve, ms);
+  });
 
-const MOCK_DOCUMENTS: DocumentRow[] = [
-  {
-    name: 'Vue 3 实战指南',
-    document_id: 101,
-    type: '电子书',
-    uploadTime: '2024-05-12 09:30:00',
-    status: '开放',
-    category: '前端开发',
-    collections: 128,
-    readCounts: 532,
-    URL: 'https://example.com/docs/vue3',
-    bookISBN: '978-7-121-12345-6',
-    author: '张三',
-    cover: 'https://picsum.photos/seed/vue3/120/160',
-    intruduction: '系统介绍 Vue 3 核心特性与实战案例。',
-    createYear: '2023',
-    tags: ['Vue', '前端', 'JavaScript'],
-  },
-  {
-    name: 'Spring Boot 微服务实践',
-    document_id: 102,
-    type: '讲义',
-    uploadTime: '2024-06-01 14:15:00',
-    status: '审核中',
-    category: '后端开发',
-    collections: 86,
-    readCounts: 421,
-    URL: 'https://example.com/docs/spring',
-    bookISBN: '978-7-111-65432-1',
-    author: '李四',
-    cover: 'https://picsum.photos/seed/spring/120/160',
-    intruduction: '覆盖 Spring Boot 微服务架构的核心概念与落地方案。',
-    createYear: '2022',
-    tags: ['Spring', '微服务', 'Java'],
-  },
-  {
-    name: '数据分析入门',
-    document_id: 103,
-    type: '课件',
-    uploadTime: '2024-04-22 16:45:00',
-    status: '关闭',
-    category: '数据科学',
-    collections: 64,
-    readCounts: 308,
-    URL: 'https://example.com/docs/data-analysis',
-    bookISBN: '978-7-302-76543-0',
-    author: '王五',
-    cover: 'https://picsum.photos/seed/data/120/160',
-    intruduction: '以真实案例讲解 Pandas、NumPy 与可视化工具的使用。',
-    createYear: '2021',
-    tags: ['数据分析', 'Python', 'Pandas'],
-  },
-  {
-    name: '产品原型设计规范',
-    document_id: 104,
-    type: '文档',
-    uploadTime: '2024-07-08 10:20:00',
-    status: '已撤回',
-    category: '产品设计',
-    collections: 25,
-    readCounts: 102,
-    URL: 'https://example.com/docs/ux',
-    bookISBN: '978-7-900-12345-0',
-    author: '赵六',
-    cover: 'https://picsum.photos/seed/ux/120/160',
-    intruduction: '梳理常见原型设计规范与组件库使用建议。',
-    createYear: '2020',
-    tags: ['产品设计', '原型', '交互'],
-  },
-] as const
+const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
+  { label: "开放", value: "开放" },
+  { label: "审核中", value: "审核中" },
+  { label: "关闭", value: "关闭" },
+  { label: "已撤回", value: "已撤回" },
+];
 
-const STATUS_OPTIONS: Array<{ label: string; value: DocumentStatus }> = [
-  { label: '开放', value: '开放' },
-  { label: '审核中', value: '审核中' },
-  { label: '关闭', value: '关闭' },
-  { label: '已撤回', value: '已撤回' },
-]
+// 这段代码最终的结果是："开放" | "审核中" | "关闭" | "已撤回"
+type DocumentStatus = (typeof STATUS_OPTIONS)[number]["value"];
 
-const documents = ref<DocumentRow[]>([])
-const loading = ref(false)
-const editVisible = ref(false)
-const saving = ref(false)
-const coverInput = ref<HTMLInputElement | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
-const showReviewingOnly = ref(false)
+// 按照要求返回资料，搜索逻辑也在其中。所以这个函数可以表示为：源数据 + 派生条件 -> 计算得到展示列表
+const filteredDocuments = computed<Document[]>(() => {
+  const keyword = appliedKeyword.value.toLowerCase();
 
-const REVIEWING_STATUS =
-  STATUS_OPTIONS.find((option) => option.value.includes('审核'))?.value ?? ('审核中' as DocumentStatus)
+  const baseList = showReviewingOnly.value
+    ? documents.value.filter((item) => item.infoBrief.status === "审核中")
+    : documents.value;
 
-const filteredDocuments = computed(() =>
-  showReviewingOnly.value
-    ? documents.value.filter((item) => item.status === REVIEWING_STATUS)
-    : documents.value,
-)
+  if (!keyword) {
+    return baseList;
+  }
 
-const editForm = reactive<EditFormState>({
-  document_id: null,
-  type: '',
-  category: '',
-  name: '',
-  isbn: '',
-  tags: '',
-  author: '',
-  createYear: '',
-  coverUrl: '',
+  return baseList.filter((item) => {
+    const name = item.infoBrief.name?.toLowerCase() ?? "";
+    const author = item.author?.toLowerCase() ?? "";
+    return name.includes(keyword) || author.includes(keyword);
+  });
+});
+
+const displayedDocuments = computed<Document[]>(() =>
+  filteredDocuments.value.slice(0, 10)
+);
+
+const handleSearch = () => {
+  appliedKeyword.value = searchInput.value.trim();
+};
+
+const handleClear = () => {
+  searchInput.value = '';
+  appliedKeyword.value = '';
+}
+
+
+const editForm = reactive<DocumentEditForm>({
+  documentId: null,
+  type: "",
+  category: "",
+  name: "",
+  isbn: "",
+  tags: "",
+  author: "",
+  createYear: "",
+  coverUrl: "",
   coverFile: null,
-  introduction: '',
+  introduction: "",
   file: null,
-  vedioURL: '',
-})
+  vedioURL: "",
+});
 
-const normalizeDocument = (doc: BookItem): DocumentRow => {
-  const fallbackStatus: DocumentStatus = '审核中'
-  const status = STATUS_OPTIONS.find((option) => option.value === doc.status)?.value ?? fallbackStatus
+const normalizeDocument = (doc: Document): Document => {
+  const fallbackStatus: DocumentStatus = "审核中";
+  const normalizedStatus: DocumentStatus =
+    STATUS_OPTIONS.find((option) => option.value === doc.infoBrief.status)
+      ?.value ?? fallbackStatus;
 
   return {
     ...doc,
-    status,
-    uploadTime: doc.uploadTime || '',
-    cover: doc.cover || '',
-    intruduction: doc.intruduction || '',
-    bookISBN: doc.bookISBN || '',
+    infoBrief: {
+      ...doc.infoBrief,
+      status: normalizedStatus,
+      uploadTime: doc.infoBrief.uploadTime || "",
+      name: doc.infoBrief.name || "",
+      category: doc.infoBrief.category || "",
+    },
+    cover: doc.cover || "",
+    introduction: doc.introduction || "",
+    bookISBN: doc.bookISBN || "",
     tags: Array.isArray(doc.tags) ? doc.tags : [],
-  }
-}
+  };
+};
 
 const fetchDocuments = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     if (USE_MOCK) {
-      await delay(300)
-      documents.value = MOCK_DOCUMENTS.map((item) => normalizeDocument(item))
-      if (!hasMockNotice) {
-        ElMessage.info(TEXT.mockUsingDemo)
-        hasMockNotice = true
-      }
-      return
+      await delay(300);
+      documents.value = MOCK_DOCUMENTS.map((item) => normalizeDocument(item));
+      ElMessage.info(TEXT.mockUsingDemo);
+      return;
     }
 
-    const res = await service.get<ApiResponse<BookItem[]>>('/documents', {
+    const res = await service.get<ApiResponse<Document[]>>("/documents", {
       params: {
         isSuggest: false,
       },
-    })
+    });
 
-    const list = Array.isArray(res.data) ? res.data : []
+    const list = Array.isArray(res.data) ? res.data : [];
     if (list.length === 0) {
-      documents.value = []
-      ElMessage.info(TEXT.mockFallback)
-      return
+      documents.value = [];
+      ElMessage.info(TEXT.mockFallback);
+      return;
     }
 
-    documents.value = list.map(normalizeDocument)
+    documents.value = list.map(normalizeDocument);
   } catch (error) {
-    documents.value = []
-    ElMessage.error((error as Error)?.message || TEXT.mockFallback)
+    documents.value = [];
+    ElMessage.error((error as Error)?.message || TEXT.mockFallback);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
-const handleGoDetail = (row: DocumentRow) => {
-  if (!row.document_id) {
-    ElMessage.warning(TEXT.previewUnavailable)
-    return
+const handleGoDetail = (row: Document) => {
+  if (!row.infoBrief?.documentId) {
+    ElMessage.warning(TEXT.previewUnavailable);
+    return;
   }
 
   router.push({
-    name: 'BookInfo',
+    name: "BookInfo",
     query: {
-      id: String(row.document_id),
+      id: String(row.infoBrief.documentId),
     },
-  })
-}
+  });
+};
 
 const toggleReviewingFilter = () => {
-  showReviewingOnly.value = !showReviewingOnly.value
-}
+  showReviewingOnly.value = !showReviewingOnly.value;
+};
 
-const handleStatusChange = async (row: DocumentRow, nextStatus: DocumentStatus) => {
-  if (!row.document_id) {
-    ElMessage.error(TEXT.editMissingId)
-    return
+const handleStatusChange = async (row: Document, nextStatus: string) => {
+  if (!row.infoBrief?.documentId) {
+    ElMessage.error(TEXT.editMissingId);
+    return;
   }
 
-  const previous = row.status
-  row.status = nextStatus
+  const previous = row.infoBrief.status;
+  row.infoBrief.status = nextStatus as typeof row.infoBrief.status;
 
   try {
     if (USE_MOCK) {
-      await delay(200)
-      const mockIndex = MOCK_DOCUMENTS.findIndex((item) => item.document_id === row.document_id)
+      await delay(200);
+      const mockIndex = MOCK_DOCUMENTS.findIndex(
+        (item) => item.infoBrief.documentId === row.infoBrief.documentId
+      );
       if (mockIndex !== -1) {
-        MOCK_DOCUMENTS[mockIndex].status = nextStatus
+        MOCK_DOCUMENTS[mockIndex].infoBrief.status =
+          nextStatus as (typeof MOCK_DOCUMENTS)[number]["infoBrief"]["status"];
       }
     } else {
-      await service.put('/admin/document/status', {
-        document_id: row.document_id,
+      await service.put("/admin/document/status", {
+        documentId: row.infoBrief.documentId,
         status: nextStatus,
-      })
+      });
     }
-    ElMessage.success(TEXT.statusUpdated)
+    ElMessage.success(TEXT.statusUpdated);
   } catch (error) {
-    row.status = previous
-    ElMessage.error((error as Error)?.message || TEXT.statusUpdateFailed)
+    row.infoBrief.status = previous;
+    ElMessage.error((error as Error)?.message || TEXT.statusUpdateFailed);
   }
-}
+};
 
 const releaseBlob = (url: string) => {
-  if (url && url.startsWith('blob:')) {
-    URL.revokeObjectURL(url)
+  if (url && url.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
   }
-}
+};
 
-const openEditDialog = (row: DocumentRow) => {
-  editVisible.value = true
+const openEditDialog = (row: Document) => {
+  editVisible.value = true;
 
-  editForm.document_id = row.document_id ?? null
-  editForm.category = row.category || ''
-  editForm.type = row.type || ''
-  editForm.name = row.name || ''
-  editForm.isbn = row.bookISBN || ''
-  editForm.tags = Array.isArray(row.tags) ? row.tags.join(', ') : ''
-  editForm.author = row.author || ''
-  editForm.createYear = row.createYear || ''
-  editForm.coverUrl = row.cover || ''
-  editForm.coverFile = null
-  editForm.introduction = row.intruduction || ''
-  editForm.file = null
-  editForm.vedioURL = row.URL || ''
+  editForm.documentId = row.infoBrief.documentId ?? null;
+  editForm.category = row.infoBrief.category || "";
+  editForm.type = row.infoBrief.type || "";
+  editForm.name = row.infoBrief.name || "";
+  editForm.isbn = row.bookISBN || "";
+  editForm.tags = Array.isArray(row.tags) ? row.tags.join(", ") : "";
+  editForm.author = row.author || "";
+  editForm.createYear = row.createYear || "";
+  editForm.coverUrl = row.cover || "";
+  editForm.coverFile = null;
+  editForm.introduction = row.introduction || "";
+  editForm.file = null;
+  editForm.vedioURL = row.infoBrief.URL || "";
 
   if (coverInput.value) {
-    coverInput.value.value = ''
+    coverInput.value.value = "";
   }
   if (fileInput.value) {
-    fileInput.value.value = ''
+    fileInput.value.value = "";
   }
-}
+};
 
 const resetEditForm = () => {
-  releaseBlob(editForm.coverUrl)
+  releaseBlob(editForm.coverUrl);
 
-  editForm.document_id = null
-  editForm.category = ''
-  editForm.type = ''
-  editForm.name = ''
-  editForm.isbn = ''
-  editForm.tags = ''
-  editForm.author = ''
-  editForm.createYear = ''
-  editForm.coverUrl = ''
-  editForm.coverFile = null
-  editForm.introduction = ''
-  editForm.file = null
-  editForm.vedioURL = ''
+  editForm.documentId = null;
+  editForm.category = "";
+  editForm.type = "";
+  editForm.name = "";
+  editForm.isbn = "";
+  editForm.tags = "";
+  editForm.author = "";
+  editForm.createYear = "";
+  editForm.coverUrl = "";
+  editForm.coverFile = null;
+  editForm.introduction = "";
+  editForm.file = null;
+  editForm.vedioURL = "";
 
   if (coverInput.value) {
-    coverInput.value.value = ''
+    coverInput.value.value = "";
   }
   if (fileInput.value) {
-    fileInput.value.value = ''
+    fileInput.value.value = "";
   }
-}
+};
 
 const handleCoverFile = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files && input.files[0] ? input.files[0] : null
+  const input = event.target as HTMLInputElement;
+  const file = input.files && input.files[0] ? input.files[0] : null;
 
   if (file) {
-    releaseBlob(editForm.coverUrl)
-    editForm.coverFile = file
-    editForm.coverUrl = URL.createObjectURL(file)
+    releaseBlob(editForm.coverUrl);
+    editForm.coverFile = file;
+    editForm.coverUrl = URL.createObjectURL(file);
   } else {
-    editForm.coverFile = null
+    editForm.coverFile = null;
   }
-}
+};
 
 const handleDocumentFile = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const file = input.files && input.files[0] ? input.files[0] : null
-  editForm.file = file
-}
+  const input = event.target as HTMLInputElement;
+  const file = input.files && input.files[0] ? input.files[0] : null;
+  editForm.file = file;
+};
 
 const buildSubmitFormData = () => {
-  const formData = new FormData()
+  const formData = new FormData();
 
-  formData.append('document_id', String(editForm.document_id))
-  formData.append('type', editForm.type.trim())
-  formData.append('category', editForm.category.trim())
-  formData.append('name', editForm.name.trim())
-  formData.append('isbn', editForm.isbn.trim())
-  formData.append('tags', editForm.tags.trim())
-  formData.append('author', editForm.author.trim())
-  formData.append('createYear', editForm.createYear.trim())
-  formData.append('introduction', editForm.introduction.trim())
-  formData.append('vedioURL', editForm.vedioURL.trim())
+  formData.append("documentId", String(editForm.documentId));
+  formData.append("type", editForm.type.trim());
+  formData.append("category", editForm.category.trim());
+  formData.append("name", editForm.name.trim());
+  formData.append("isbn", editForm.isbn.trim());
+  formData.append("tags", editForm.tags.trim());
+  formData.append("author", editForm.author.trim());
+  formData.append("createYear", editForm.createYear.trim());
+  formData.append("introduction", editForm.introduction.trim());
+  formData.append("vedioURL", editForm.vedioURL.trim());
 
   if (editForm.coverFile) {
-    formData.append('cover', editForm.coverFile)
-  } else if (editForm.coverUrl && !editForm.coverUrl.startsWith('blob:')) {
-    formData.append('cover', editForm.coverUrl.trim())
+    formData.append("cover", editForm.coverFile);
+  } else if (editForm.coverUrl && !editForm.coverUrl.startsWith("blob:")) {
+    formData.append("cover", editForm.coverUrl.trim());
   }
 
   if (editForm.file) {
-    formData.append('file', editForm.file)
+    formData.append("file", editForm.file);
   }
 
-  return formData
-}
+  return formData;
+};
 
 const handleSaveEdit = async () => {
-  if (editForm.document_id === null) {
-    ElMessage.error(TEXT.editMissingId)
-    return
+  if (editForm.documentId === null) {
+    ElMessage.error(TEXT.editMissingId);
+    return;
   }
 
   const current = USE_MOCK
-    ? documents.value.find((item) => item.document_id === editForm.document_id) ?? null
-    : null
+    ? documents.value.find(
+        (item) => item.infoBrief.documentId === editForm.documentId
+      ) ?? null
+    : null;
 
   if (USE_MOCK && current === null) {
-    ElMessage.error(TEXT.editMissingId)
-    return
+    ElMessage.error(TEXT.editMissingId);
+    return;
   }
 
-  saving.value = true
+  saving.value = true;
   try {
     if (USE_MOCK && current) {
-      await delay(400)
+      await delay(400);
       const tags = editForm.tags
-        .split(',')
+        .split(",")
         .map((tag) => tag.trim())
-        .filter(Boolean)
+        .filter(Boolean);
 
-      current.type = editForm.type.trim()
-      current.category = editForm.category.trim()
-      current.name = editForm.name.trim()
-      current.bookISBN = editForm.isbn.trim()
-      current.author = editForm.author.trim()
-      current.createYear = editForm.createYear.trim()
-      current.cover = editForm.coverUrl.trim()
-      current.intruduction = editForm.introduction.trim()
-      current.URL = editForm.vedioURL.trim()
-      current.tags = tags
+      current.infoBrief.type =
+        editForm.type.trim() as typeof current.infoBrief.type;
+      current.infoBrief.category = editForm.category.trim();
+      current.infoBrief.name = editForm.name.trim();
+      current.bookISBN = editForm.isbn.trim();
+      current.author = editForm.author.trim();
+      current.createYear = editForm.createYear.trim();
+      current.cover = editForm.coverUrl.trim();
+      current.introduction = editForm.introduction.trim();
+      current.infoBrief.URL = editForm.vedioURL.trim();
+      current.tags = tags;
 
-      const mockTarget = MOCK_DOCUMENTS.find((item) => item.document_id === current.document_id)
+      const mockTarget = MOCK_DOCUMENTS.find(
+        (item) => item.infoBrief.documentId === current.infoBrief.documentId
+      );
       if (mockTarget) {
-        mockTarget.type = current.type
-        mockTarget.category = current.category
-        mockTarget.name = current.name
-        mockTarget.bookISBN = current.bookISBN
-        mockTarget.author = current.author
-        mockTarget.createYear = current.createYear
-        mockTarget.cover = current.cover
-        mockTarget.intruduction = current.intruduction
-        mockTarget.URL = current.URL
-        mockTarget.tags = [...current.tags]
+        mockTarget.infoBrief.type = current.infoBrief.type;
+        mockTarget.infoBrief.category = current.infoBrief.category;
+        mockTarget.infoBrief.name = current.infoBrief.name;
+        mockTarget.bookISBN = current.bookISBN;
+        mockTarget.author = current.author;
+        mockTarget.createYear = current.createYear;
+        mockTarget.cover = current.cover;
+        mockTarget.introduction = current.introduction;
+        mockTarget.infoBrief.URL = current.infoBrief.URL;
+        mockTarget.tags = [...current.tags];
       }
     } else {
-      const formData = buildSubmitFormData()
-      await service.put('/document', formData)
-      await fetchDocuments()
+      const formData = buildSubmitFormData();
+      await service.put("/document", formData);
+      await fetchDocuments();
     }
 
-    ElMessage.success(TEXT.editSuccess)
-    editVisible.value = false
+    ElMessage.success(TEXT.editSuccess);
+    editVisible.value = false;
   } catch (error) {
-    ElMessage.error((error as Error)?.message || TEXT.editFailed)
+    ElMessage.error((error as Error)?.message || TEXT.editFailed);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
-onMounted(fetchDocuments)
+onMounted(fetchDocuments);
 </script>
 
 <style scoped lang="css">
 .document-list {
   padding: 0;
-  height: 100%;
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
+  gap: 18px;
 }
-
-
 
 :deep(.el-card.document-card) {
   border: none;
@@ -688,33 +638,29 @@ onMounted(fetchDocuments)
 .document-card {
   border-radius: 10px;
   background: #fff;
-  flex: 1;
   display: flex;
   flex-direction: column;
 }
 
 .document-card :deep(.el-card__body) {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
   box-shadow: none;
   border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .document-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 18px;
 }
 
-.document-card__title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: #311a45;
+.documnet-card__search {
+  display: flex;
+}
+.document-card__search-input {
+  min-width: 400px;
 }
 
 .document-card__actions {
@@ -748,7 +694,7 @@ onMounted(fetchDocuments)
 }
 
 .document-table {
-  flex: 1;
+  width: 100%;
 }
 
 :deep(.el-table) {

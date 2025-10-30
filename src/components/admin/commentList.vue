@@ -1,40 +1,66 @@
 <template>
   <div class="comment-list">
     <el-card class="comment-card">
-      <div class="comment-card__header">
-        <h3 class="comment-card__title">{{ TEXT.title }}</h3>
+      <header class="comment-card__header">
+        <div class="comment-card__search">
+          <el-select
+            v-model="searchKey"
+            placeholder="请选择搜索类型"
+            class="comment-card__search-select"
+            clearable
+            @clear="resetSearch"
+          >
+            <el-option label="姓名" value="name" />
+            <el-option label="评论内容" value="content" />
+            <el-option label="评论时间" value="time" />
+          </el-select>
+          <el-input
+            v-model="searchInput"
+            placeholder="请输入搜索内容"
+            class="comment-card__search-input"
+            clearable
+            @clear="resetSearch"
+            @keyup.enter="handleSearch"
+          >
+            <template #append>
+              <el-button type="primary" @click="handleSearch">
+                搜索
+              </el-button>
+            </template>
+          </el-input>
+        </div>
         <el-button
-          size="small"
+          class="comment-card__refresh"
           type="primary"
           :loading="loading"
           @click="fetchComments"
         >
           {{ TEXT.refresh }}
         </el-button>
-      </div>
+      </header>
 
-      <div
+      <section
         class="comment-card__body"
         v-loading="loading"
         :element-loading-text="TEXT.loading"
       >
         <el-empty
-          v-if="!loading && sortedComments.length === 0"
+          v-if="!loading && displayedComments.length === 0"
           :description="TEXT.empty"
         />
         <el-timeline v-else class="comment-timeline">
           <el-timeline-item
-            v-for="comment in sortedComments"
-            :key="comment.comment_id"
-            :timestamp="formatDateTime(comment.created_at)"
+            v-for="comment in displayedComments"
+            :key="comment.commentId"
+            :timestamp="formatDateTime(comment.create_at)"
             placement="top"
           >
-            <div class="comment-item">
-              <div class="comment-item__meta">
+            <article class="comment-item">
+              <header class="comment-item__meta">
                 <div class="comment-item__user">
                   <el-avatar
                     :src="comment.commenter?.userAvatar"
-                    :size="46"
+                    :size="44"
                     class="comment-item__avatar"
                   >
                     {{ getAvatarFallback(comment.commenter?.username) }}
@@ -44,38 +70,38 @@
                       {{ comment.commenter?.username || TEXT.unknownUser }}
                     </span>
                     <span class="comment-item__id">
-                      ID: {{ comment.commenter?.userId ?? '-' }}
+                      ID: {{ comment.commenter?.userId ?? "-" }}
                     </span>
                   </div>
                 </div>
 
-                <div class="comment-item__spacer" />
+                <div class="comment-item__meta-right">
+                  <el-tag
+                    v-if="comment.document?.name"
+                    size="small"
+                    type="info"
+                    class="comment-item__doc"
+                  >
+                    {{ comment.document.name }}
+                  </el-tag>
+                  <el-button
+                    type="danger"
+                    link
+                    size="small"
+                    @click="handleDelete(comment)"
+                  >
+                    {{ TEXT.delete }}
+                  </el-button>
+                </div>
+              </header>
 
-                <el-tag
-                  v-if="comment.document?.name"
-                  size="small"
-                  type="info"
-                  class="comment-item__doc"
-                >
-                  {{ comment.document.name }}
-                </el-tag>
-
-                <el-button
-                  type="danger"
-                  link
-                  size="small"
-                  @click="handleDelete(comment)"
-                >
-                  {{ TEXT.delete }}
-                </el-button>
-              </div>
-              <div class="comment-item__content">
+              <p class="comment-item__content">
                 {{ comment.content }}
-              </div>
-            </div>
+              </p>
+            </article>
           </el-timeline-item>
         </el-timeline>
-      </div>
+      </section>
     </el-card>
   </div>
 </template>
@@ -83,58 +109,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import service from '../../utils/service'
-
-interface CommentUser {
-  userId: number
-  username: string
-  userAvatar: string
-  status: string
-  createTime: string
-  email: string
-  role: string
-}
-
-interface CommentDocument {
-  name: string
-  document_id: number
-  type: string
-  uploadTime: string
-  status: string
-  category: string
-  collections: number
-  readCounts: number
-  URL: string
-}
-
-interface CommentItem {
-  comment_id: number
-  commenter: CommentUser | null
-  document: CommentDocument | null
-  created_at: string
-  content: string
-}
-
-interface CommentResponse {
-  code: number
-  message: string
-  data: CommentItem[]
-}
-
-interface ActionResponse {
-  code: number
-  message: string
-}
+import { deleteAdminComment, getAdminComments, type CommentItem } from '@/api/admin'
+import { createMockComments } from './mockData'
 
 const TEXT = {
-  title: '评论管理',
   refresh: '刷新',
   loading: '正在加载评论...',
   empty: '暂无评论',
   delete: '删除',
   confirmTitle: '删除确认',
-  confirmMessage: (name: string) =>
-    `确认删除来自 ${name || '该用户'} 的评论吗？`,
+  confirmMessage: (name: string) => `确认删除来自 ${name || '该用户'} 的评论吗？`,
   cancel: '取消',
   deleteSuccess: '评论已删除',
   loadFailed: '获取评论失败，请稍后重试',
@@ -142,104 +126,48 @@ const TEXT = {
   missingDocument: '缺少文档信息，无法删除评论',
   unknownUser: '匿名用户',
   mockHint: '当前展示的是示例评论数据，后端接入后将自动更新',
-}
-
-const createMockComments = (): CommentItem[] => [
-  {
-    comment_id: 1,
-    commenter: {
-      userId: 301,
-      username: 'Alice',
-      userAvatar: 'https://avatars.dicebear.com/api/initials/Alice.svg',
-      status: 'active',
-      createTime: '2024-03-12 09:21:00',
-      email: 'alice@example.com',
-      role: 'reader',
-    },
-    document: {
-      name: '现代教育技术研究报告',
-      document_id: 9001,
-      type: 'pdf',
-      uploadTime: '2024-03-10 18:32:00',
-      status: 'published',
-      category: '教育学',
-      collections: 87,
-      readCounts: 423,
-      URL: '#',
-    },
-    created_at: '2024-03-18 10:15:26',
-    content: '这份报告的数据分析部分非常详细，对课堂教学设计提供了很多启发。',
-  },
-  {
-    comment_id: 2,
-    commenter: {
-      userId: 302,
-      username: 'Bob',
-      userAvatar: 'https://avatars.dicebear.com/api/initials/Bob.svg',
-      status: 'active',
-      createTime: '2024-01-08 14:07:00',
-      email: 'bob@example.com',
-      role: 'reader',
-    },
-    document: {
-      name: '人工智能导论课程讲义',
-      document_id: 9002,
-      type: 'ppt',
-      uploadTime: '2024-02-26 11:48:00',
-      status: 'published',
-      category: '计算机科学',
-      collections: 132,
-      readCounts: 1024,
-      URL: '#',
-    },
-    created_at: '2024-03-19 16:42:03',
-    content: '整理得很系统，特别是第二章机器学习部分的思维导图，便于理解。',
-  },
-  {
-    comment_id: 3,
-    commenter: {
-      userId: 303,
-      username: 'Celia',
-      userAvatar: 'https://avatars.dicebear.com/api/initials/Celia.svg',
-      status: 'active',
-      createTime: '2023-12-21 20:12:00',
-      email: 'celia@example.com',
-      role: 'reader',
-    },
-    document: {
-      name: '高等数学习题精解',
-      document_id: 9003,
-      type: 'pdf',
-      uploadTime: '2024-03-15 09:05:00',
-      status: 'published',
-      category: '数学',
-      collections: 65,
-      readCounts: 358,
-      URL: '#',
-    },
-    created_at: '2024-03-20 08:27:51',
-    content: '答案步骤写得很清晰，建议下一版能增加一些易错点小贴士。',
-  },
-]
+} as const
 
 const loading = ref(false)
 const comments = ref<CommentItem[]>(createMockComments())
+const searchKey = ref<'name' | 'content' | 'time' | ''>('name')
+const searchInput = ref('')
+const appliedKeyword = ref('')
 
-const sortedComments = computed(() => {
-  return [...comments.value].sort((a, b) => {
-    const timeA = Date.parse(a.created_at)
-    const timeB = Date.parse(b.created_at)
+const displayedComments = computed(() => {
+  const keyword = appliedKeyword.value.trim().toLowerCase()
+  const key = searchKey.value
+
+  const sorted = [...comments.value].sort((a, b) => {
+    const timeA = Date.parse(a.create_at)
+    const timeB = Date.parse(b.create_at)
     if (Number.isNaN(timeA) || Number.isNaN(timeB)) {
       return 0
     }
-    return timeA - timeB
+    return timeB - timeA
   })
+
+  if (!keyword) {
+    return sorted
+  }
+
+  const matchers: Record<typeof key, (item: CommentItem) => boolean> = {
+    name: (item) => (item.commenter?.username ?? '').toLowerCase().includes(keyword),
+    content: (item) => item.content.toLowerCase().includes(keyword),
+    time: (item) => formatDateTime(item.create_at).toLowerCase().includes(keyword),
+    '': (item) =>
+      (item.commenter?.username ?? '').toLowerCase().includes(keyword) ||
+      item.content.toLowerCase().includes(keyword) ||
+      formatDateTime(item.create_at).toLowerCase().includes(keyword),
+  }
+
+  return sorted.filter(matchers[key])
 })
 
 const fetchComments = async () => {
   loading.value = true
   try {
-    const res = await service.get<CommentResponse>('/admin/comments')
+    const res = await getAdminComments()
     comments.value = Array.isArray(res.data) ? res.data : []
   } catch (error) {
     console.error('Failed to fetch comments:', error)
@@ -249,9 +177,18 @@ const fetchComments = async () => {
   }
 }
 
+const handleSearch = () => {
+  appliedKeyword.value = searchInput.value.trim()
+}
+
+const resetSearch = () => {
+  searchInput.value = ''
+  appliedKeyword.value = ''
+}
+
 const handleDelete = async (comment: CommentItem) => {
   const username = comment.commenter?.username || TEXT.unknownUser
-  const documentId = comment.document?.document_id
+  const documentId = comment.document?.documentId
 
   if (documentId === undefined || documentId === null) {
     ElMessage.error(TEXT.missingDocument)
@@ -259,26 +196,15 @@ const handleDelete = async (comment: CommentItem) => {
   }
 
   try {
-    await ElMessageBox.confirm(
-      TEXT.confirmMessage(username),
-      TEXT.confirmTitle,
-      {
-        confirmButtonText: TEXT.delete,
-        cancelButtonText: TEXT.cancel,
-        type: 'warning',
-      },
-    )
-
-    await service.delete<ActionResponse>('/admin/comment', {
-      params: {
-        document_id: documentId,
-      },
+    await ElMessageBox.confirm(TEXT.confirmMessage(username), TEXT.confirmTitle, {
+      confirmButtonText: TEXT.delete,
+      cancelButtonText: TEXT.cancel,
+      type: 'warning',
     })
 
-    comments.value = comments.value.filter(
-      (item) => item.comment_id !== comment.comment_id,
-    )
+    await deleteAdminComment(documentId)
 
+    comments.value = comments.value.filter((item) => item.commentId !== comment.commentId)
     ElMessage.success(TEXT.deleteSuccess)
   } catch (error) {
     if (error === 'cancel') {
@@ -297,7 +223,9 @@ const formatDateTime = (value: string) => {
 
   const date = new Date(timestamp)
   const pad = (num: number) => num.toString().padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
+    date.getHours(),
+  )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
 const getAvatarFallback = (username?: string) => {
@@ -313,17 +241,12 @@ onMounted(fetchComments)
 <style scoped lang="css">
 .comment-list {
   padding: 0;
-  height: 100%;
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-
-
 .comment-card {
-  border-radius: 10px;
+  border-radius: 12px;
   background: #fff;
   display: flex;
   flex-direction: column;
@@ -336,27 +259,42 @@ onMounted(fetchComments)
   box-shadow: none;
 }
 
-
 .comment-card :deep(.el-card__body) {
   flex: 1;
   min-height: 0;
   border: none;
   display: flex;
   flex-direction: column;
+  padding: 24px;
 }
 
 .comment-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
-.comment-card__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: #311a45;
+.comment-card__search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-card__search-select {
+  width: 140px;
+}
+
+.comment-card__search-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.comment-card__refresh {
+  white-space: nowrap;
 }
 
 .comment-card__body {
@@ -366,18 +304,23 @@ onMounted(fetchComments)
 }
 
 .comment-timeline {
-  padding: 0 6px;
+  padding: 0 4px;
+  margin: 0;
 }
 
 .comment-item {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: rgba(255, 166, 183, 0.12);
+  border-radius: 10px;
+  padding: 16px 18px;
 }
 
 .comment-item__meta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
 }
@@ -389,15 +332,15 @@ onMounted(fetchComments)
 }
 
 .comment-item__avatar {
-  background: rgba(255, 166, 183, 0.2);
+  background: rgba(255, 166, 183, 0.25);
   color: #5b294a;
   font-weight: 600;
 }
 
 .comment-item__info {
   display: flex;
-  flex-direction: row;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .comment-item__name {
@@ -406,13 +349,14 @@ onMounted(fetchComments)
 }
 
 .comment-item__id {
-    margin-top: 1px;
   font-size: 12px;
   color: #909399;
 }
 
-.comment-item__spacer {
-  flex: 1;
+.comment-item__meta-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .comment-item__doc {
@@ -422,11 +366,9 @@ onMounted(fetchComments)
 }
 
 .comment-item__content {
-  padding: 14px 16px;
-  background: rgba(255, 166, 183, 0.12);
-  border-radius: 8px;
+  margin: 0;
   color: #4a3b5c;
-  line-height: 1.6;
+  line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
 }

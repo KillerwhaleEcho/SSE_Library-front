@@ -2,7 +2,7 @@
   <div class="user-list">
     <el-card class="user-card">
       <div class="user-card__toolbar">
-        <el-select
+        <!-- <el-select
           v-model="searchKey"
           size="medium"
           class="user-card__search-select"
@@ -10,7 +10,7 @@
         >
           <el-option :label="TEXT.searchByName" value="name" />
           <el-option :label="TEXT.searchById" value="id" />
-        </el-select>
+        </el-select> -->
         <el-input
           v-model="searchInput"
           size="medium"
@@ -79,17 +79,12 @@
 import { computed, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
-  getAdminUserList,
+  getUserList,
   updateUserStatus,
   type UserBrief,
 } from "../../api/admin";
-
-type UserRow = {
-  id: number;
-  name: string;
-  email: string;
-  status: string;
-};
+import {type UserRow } from "../../api/admin";
+import {  DEMO_USERS} from "./mockData";
 
 const TEXT = {
   title: "用户列表",
@@ -109,33 +104,21 @@ const TEXT = {
   successDeactivate: "已停用用户",
   updateError: "更新用户状态失败，请重试",
   search: "搜索",
-  searchPlaceholder: "请输入搜索内容",
+  searchPlaceholder: "请按照姓名搜索",
   searchSelect: "请选择搜索类型",
   searchByName: "根据姓名",
   searchById: "根据 ID",
   mockFallback: "未连接后端，正在使用示例数据展示",
 } as const;
 
-const DEMO_USERS: UserRow[] = [
-  {
-    id: 1,
-    name: "张三",
-    email: "zhangsan@example.com",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "王五",
-    email: "wangwu@example.com",
-    status: "active",
-  },
-];
+
 
 const users = ref<UserRow[]>([...DEMO_USERS]);
 const loading = ref(false);
-const searchKey = ref<"name" | "id">("name");
+// const searchKey = ref<"name" | "id">("name");
 const searchInput = ref("");
 const appliedKeyword = ref("");
+
 
 const normalizeStatus = (status: string) => {
   if (status === "active" || status === TEXT.normal) return "active";
@@ -146,6 +129,9 @@ const normalizeStatus = (status: string) => {
 const mapToPayloadStatus = (status: string): "active" | "disabled" =>
   status === "active" ? "active" : "disabled";
 
+
+
+//将获取的用户数据提取关键数据展示
 const mapToRows = (list: UserBrief[]): UserRow[] =>
   [...list]
     .sort((a, b) => a.userId - b.userId)
@@ -160,7 +146,7 @@ const mapToRows = (list: UserBrief[]): UserRow[] =>
 const fetchUsers = async () => {
   loading.value = true;
   try {
-    const response = await getAdminUserList();
+    const response = await getUserList();
     users.value = mapToRows(response.data || []);
   } catch (error: any) {
     console.warn(TEXT.fetchError, error);
@@ -175,11 +161,11 @@ const filteredUsers = computed(() => {
   const keyword = appliedKeyword.value;
   if (!keyword) return users.value;
 
-  if (searchKey.value === "id") {
-    const targetId = Number(keyword);
-    if (!Number.isInteger(targetId)) return [];
-    return users.value.filter((user) => user.id === targetId);
-  }
+  // if (searchKey.value === "id") {
+  //   const targetId = Number(keyword);
+  //   if (!Number.isInteger(targetId)) return [];
+  //   return users.value.filter((user) => user.id === targetId);
+  // }
 
   const normalizedKeyword = keyword.trim().toLowerCase();
   if (!normalizedKeyword) return users.value;
@@ -227,9 +213,6 @@ onMounted(fetchUsers);
 <style scoped lang="css">
 .user-list {
   padding: 0;
-  height: 100%;
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -262,9 +245,9 @@ onMounted(fetchUsers);
     margin-bottom: 16px;
   }
 
-  .user-card__search-select {
+  /* .user-card__search-select {
     width: 120px;
-  }
+  } */
 
   .user-card__search-input {
     max-width: 400px;
