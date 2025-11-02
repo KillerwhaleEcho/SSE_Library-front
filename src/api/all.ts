@@ -3,8 +3,19 @@ import request from '../utils/request'
 
 export interface ApiResponse<T = any> {
   code: number
-  message: string
+  message?: string
   data: T
+}
+
+// 用户简要信息类型
+export interface UserBrief {
+  userId: number;
+  username: string;
+  userAvatar: string;
+  status: string;
+  createTime: string;
+  email: string;
+  role: string;
 }
 
 
@@ -31,25 +42,31 @@ export interface Comment {
   document: Document;
   create_at: string;
 }
+export interface DocumentComment {
+  commentId: number;
+  commenter: UserBrief;
+  document: InfoBrief;
+  createdAt: string;
+  content: string | null;
+}
 
+// 书籍/文件相关类型
 export interface InfoBrief {
   documentId: number;
   name: string;
   type: 'book' | 'file' | 'video' | null;
   uploadTime: string;
-  status: '开放'|'审核中'|'关闭'|'已撤回'
+  status: '开放' | '审核中' | '关闭' | '已撤回'
   category?: string;
   collections: number;
   readCounts: number;
   URL: string;
 }
-
-// 书籍/文件相关类型
 export interface Document {
   infoBrief: InfoBrief;
   bookISBN?: string;
   author?: string;
-  uploader?: User;
+  uploader?: UserBrief;
   cover?: string;
   tags?: string[];
   introduction?: string;
@@ -84,16 +101,6 @@ export interface Category {
   children?: Category[];
 }
 
-// 1. 获取对某本书的评论
-export const getBookComments = (bookId: string) => {
-  return service.get<ApiResponse<Comment[]>>(`/books/${bookId}/comments`);
-};
-
-// 2. 发起预览/下载
-export const previewOrDownloadBook = (bookId: string, type: 'preview' | 'download') => {
-  return service.get<ApiResponse<{ url: string }>>(`/books/${bookId}/${type}`);
-};
-
 // 3.1 获取分类和课程
 export const getCategoriesAndCourses = (is_suggest?: boolean) => {
   return service.get<ApiResponse<{ categories: Category[] }>>('/category', {
@@ -110,7 +117,7 @@ export const getHotCategories = (count?: number) => {
 //3.3 获取所有分类
 export const getAllCategories = () => {
   return service.get<ApiResponse<{ categories: Category[] }>>('/category', {
-    params: { }
+    params: {}
   });
 };
 //3.4 获取热门书籍/文件
@@ -137,8 +144,8 @@ export const uploadFile = (data: UploadFile) => {
 
 // 5. 获取书籍列表
 export const getBookList = (is_suggest: boolean, categoryId?: number) => {
-  return service.get<ApiResponse<{  documents: Document[] }>>('/documents', {
-    params: { is_suggest, categoryId  },
+  return service.get<ApiResponse<{ documents: Document[] }>>('/documents', {
+    params: { is_suggest, categoryId },
   });
 };
 
@@ -155,24 +162,41 @@ export const searchBooksOrFiles = (
   keyType: string | null,
   keyword: string | null,
 ) => {
-  return service.get<ApiResponse<{  documents: Document[] }>>('/searchdoc', {
+  return service.get<ApiResponse<{ documents: Document[] }>>('/searchdoc', {
     params: { type, categoryId, year, keyType, keyword },
   });
 };
 
-// 8. 获取指定书目
-export const getSpecifiedBook = (id: string) => {
-  return service.get<ApiResponse<Document>>(`/books/${id}`);
-};
-
-// 9. 发表评论
-export const postComment = (bookId: string, content: string) => {
-  return service.post<ApiResponse<Comment>>(`/books/${bookId}/comments`, { content });
-};
 
 // 10. 搜索分类和课程
 export const searchCategoriesAndCourses = (keyword: string, params?: { page?: number; pageSize?: number }) => {
   return service.get<ApiResponse<{ categories: Category[]; courses: any[]; total: number }>>('/categoriesAndCourses/search', {
     params: { keyword, ...params },
   });
+};
+
+// 书籍/文件评论相关类型
+export interface CreateCommentPayload {
+  commenter: UserBrief;
+  document: InfoBrief;
+  content: string;
+  createTime: string;
+}
+
+// 获取指定书籍/文件的详细信息
+export const getDocumentDetail = (documentId: string | number) => {
+  return service.get<ApiResponse<Document>>(`/document/${documentId}`);
+};
+
+// 获取指定书籍/文件的评论
+export const getDocumentComments = (documentId: string | number) => {
+  return service.get<ApiResponse<DocumentComment[]>>(`/${documentId}/comments`);
+};
+
+// 发表评论
+export const createDocumentComment = (
+  documentId: string | number,
+  payload: CreateCommentPayload,
+) => {
+  return service.post<ApiResponse<DocumentComment[]>>(`/user/${documentId}/comments`, payload);
 };
