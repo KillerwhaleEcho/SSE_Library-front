@@ -44,6 +44,7 @@ export interface Comment {
 }
 export interface DocumentComment {
   commentId: number;
+  parentId: number | null;
   commenter: UserBrief;
   document: InfoBrief;
   createdAt: string;
@@ -181,6 +182,7 @@ export interface CreateCommentPayload {
   document: InfoBrief;
   content: string;
   createTime: string;
+  parentId: number | null;
 }
 
 // 获取指定书籍/文件的详细信息
