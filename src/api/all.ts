@@ -195,6 +195,11 @@ export const getDocumentComments = (documentId: string | number) => {
   return service.get<ApiResponse<DocumentComment[]>>(`/${documentId}/comments`);
 };
 
+// 获取单条评论
+export const getSingleComment = (commentId: string | number) => {
+  return service.get<ApiResponse<DocumentComment>>(`/comment/${commentId}`);
+};
+
 // 发表评论
 export const createDocumentComment = (
   documentId: string | number,
