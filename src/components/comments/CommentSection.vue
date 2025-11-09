@@ -1,3 +1,7 @@
+<!--
+CommentSection 组件用于展示指定文档的评论列表，并支持在登录后进行评论或回复。
+可配置显示的部分：评论编辑框(showEditor)、评论用户信息(showCommentUser)、回复按钮(showReplyButton)、评论关联文档标签(showDocumentName)。
+-->
 <template>
     <section class="comments-section">
         <div v-if="shouldShowEditor" class="comment-editor">
@@ -61,7 +65,7 @@
                                         <div class="reply-parent-header">
                                             <span class="reply-parent-name">{{ item.parent.commenter.username }}</span>
                                             <span class="reply-parent-time">{{ formattedDate(item.parent.createdAt)
-                                                }}</span>
+                                            }}</span>
                                         </div>
                                         <p class="reply-parent-content">{{ item.parent.content || '（原评论暂无内容）' }}</p>
                                     </div>
