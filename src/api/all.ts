@@ -44,7 +44,7 @@ export interface Comment {
 }
 export interface DocumentComment {
   commentId: number;
-  parentId: number | null;
+  parentId?: number | null;
   commenter: UserBrief;
   document: InfoBrief;
   createdAt: string;
@@ -193,6 +193,16 @@ export const getDocumentDetail = (documentId: string | number) => {
 // 获取指定书籍/文件的评论
 export const getDocumentComments = (documentId: string | number) => {
   return service.get<ApiResponse<DocumentComment[]>>(`/${documentId}/comments`);
+};
+
+// 获取指定用户发表过的所有评论
+export const getUserComments = (userId: string | number) => {
+  return service.get<ApiResponse<DocumentComment[]>>(`/user/${userId}/comments`);
+};
+
+// 管理员获取所有评论
+export const getAllComments = () => {
+  return service.get<ApiResponse<DocumentComment[]>>('/admin/comments');
 };
 
 // 获取单条评论

@@ -1,7 +1,20 @@
 <!--
-CommentSection 组件用于展示指定文档的评论列表，并支持在登录后进行评论或回复。
+CommentSection 组件会依据 documentId 或 viewer.role 自动选择评论数据源，可展示指定文档、指定用户或全部评论；
+在文档模式下，支持登录后发表评论与回复。
 可配置显示的部分：评论编辑框(showEditor)、评论用户信息(showCommentUser)、回复按钮(showReplyButton)、评论关联文档标签(showDocumentName)。
+
+调用示例：
+<CommentSection
+    :document-id="docId"
+    :document-brief="docBrief"
+    :viewer="currentViewer"
+    :show-editor="true"
+    :show-comment-user="true"
+    :show-reply-button="true"
+    :show-document-name="true"
+/>
 -->
+
 <template>
     <section class="comments-section">
         <div v-if="shouldShowEditor" class="comment-editor">
@@ -29,7 +42,7 @@ CommentSection 组件用于展示指定文档的评论列表，并支持在登�
                 </div>
             </template>
             <template #default>
-                <div v-if="hasDocumentId">
+                <div v-if="hasCommentsSource">
                     <div v-if="hasComments" class="comment-list">
                         <el-card v-for="item in displayComments" :key="item.comment.commentId" class="comment-card"
                             shadow="never">
@@ -85,7 +98,7 @@ CommentSection 组件用于展示指定文档的评论列表，并支持在登�
                     </div>
                     <el-empty v-else description="暂无评论" />
                 </div>
-                <el-empty v-else description="暂无可用文档" />
+                <el-empty v-else description="暂无可用评论源" />
             </template>
         </el-skeleton>
 
@@ -122,6 +135,8 @@ import {
     type CreateCommentPayload,
     type UserBrief,
     getDocumentComments,
+    getUserComments,
+    getAllComments,
     getSingleComment,
     createDocumentComment,
 } from '@/api/all.ts'
@@ -130,6 +145,7 @@ import { useAuthStore } from '@/stores/auth'
 const props = defineProps<{
     documentId: string | number | null
     documentBrief?: InfoBrief | null
+    viewer?: UserBrief | null
     showEditor?: boolean
     showCommentUser?: boolean
     showReplyButton?: boolean
@@ -148,9 +164,7 @@ const replyingTo = ref<DocumentComment | null>(null)
 const replyingContent = ref('')
 const replyingModalVisible = ref(false)
 
-const shouldShowEditor = computed(() => props.showEditor !== false)
 const shouldShowCommentUser = computed(() => props.showCommentUser !== false)
-const shouldShowReplyButton = computed(() => props.showReplyButton !== false)
 const shouldShowDocumentName = computed(() => props.showDocumentName === true)
 
 const resolvedDocumentId = computed(() => {
@@ -158,7 +172,55 @@ const resolvedDocumentId = computed(() => {
     return String(props.documentId).trim()
 })
 
-const hasDocumentId = computed(() => Boolean(resolvedDocumentId.value))
+const effectiveViewer = computed<UserBrief | null>(() => {
+    if (props.viewer) return props.viewer
+    if (userInfo.value) {
+        return {
+            userId: userInfo.value.userId,
+            username: userInfo.value.username,
+            userAvatar: userInfo.value.userAvatar,
+            status: userInfo.value.status,
+            createTime: userInfo.value.createTime,
+            email: userInfo.value.email,
+            role: userInfo.value.role,
+        }
+    }
+    return null
+})
+
+type CommentFetchMode =
+    | { kind: 'document'; documentId: string }
+    | { kind: 'user'; userId: number }
+    | { kind: 'admin' }
+    | { kind: 'none' }
+
+const commentFetchMode = computed<CommentFetchMode>(() => {
+    if (resolvedDocumentId.value) {
+        return { kind: 'document', documentId: resolvedDocumentId.value }
+    }
+
+    const viewer = effectiveViewer.value
+    if (!viewer) {
+        return { kind: 'none' }
+    }
+
+    const viewerRole = (viewer.role || '').toLowerCase()
+
+    if (viewerRole.includes('admin')) {
+        return { kind: 'admin' }
+    }
+
+    if (viewerRole === 'user' && viewer.userId !== undefined && viewer.userId !== null) {
+        return { kind: 'user', userId: viewer.userId }
+    }
+
+    return { kind: 'none' }
+})
+
+const isDocumentMode = computed(() => commentFetchMode.value.kind === 'document')
+const shouldShowEditor = computed(() => props.showEditor !== false && isDocumentMode.value)
+const shouldShowReplyButton = computed(() => props.showReplyButton !== false && isDocumentMode.value)
+const hasCommentsSource = computed(() => commentFetchMode.value.kind !== 'none')
 const hasComments = computed(() => comments.value.length > 0)
 
 const parentCommentCache = ref<Record<number, DocumentComment | null>>({})
@@ -264,11 +326,30 @@ const ensureParentComments = async (list: DocumentComment[]) => {
     await Promise.all(tasks)
 }
 
-const loadComments = async (id: string) => {
+const loadCommentsForMode = async (mode: CommentFetchMode) => {
+    if (mode.kind === 'none') {
+        comments.value = []
+        return
+    }
+
     commentsLoading.value = true
     try {
-        const response = (await getDocumentComments(id)) as unknown as ApiResponse<DocumentComment[]>
-        comments.value = Array.isArray(response.data) ? response.data : []
+        let response: ApiResponse<DocumentComment[]>
+
+        if (mode.kind === 'document') {
+            response = (await getDocumentComments(mode.documentId)) as unknown as ApiResponse<DocumentComment[]>
+        } else if (mode.kind === 'user') {
+            response = (await getUserComments(mode.userId)) as unknown as ApiResponse<DocumentComment[]>
+        } else {
+            response = (await getAllComments()) as unknown as ApiResponse<DocumentComment[]>
+        }
+
+        const data = Array.isArray(response.data) ? response.data : []
+        comments.value = data.map((item) => ({
+            ...item,
+            parentId: item.parentId ?? null,
+            content: item.content ?? null,
+        }))
         await ensureParentComments(comments.value)
     } catch (error: any) {
         comments.value = []
@@ -279,13 +360,14 @@ const loadComments = async (id: string) => {
     }
 }
 
-const refreshComments = async () => {
+const refreshComments = async (mode: CommentFetchMode = commentFetchMode.value) => {
     resetParentCommentState()
-    if (!resolvedDocumentId.value) {
+    if (mode.kind === 'none') {
+        commentsLoading.value = false
         comments.value = []
         return
     }
-    await loadComments(resolvedDocumentId.value)
+    await loadCommentsForMode(mode)
 }
 
 const buildCommenterPayload = (): UserBrief | null => {
@@ -413,9 +495,19 @@ const closeReplyBox = () => {
 }
 
 watch(
-    () => resolvedDocumentId.value,
-    async () => {
-        await refreshComments()
+    commentFetchMode,
+    async (mode, prevMode) => {
+        const switchedToNonDocument = mode.kind !== 'document'
+        const switchedDocumentId =
+            prevMode && prevMode.kind === 'document' && mode.kind === 'document' && prevMode.documentId !== mode.documentId
+
+        if (switchedToNonDocument || switchedDocumentId) {
+            commentContent.value = ''
+            replyingContent.value = ''
+            replyingTo.value = null
+            replyingModalVisible.value = false
+        }
+        await refreshComments(mode)
     },
     { immediate: true },
 )
@@ -423,6 +515,7 @@ watch(
 watch(
     () => props.documentBrief,
     () => {
+        if (!isDocumentMode.value) return
         // 清理草稿内容以避免不同文档间的串联
         commentContent.value = ''
         replyingContent.value = ''
