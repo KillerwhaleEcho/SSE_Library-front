@@ -78,7 +78,7 @@ CommentSection 组件会依据 documentId 或 viewer.role 自动选择评论数�
                                         <div class="reply-parent-header">
                                             <span class="reply-parent-name">{{ item.parent.commenter.username }}</span>
                                             <span class="reply-parent-time">{{ formattedDate(item.parent.createdAt)
-                                            }}</span>
+                                                }}</span>
                                         </div>
                                         <p class="reply-parent-content">{{ item.parent.content || '（原评论暂无内容）' }}</p>
                                     </div>
@@ -89,9 +89,15 @@ CommentSection 组件会依据 documentId 或 viewer.role 自动选择评论数�
                             </div>
 
                             <p class="comment-content">{{ item.comment.content || '（该评论暂无内容）' }}</p>
-                            <div v-if="shouldShowReplyButton" class="comment-actions">
-                                <el-button type="primary" link size="small" @click="openReplyBox(item.comment)">
+                            <div v-if="shouldShowReplyButton || canDeleteComment(item.comment)" class="comment-actions">
+                                <el-button v-if="shouldShowReplyButton" type="primary" link size="small"
+                                    @click="openReplyBox(item.comment)">
                                     回复
+                                </el-button>
+                                <el-button v-if="canDeleteComment(item.comment)" type="danger" link size="small"
+                                    :loading="isDeletingComment(item.comment.commentId)"
+                                    @click="handleDeleteComment(item.comment)">
+                                    删除
                                 </el-button>
                             </div>
                         </el-card>
@@ -139,6 +145,8 @@ import {
     getAllComments,
     getSingleComment,
     createDocumentComment,
+    deleteUserComment,
+    deleteAdminComment,
 } from '@/api/all.ts'
 import { useAuthStore } from '@/stores/auth'
 
@@ -163,6 +171,7 @@ const commentContent = ref('')
 const replyingTo = ref<DocumentComment | null>(null)
 const replyingContent = ref('')
 const replyingModalVisible = ref(false)
+const deletingCommentMap = ref<Record<number, boolean>>({})
 
 const shouldShowCommentUser = computed(() => props.showCommentUser !== false)
 const shouldShowDocumentName = computed(() => props.showDocumentName === true)
@@ -222,6 +231,48 @@ const shouldShowEditor = computed(() => props.showEditor !== false && isDocument
 const shouldShowReplyButton = computed(() => props.showReplyButton !== false && isDocumentMode.value)
 const hasCommentsSource = computed(() => commentFetchMode.value.kind !== 'none')
 const hasComments = computed(() => comments.value.length > 0)
+const normalizedViewerRole = computed(() => (effectiveViewer.value?.role || '').toLowerCase())
+const viewerUserId = computed(() => effectiveViewer.value?.userId ?? null)
+
+const canDeleteComment = (comment: DocumentComment) => {
+    const role = normalizedViewerRole.value
+    if (!role) return false
+    if (role.includes('admin')) return true
+    if (role === 'user' && viewerUserId.value !== null) {
+        return comment.commenter?.userId === viewerUserId.value
+    }
+    return false
+}
+
+const isDeletingComment = (commentId: number) => deletingCommentMap.value[commentId] === true
+
+const handleDeleteComment = async (comment: DocumentComment) => {
+    if (!effectiveViewer.value) {
+        ElMessage.warning('请先登录再尝试删除评论')
+        router.push('/login')
+        return
+    }
+
+    if (!canDeleteComment(comment)) return
+
+    deletingCommentMap.value[comment.commentId] = true
+    try {
+        const role = normalizedViewerRole.value
+        if (role.includes('admin')) {
+            await deleteAdminComment(comment.commentId)
+        } else if (role === 'user' && viewerUserId.value !== null) {
+            await deleteUserComment(viewerUserId.value, comment.commentId)
+        } else {
+            throw new Error('当前身份不支持删除评论')
+        }
+        ElMessage.success('评论删除成功')
+        await refreshComments(commentFetchMode.value)
+    } catch (error: any) {
+        ElMessage.error(error?.message || '删除评论失败')
+    } finally {
+        deletingCommentMap.value[comment.commentId] = false
+    }
+}
 
 const parentCommentCache = ref<Record<number, DocumentComment | null>>({})
 const parentLoadingState = ref<Record<number, boolean>>({})
@@ -701,6 +752,9 @@ watch(
 
 .comment-actions {
     margin-top: 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
 .reply-context {

@@ -217,3 +217,17 @@ export const createDocumentComment = (
 ) => {
   return service.post<ApiResponse<DocumentComment[]>>(`/user/${documentId}/comments`, payload);
 };
+
+// 普通用户删除自己的评论
+export const deleteUserComment = (userId: string | number, commentId: string | number) => {
+  return service.delete<ApiResponse<null>>('/user/comment', {
+    params: { userId, commentId },
+  });
+};
+
+// 管理员删除任意评论
+export const deleteAdminComment = (commentId: string | number) => {
+  return service.delete<ApiResponse<null>>('/admin/comment', {
+    params: { commentId },
+  });
+};
