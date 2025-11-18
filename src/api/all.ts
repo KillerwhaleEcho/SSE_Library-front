@@ -1,17 +1,24 @@
 import service from '../utils/service'
 import request from '../utils/request'
 
-
 export interface ApiResponse<T = any> {
   code: number
   message?: string
   data: T
 }
 
-
 // 用户相关类型
-
 export interface UserBrief {
+  userId: number;
+  username: string;
+  userAvatar: string;
+  status: string;
+  createTime: string;
+  email: string;
+  role: string;
+}
+
+export interface User {
   userId: number;
   username: string;
   userAvatar: string;
@@ -19,10 +26,7 @@ export interface UserBrief {
   createTime: string;
   email: string;
   role: 'user' | 'admin';
-}
-
-export interface User {
-  userBrief:UserBrief
+  userBrief?: UserBrief;
 
   password?: string; // 仅用于注册和登录
   collectionList?: Document[]; // 用户收藏的书籍/文件
@@ -97,28 +101,27 @@ export interface Category {
   children?: Category[];
 }
 
-export interface message
-  {
+export interface message {
   sessionId: number;
   senderId: number;
   sendTime: string;
   senderName: string;
   senderAvatar: string;
   content: string;
-    status: '已发送'|'未读'|'未接收'
-  }
+  status: '已发送' | '未读' | '未接收'
+}
 
-export interface chatBox{
-      sessionId: number,
-    userId1: number,
-    userAvatar1: string,
-    userName1: string,
-    userId2: number,
-    userAvatar2:string,
-    userName2: string,
+export interface chatBox {
+  sessionId: number,
+  userId1: number,
+  userAvatar1: string,
+  userName1: string,
+  userId2: number,
+  userAvatar2: string,
+  userName2: string,
   lastMessage: string,
-    lastTime: string,
-    unreadCount: number
+  lastTime: string,
+  unreadCount: number
 }
 
 
@@ -196,19 +199,75 @@ export const searchCategoriesAndCourses = (keyword: string, params?: { page?: nu
   });
 };
 
+// 书籍/文件评论相关类型
+export interface CreateCommentPayload {
+  commenter: UserBrief;
+  document: InfoBrief;
+  content: string;
+  createTime: string;
+  parentId: number | null;
+}
+
+// 获取指定书籍/文件的详细信息
+export const getDocumentDetail = (documentId: string | number) => {
+  return service.get<ApiResponse<Document>>(`/document/${documentId}`);
+};
+
+// 获取指定书籍/文件的评论
+export const getDocumentComments = (documentId: string | number) => {
+  return service.get<ApiResponse<DocumentComment[]>>(`/${documentId}/comments`);
+};
+
+// 获取指定用户发表过的所有评论
+export const getUserComments = (userId: string | number) => {
+  return service.get<ApiResponse<DocumentComment[]>>(`/user/${userId}/comments`);
+};
+
+// 管理员获取所有评论
+export const getAllComments = () => {
+  return service.get<ApiResponse<DocumentComment[]>>('/admin/comments');
+};
+
+// 获取单条评论
+export const getSingleComment = (commentId: string | number) => {
+  return service.get<ApiResponse<DocumentComment>>(`/comment/${commentId}`);
+};
+
+// 发表评论
+export const createDocumentComment = (
+  documentId: string | number,
+  payload: CreateCommentPayload,
+) => {
+  return service.post<ApiResponse<DocumentComment[]>>(`/user/${documentId}/comments`, payload);
+};
+
+// 普通用户删除自己的评论
+export const deleteUserComment = (userId: string | number, commentId: string | number) => {
+  return service.delete<ApiResponse<null>>('/user/comment', {
+    params: { userId, commentId },
+  });
+};
+
+// 管理员删除任意评论
+export const deleteAdminComment = (commentId: string | number) => {
+  return service.delete<ApiResponse<null>>('/admin/comment', {
+    params: { commentId },
+  });
+};
+
 // 11.发送消息,接口名加上interface避免重名
-export const sendMessageInterface = (sessionId:number,receiverId:number,content :string) => {
+export const sendMessageInterface = (sessionId: number, receiverId: number, content: string) => {
   return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/send', { sessionId, receiverId, content })
 }
 
 //获取聊天回话列表
 export const getSessionList = (userId: number) => {
-  return service.get<ApiResponse<chatBox[]>>('/chat/sessions', {params:{ userId } })
+  return service.get<ApiResponse<chatBox[]>>('/chat/sessions', { params: { userId } })
 }
 
 
 //获取聊天记录
-export const getMessageList = (sessionId:number,userId:number) => {
+export const getMessageList = (sessionId: number, userId: number) => {
   return service.get<ApiResponse<message[]>>('/chat/messages', { params: { sessionId, userId } })
 }
 
