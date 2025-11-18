@@ -19,13 +19,6 @@ export interface UserBrief {
 }
 
 export interface User {
-  userId: number;
-  username: string;
-  userAvatar: string;
-  status: 'active' | 'banned';
-  createTime: string;
-  email: string;
-  role: 'user' | 'admin';
   userBrief?: UserBrief;
 
   password?: string; // 仅用于注册和登录
