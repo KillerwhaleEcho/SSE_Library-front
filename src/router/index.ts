@@ -9,7 +9,7 @@ import User from '@/views/user.vue';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/admin',
+    redirect: '/login',
   },
   {
     path: '/login',
@@ -49,11 +49,8 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
-  const isAdmin = /* 这里根据实际情况判断是否为管理员 */ true;
-  if (to.path === 'admin') {
-    next();
-    return;
-}
+  const isAdmin = /* 这里根据实际情况判断是否为管理员 */ false;
+
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login');
