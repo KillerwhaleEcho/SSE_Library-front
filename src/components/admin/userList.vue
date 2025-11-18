@@ -13,7 +13,7 @@
         </el-select> -->
         <el-input
           v-model="searchInput"
-          size="medium"
+          size="large"
           clearable
           :placeholder="TEXT.searchPlaceholder"
           @clear="resetSearch"
@@ -45,10 +45,10 @@
           :empty-text="TEXT.empty"
           border
         >
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="name" :label="TEXT.name" min-width="140" />
-          <el-table-column prop="email" :label="TEXT.email" min-width="220" />
-          <el-table-column :label="TEXT.status" width="120">
+          <el-table-column prop="id" label="ID" width="80" align="center"/>
+          <el-table-column prop="name" :label="TEXT.name" min-width="140" align="center"/>
+          <el-table-column prop="email" :label="TEXT.email" min-width="220" align="center"/>
+          <el-table-column :label="TEXT.status" width="120" align="center">
             <template #default="{ row }">
               <el-tag :type="row.status === 'active' ? 'success' : 'info'">
                 {{ row.status === "active" ? TEXT.normal : TEXT.disabled }}
@@ -215,6 +215,8 @@ onMounted(fetchUsers);
   padding: 0;
   display: flex;
   flex-direction: column;
+  overflow: auto;
+  scrollbar-width: none;
 }
 
 :deep(.el-card.is-always-shadow.user-card) {
@@ -225,7 +227,8 @@ onMounted(fetchUsers);
 .user-card {
   border-radius: 10px;
   background: #fff;
-  overflow: hidden;
+  overflow: auto;
+  scrollbar-width: none;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -250,7 +253,7 @@ onMounted(fetchUsers);
   } */
 
   .user-card__search-input {
-    max-width: 400px;
+width: 50%;
   }
 
   .user-card__refresh {

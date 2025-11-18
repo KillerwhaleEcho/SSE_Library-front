@@ -5,10 +5,10 @@ import {
   updateAdminProfile,
   updateAdminPassword,
   type UserBrief,
-  type AdminDetailResponse,
   type AdminUpdatePayload,
   type AdminPasswordPayload,
 } from '../api/admin'
+import type { User } from '@/api/all'
 
 const STORAGE_KEY = 'adminInfo'
 const storage = typeof window === 'undefined' ? null : window.localStorage
@@ -29,8 +29,8 @@ export const useAdminStore = defineStore('admin', () => {
   const adminInfo = ref<UserBrief | null>(null)
   const loading = ref(false)
   const error = ref('')
-  const collectionList = ref<AdminDetailResponse['collectionList']>([])
-  const historyList = ref<AdminDetailResponse['historyList']>([])
+  const collectionList = ref<User['collectionList']>([])
+  const historyList = ref<User['historyList']>([])
 // <AdminDetailResponse['collectionList']> 是 TypeScript 的泛型，它使用了索引访问类型（indexed access type）来获取 AdminDetailResponse 类型中的 collectionList 属性的类型。
 
 
@@ -70,7 +70,7 @@ export const useAdminStore = defineStore('admin', () => {
   }
 
   // 把后端返回的信息应用
-  const applyDetail = (detail: AdminDetailResponse) => {
+  const applyDetail = (detail: User) => {
     adminInfo.value = detail.userBrief//两个是一样的
     collectionList.value = detail.collectionList ?? []
     historyList.value = detail.historyList ?? []
@@ -94,7 +94,7 @@ export const useAdminStore = defineStore('admin', () => {
     startFetch()
     try {
       const response = await getAdminDetail(userId)
-      applyDetail(response.data)
+      applyDetail(response)
       return adminInfo.value
     } catch (err: any) {
       error.value = err?.message || '获取管理员信息失败'

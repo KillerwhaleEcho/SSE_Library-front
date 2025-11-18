@@ -1,0 +1,93 @@
+[1mdiff --git a/src/api/all.ts b/src/api/all.ts[m
+[1mindex 2c4ecd5..e769007 100644[m
+[1m--- a/src/api/all.ts[m
+[1m+++ b/src/api/all.ts[m
+[36m@@ -1,5 +1,6 @@[m
+ import service from '../utils/service'[m
+ import request from '../utils/request'[m
+[32m+[m[32mimport { useRadio } from 'element-plus/es/components/radio/src/use-radio.mjs'[m
+ [m
+ export interface ApiResponse<T = any> {[m
+   code: number[m
+[36m@@ -9,7 +10,8 @@[m [mexport interface ApiResponse<T = any> {[m
+ [m
+ [m
+ // 用户相关类型[m
+[31m-export interface User {[m
+[32m+[m
+[32m+[m[32mexport interface UserBrief {[m
+   userId: number;[m
+   username: string;[m
+   userAvatar: string;[m
+[36m@@ -17,6 +19,10 @@[m [mexport interface User {[m
+   createTime: string;[m
+   email: string;[m
+   role: 'user' | 'admin';[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport interface User {[m
+[32m+[m[32m  userBrief:UserBrief[m
+ [m
+   password?: string; // 仅用于注册和登录[m
+   collectionList?: Document[]; // 用户收藏的书籍/文件[m
+[36m@@ -84,6 +90,31 @@[m [mexport interface Category {[m
+   children?: Category[];[m
+ }[m
+ [m
+[32m+[m[32m//聊天消息相关[m
+[32m+[m[32mexport interface message{[m
+[32m+[m[32m  sessionId: number,[m
+[32m+[m[32m  senderId: number[m
+[32m+[m[32m  sendTime: string,[m
+[32m+[m[32m  senderName: string[m
+[32m+[m[32m  senderAvatar: string[m
+[32m+[m[32m  content: string[m
+[32m+[m[32m  status:'已发送'|'未接收'|'未读'[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m//聊天框应该显示的数据[m
+[32m+[m[32mexport interface chatBox{[m
+[32m+[m[32m  sessionId: number[m
+[32m+[m[32m  userId1: number[m
+[32m+[m[32m  userAvatar1: string[m
+[32m+[m[32m  userName1: string[m
+[32m+[m[32m  userId2: number[m
+[32m+[m[32m  userAvatar2: string[m
+[32m+[m[32m  userName2: string[m
+[32m+[m[32m  lastMessage: string[m
+[32m+[m[32m  lastTime: string[m
+[32m+[m[32m  unreadCount:number[m
+[32m+[m[32m}[m
+[32m+[m
+ // 1. 获取对某本书的评论[m
+ export const getBookComments = (bookId: string) => {[m
+   return service.get<ApiResponse<Comment[]>>(`/books/${bookId}/comments`);[m
+[36m@@ -175,4 +206,25 @@[m [mexport const searchCategoriesAndCourses = (keyword: string, params?: { page?: nu[m
+   return service.get<ApiResponse<{ categories: Category[]; courses: any[]; total: number }>>('/categoriesAndCourses/search', {[m
+     params: { keyword, ...params },[m
+   });[m
+[31m-};[m
+\ No newline at end of file[m
+[32m+[m[32m};[m
+[32m+[m
+[32m+[m[32m// 11.发送消息,接口名加上interface避免重名[m
+[32m+[m[32mexport const sendMessageInterface = (sessionId:number,receiverId:number,content :string) => {[m
+[32m+[m[32m  return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/send', { sessionId, receiverId, content })[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m//获取聊天回话列表[m
+[32m+[m[32mexport const getSessionList = (userId: number) => {[m
+[32m+[m[32m  return service.get<ApiResponse<chatBox[]>>('/chat/sessions', {params:{ userId } })[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m
+[32m+[m[32m//获取聊天记录[m
+[32m+[m[32mexport const getMessageList = (sessionId:number,userId:number) => {[m
+[32m+[m[32m  return service.get<ApiResponse<message[]>>('/chat/messages', { params: { sessionId, userId } })[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m// 获取用户的详细信息[m
+[32m+[m[32mexport const getUserDetail = (userId: string) => {[m
+[32m+[m[32m  return service.get<User>(`/user/${userId}`)[m
+[32m+[m[32m}[m
+\ No newline at end of file[m

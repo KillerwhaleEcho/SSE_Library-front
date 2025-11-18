@@ -1,129 +1,119 @@
 <template>
-  <div class="admin-panel">
-    <!-- 左侧导航 -->
-    <aside class="admin-panel__sidebar">
-      <div class="admin-panel__brand">SSE-library</div>
+  <div class="admin">
+    <head class="admin__topbar">
+      <h1 class="admin__title">SSE-library</h1>
       <el-menu
+        class="admin__menu"
         :default-active="activeTab"
-        class="admin-panel__menu"
         @select="handleSelect"
       >
-        <!-- Element Plus的el-menu组件在触发select事件时，会传递被选中的菜单项的index作为参数。 -->
-        <el-menu-item index="admin">管理员信息</el-menu-item>
+        <el-menu-item index="admin">我的信息</el-menu-item>
+        <el-menu-item index="chat">聊天区</el-menu-item>
         <el-menu-item index="users">用户列表</el-menu-item>
-        <el-menu-item index="files" >文件列表</el-menu-item>
+        <el-menu-item index="files">资料列表</el-menu-item>
         <el-menu-item index="comments">评论列表</el-menu-item>
       </el-menu>
-    </aside>
-
-    <!-- 右侧内容 -->
-    <section class="admin-panel__content">
-      <!-- 管理员信息 -->
-      <AdminInfo v-if="activeTab === 'admin'" />
-
-      <!-- 用户列表 -->
-      <UserList v-if="activeTab === 'users'" />
-      <!-- 待审核文件列表 -->
-       <DocumentList v-if="activeTab === 'files'" />
-      <!-- 评论列表 --> 
-      <CommentList v-if="activeTab === 'comments'" />
-    </section>
+    </head>
+    <div class="admin__content">
+      <adminInfo v-if="activeTab === 'admin'"> </adminInfo>
+      <userList v-if="activeTab === 'users'"></userList>
+      <documentList v-if="activeTab === 'files'"></documentList>
+      <commentList v-if="activeTab === 'comments'"></commentList>
+      <chatView v-if="activeTab === 'chat'"></chatView>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import AdminInfo from '../components/admin/adminInfo.vue'
-import UserList from '../components/admin/userList.vue'
-import CommentList from '../components/admin/commentList.vue'
-import DocumentList from '../components/admin/documentList.vue'
+import { ref } from "vue";
+import adminInfo from "../components/admin/adminInfo.vue";
+import userList from "../components/admin/userList.vue";
+import commentList from "../components/admin/commentList.vue";
+import documentList from "../components/admin/documentList.vue";
+import chatView from "@/components/chatView.vue";
 
 // 左侧菜单激活项（同 view 中不同栏目）
-const activeTab = ref<'admin' | 'users'|'files'|'comments'>('admin')
+const activeTab = ref<"admin" | "users" | "files" | "comments" | "chat">(
+  "admin"
+);
+
 const handleSelect = (index: string) => {
-  if (index === 'admin' || index === 'users'||index==='files'||index==='comments') activeTab.value = index
-}
+  if (
+    index === "admin" ||
+    index === "users" ||
+    index === "files" ||
+    index === "comments" ||
+    index === "chat"
+  )
+    activeTab.value = index;
+};
+
 </script>
 
-
-
 <style scoped>
-
-
-.admin-panel {
+.admin {
   display: flex;
-  align-items: stretch;
-  width: 100vw;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
   height: 100vh;
-  gap: 24px;
-  box-sizing: border-box;
-  overflow-y: auto; /* 允许垂直滚动 */
-  scrollbar-width: none; /* Firefox：隐藏滚动条 */
-  -ms-overflow-style: none; /* IE/Edge：隐藏滚动条 */
-}
-
-
-.admin-panel__brand{
-  font-size: 18px;
-  font-weight: 700;
-  padding: 16px;
-  border-bottom: 1px solid #ebeef5;
- margin :1rem 1rem;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.admin-panel__sidebar {
-  width: 200px;
-  border: none;
-  border-right: 1px solid #ebeef5;
-  background: #fff;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.admin-panel__menu {
-  flex: 1;
-  border-right: none;
-  background: transparent;
-  padding: 12px 16px 16px;
-}
-
-.admin-panel__content {
-  flex: 1;
-  border-radius: 10px;
-  background: #fff;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: 20px;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
   scrollbar-width: none;
-  -ms-overflow-style: none;
 }
 
-.admin-panel__content::-webkit-scrollbar {
-  display: none;
+.admin__topbar {
+  width: 100%;
+  top: 0;
+  left: 0;
+  /* 都指的是与父容器的间距 */
+  padding: 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  height: 60px;
+  box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.1);
+  position: sticky;
+  /* 设置元素为粘性定位。粘性定位是相对定位和固定定位的混合。元素在跨越特定阈值前为相对定位，之后为固定定位。这里结合top:0，当页面滚动时，元素会固定在顶部。 */
+  z-index: 10000;
+  /*设置元素的堆叠顺序。数值越大，元素在层叠上下文中的位置越高。这里设置一个较大的值，确保该元素显示在其他元素之上。 */
+  background-color: #fff;
+  /* header 默认的 background-color 值就是 transparent，它不会自动继承父节点的背景； */
 }
 
-.admin-panel__menu :deep(.el-menu-item) {
-  border-radius: 5px;
-  margin: 4px 0px;
-  transition: all 0.2s ease;
+.admin__title {
+  margin-left: 20px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #b994fe;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.admin__title:hover {
+  color: #916ad9ff;
 }
 
-/* .admin-panel__menu :deep(.el-menu-item:hover) {
-  background: rgba(64, 158, 255, 0.08);
-} */
+.admin__menu {
+  display: flex;
+  padding-left: 25px;
+  border-right: none;
+}
 
-.admin-panel__menu :deep(.el-menu-item.is-active) {
-  color: #409eff;
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.18), rgba(64, 158, 255, 0.08));
-  /* box-shadow: inset 0 0 0 1px rgba(64, 158, 255, 0.25); */
+.admin__menu :deep(.el-menu-item:hover) {
+  background-color: transparent !important;
+  color: #916ad9ff;
+}
+
+.admin__menu:deep(.el-menu-item.is-active) {
+  /* 括号里的其实是个交集选择器 */
+  color: #916ad9ff;
+  background-color: transparent !important;
+}
+
+.admin__content {
+  width: 80%;
+  height: 100%;
 }
 </style>

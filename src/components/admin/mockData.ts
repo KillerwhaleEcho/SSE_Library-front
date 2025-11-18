@@ -1,8 +1,8 @@
 import { type Document ,type InfoBrief,type User,type Comment} from '@/api/all.ts'
 import { type CommentItem } from '@/api/admin';
 import {type UserRow } from '@/api/admin';
-
-
+import {type message,type chatBox} from'@/api/all'
+import avatarIcon from '@/assets/icon_user.png'
 
 export const MOCK_DOCUMENTS: Document[] = [
     {
@@ -328,4 +328,210 @@ export const DEMO_USERS: UserRow[] = [
     email: "wangwu@example.com",
     status: "active",
   },
+];
+
+
+export const chatBoxFallback: chatBox[] = [
+  {
+    sessionId: 1001,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 2,
+    userAvatar2: avatarIcon,
+    userName2: "李四",
+    lastMessage: "你好，请问这个商品还有货吗？",
+    lastTime: "2024-01-15 14:30:25",
+    unreadCount: 3
+  },
+  {
+    sessionId: 1002,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 3,
+    userAvatar2: avatarIcon,
+    userName2: "王五",
+    lastMessage: "明天下午可以送货",
+    lastTime: "2024-01-15 13:45:12",
+    unreadCount: 0
+  },
+  {
+    sessionId: 1003,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 4,
+    userAvatar2: avatarIcon,
+    userName2: "赵六",
+    lastMessage: "好的，我已经下单了",
+    lastTime: "2024-01-15 12:20:33",
+    unreadCount: 1
+  },
+  {
+    sessionId: 1004,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 5,
+    userAvatar2: avatarIcon,
+    userName2: "钱七",
+    lastMessage: "这个价格还能再优惠吗？",
+    lastTime: "2024-01-15 11:15:47",
+    unreadCount: 0
+  },
+  {
+    sessionId: 1005,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 6,
+    userAvatar2: avatarIcon,
+    userName2: "孙八",
+    lastMessage: "快递已经发出了",
+    lastTime: "2024-01-15 10:05:19",
+    unreadCount: 2
+  },
+  {
+    sessionId: 1006,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+  }
+];
+
+
+export const messageFallback: message[] = [
+  {
+    sessionId: 1001,
+    senderId: 2,
+    sendTime: "2024-01-15 14:30:25",
+    senderName: "李四",
+    senderAvatar: avatarIcon,
+    content: "你好，请问这个商品还有货吗？",
+    status: '已发送'
+  },
+  {
+    sessionId: 1001,
+    senderId: 1,
+    sendTime: "2024-01-15 14:31:10",
+    senderName: "张三",
+    senderAvatar: avatarIcon,
+    content: "有的，目前库存充足",
+    status: '已发送'
+  },
+  {
+    sessionId: 1001,
+    senderId: 2,
+    sendTime: "2024-01-15 14:32:05",
+    senderName: "李四",
+    senderAvatar: avatarIcon,
+    content: "那太好了，我今天能下单吗？",
+    status: '已发送'
+  },
+  {
+    sessionId: 1001,
+    senderId: 1,
+    sendTime: "2024-01-15 14:33:20",
+    senderName: "张三",
+    senderAvatar: avatarIcon,
+    content: "当然可以，我们支持当天发货",
+    status: '已发送'
+  },
+  {
+    sessionId: 1002,
+    senderId: 3,
+    sendTime: "2024-01-15 13:45:12",
+    senderName: "王五",
+    senderAvatar: avatarIcon,
+    content: "明天下午可以送货",
+    status: '已发送'
+  },
+  {
+    sessionId: 1002,
+    senderId: 1,
+    sendTime: "2024-01-15 13:46:30",
+    senderName: "张三",
+    senderAvatar: avatarIcon,
+    content: "好的，具体几点？",
+    status: '已发送'
+  },
+  {
+    sessionId: 1002,
+    senderId: 3,
+    sendTime: "2024-01-15 13:47:15",
+    senderName: "王五",
+    senderAvatar: avatarIcon,
+    content: "下午2-4点之间",
+    status: '未读'
+  },
+  {
+    sessionId: 1003,
+    senderId: 4,
+    sendTime: "2024-01-15 12:20:33",
+    senderName: "赵六",
+    senderAvatar: avatarIcon,
+    content: "好的，我已经下单了",
+    status: '已发送'
+  },
+  {
+    sessionId: 1003,
+    senderId: 1,
+    sendTime: "2024-01-15 12:21:45",
+    senderName: "张三",
+    senderAvatar: avatarIcon,
+    content: "收到，我们会尽快处理",
+    status: '未接收'
+  },
+  {
+    sessionId: 1004,
+    senderId: 5,
+    sendTime: "2024-01-15 11:15:47",
+    senderName: "钱七",
+    senderAvatar: avatarIcon,
+    content: "这个价格还能再优惠吗？",
+    status: '已发送'
+  },
+  {
+    sessionId: 1004,
+    senderId: 1,
+    sendTime: "2024-01-15 11:16:30",
+    senderName: "张三",
+    senderAvatar: avatarIcon,
+    content: "这是最低价了，还包邮哦",
+    status: '已发送'
+  },
+  {
+    sessionId: 1005,
+    senderId: 1,
+    sendTime: "2024-01-15 10:05:19",
+    senderName: "张三",
+    senderAvatar: avatarIcon,
+    content: "快递已经发出了",
+    status: '已发送'
+  },
+  {
+    sessionId: 1005,
+    senderId: 6,
+    sendTime: "2024-01-15 10:06:22",
+    senderName: "孙八",
+    senderAvatar: avatarIcon,
+    content: "太好了，期待收货",
+    status: '未读'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  }
 ];

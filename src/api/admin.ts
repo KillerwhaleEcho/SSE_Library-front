@@ -31,7 +31,7 @@ export type UserRow = {
 export interface CommentItem {
   commentId: number;
   content: string;
-  commenter: User;
+  commenter: UserBrief;
   document: InfoBrief;
   create_at: string;
 }
@@ -44,19 +44,14 @@ export interface CommentItem {
 
 
 //获取管理员信息相关
-export interface AdminDetailResponse {
-  userBrief: UserBrief
-  collectionList?: Document[]
-  historyList?: Document[]
-}
-
 export const getAdminDetail = (
   userId: string
-): Promise<ApiResponse<AdminDetailResponse>> => {
+): Promise<User> => {
   return request({
     url: `/user/${userId}`,
     method: 'get',
   })
+  // 返回的是request实例，这个实例在截拦器里返回的是整个后端响应对象，（通常包含 code、message、data），若要拿到用户详情，还需要 response.data。
 }
 
 

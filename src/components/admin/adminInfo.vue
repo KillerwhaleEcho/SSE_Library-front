@@ -6,6 +6,7 @@
           <figure class="profile-avatar">
             <img :src="avatarUrl" alt="管理员头像" />
           </figure>
+              <!-- div标签只是用来布局和分割页面，但是figue标签一般用来表示包含图像的独立内容块，比如用户头像、文章插图等。使用figure标签可以提高语义化，有助于搜索引擎优化（SEO）和辅助技术的理解。 -->
           <el-upload
             class="avatar-upload"
             action="#"
@@ -15,6 +16,7 @@
             @change="handleAvatarChange"
           >
           <!-- 默认情况下：组件会把选择的文件传给内置的 HTTP 上传逻辑 + handle 函数 ；所以需要禁用自动上传-->
+           <!-- 这个组件内部会维护一个文件列表（因为可能一次选择多个文件），如果是change事件，对于你这里的场景，每次选择文件后，内部文件列表会新增一个文件，然后触发函数；select事件是在用户选择文件后立即触发，但此时文件还没有被添加到组件的内部文件列表中，选择多个文件就会多次触发。 -->
             <el-button size="small" type="primary">上传头像</el-button>
           </el-upload>
           <ul class="profile-summary">
@@ -47,7 +49,7 @@
               </label>
             </div>
             <div class="profile-actions">
-              <el-button class="profile__button" type="primary" @click="handleProfileSave">保存修改</el-button>
+              <el-button  type="primary" @click="handleProfileSave">保存修改</el-button>
             </div>
           </div>
 
@@ -107,12 +109,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { ElMessage } from 'element-plus'
-import type { UploadFile } from 'element-plus'
+import  {type UploadFile ,ElMessage} from 'element-plus'
 import { useAdminStore } from '../../stores/admin'
 import { sendEmailCode } from '../../api/user'
+import emitter from '@/utils/emitter'
 
 const verificationCode = ref('')
 const isCodeSending = ref(false)
@@ -129,8 +131,15 @@ const avatarUploading = ref(false)
 const adminStore = useAdminStore()
 const { adminInfo, loading, error } = storeToRefs(adminStore)
 
-const avatarUrl = computed(
-  () => adminInfo.value?.userAvatar || 'https://placehold.co/120x120?text=Avatar'//fallback中没有给出默认值所以加上了一个默认占位图
+const DEFAULT_AVATAR = 'https://placehold.co/120x120?text=Avatar'
+const avatarUrl = ref(DEFAULT_AVATAR)
+
+watch(
+  () => adminInfo.value?.userAvatar,
+  (newAvatar) => {
+    avatarUrl.value = newAvatar || DEFAULT_AVATAR
+  },
+  { immediate: true },
 )
 
 const profileForm = reactive({//要呈现的管理员信息，不包括头像
@@ -159,7 +168,9 @@ watch(
   },
   { immediate: true },
 )
-//这是一个watch监听器，用于监听adminInfo.value，当值发生变化时就把新值作为参数传入回调函数，并更新profileForm中的各个字段
+//这是一个watch监听器，用于监听adminInfo.value，当值发生变化时就把新值作为参数传入回调函数，并更新profileForm中的各个字段;immediate的作用是在监听器创建的时候马上调用一次
+
+
 
 const handleProfileSave = async () => {
   if (profileSaving.value) return
@@ -237,11 +248,14 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
   }
 
   avatarUploading.value = true
+  const previousAvatar = avatarUrl.value
   try {
     const base64 = await readFileAsDataURL(file)
+    avatarUrl.value = base64
     await adminStore.updateAdminInfo({ userAvatar: base64 })
     ElMessage.success('头像已更新')
   } catch (err: any) {
+    avatarUrl.value = adminInfo.value?.userAvatar || previousAvatar || DEFAULT_AVATAR
     ElMessage.error(err?.message || '头像更新失败，请重试')
   } finally {
     avatarUploading.value = false
@@ -255,7 +269,10 @@ const getVerificationCode= async() => {
   }
 
   try {
-    const response = await sendEmailCode(profileForm.email)
+    const response = await sendEmailCode(
+       profileForm.email,
+      'reset-password',
+    )
     if (response.code === 200) {
       isCodeSending.value = true
       ElMessage.success('验证码已发送，请查收')
@@ -271,9 +288,11 @@ const getVerificationCode= async() => {
       if (countdown.value < 0 && timer.value) {
         clearInterval(timer.value)
         timer.value = null
-        isCodeSending.value = false; // 倒计时结束，重置发送状态
+        isCodeSending.value = false; 
       }
-    },1000)
+    }, 1000)
+    // setInterval 是 JavaScript 中用于定期重复执行某个函数的方法，它返回一个定时器ID，这个ID可以用于清除定时器（使用 clearInterval）。
+// setInterval是同步调用的， 但是，setInterval的回调函数是异步执行的，它会在每个间隔时间（这里是1000毫秒）后执行
 
   } catch(error) {
     ElMessage.error('验证码发送失败，请稍后重试')
@@ -281,8 +300,12 @@ const getVerificationCode= async() => {
   }
 }
 
+const sendAdminInfo = () => {
+  emitter.emit('sendAdminInfo',adminInfo.value)
+}
+
 onMounted(() => {
-  adminStore.fetchAdminInfo().catch((err) => {
+  adminStore.fetchAdminInfo().catch((err:any) => {
     console.error('加载管理员信息失败', err)
     //永远不会触发，因为fetchAminInfo至少会返回fallback数据
   })
@@ -300,7 +323,6 @@ onMounted(() => {
   border: none;
   overflow: hidden;
   background: #fff;
-  /* box-shadow: 0 18px 36px rgba(91, 36, 127, 0.16); */
 }
 
 .profile-layout {
@@ -310,7 +332,7 @@ onMounted(() => {
 }
 
 .profile-sidebar {
-  width: 240px;
+  width: 15%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -425,7 +447,7 @@ onMounted(() => {
   border-radius: 5px;
 }
 
-.profile-field :deep(.el-input__wrapper:focus),
+
 .profile-field :deep(.is-focus .el-input__wrapper) {
   border-color: #b994fe;
   box-shadow: 0 0 0 2px rgba(185, 148, 254, 0.18);
@@ -448,6 +470,10 @@ onMounted(() => {
   border: none;
   transition: all 0.3s ease;
 }
+/* transition 是CSS3的一个属性，用于设置元素的过渡效果。
+all 表示该过渡效果应用于元素的所有可过渡属性。也就是说，只要任何CSS属性值发生变化，并且这个属性是可以有过渡效果的，那么就会以过渡的方式变化。
+0.3s 表示过渡的持续时间是0.3秒。
+ease 是过渡的时间函数，表示过渡效果的速度曲线。ease 是默认值，它表示过渡效果以慢速开始，然后变快，然后慢速结束。 */
 
 .profile-actions :deep(.el-button:hover) {
   transform: translateY(-2px);

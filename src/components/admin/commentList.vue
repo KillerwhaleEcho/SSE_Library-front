@@ -9,6 +9,7 @@
             class="comment-card__search-select"
             clearable
             @clear="resetSearch"
+            size="large"
           >
             <el-option label="姓名" value="name" />
             <el-option label="评论内容" value="content" />
@@ -21,6 +22,7 @@
             clearable
             @clear="resetSearch"
             @keyup.enter="handleSearch"
+            size="large"
           >
             <template #append>
               <el-button type="primary" @click="handleSearch">
@@ -130,7 +132,7 @@ const TEXT = {
 
 const loading = ref(false)
 const comments = ref<CommentItem[]>(createMockComments())
-const searchKey = ref<'name' | 'content' | 'time' | ''>('name')
+const searchKey = ref<'name' | 'content' | 'time' | ''>('')
 const searchInput = ref('')
 const appliedKeyword = ref('')
 
@@ -155,6 +157,7 @@ const displayedComments = computed(() => {
     name: (item) => (item.commenter?.username ?? '').toLowerCase().includes(keyword),
     content: (item) => item.content.toLowerCase().includes(keyword),
     time: (item) => formatDateTime(item.create_at).toLowerCase().includes(keyword),
+    //默认匹配类型 如果key=‘’就是下面这种情况
     '': (item) =>
       (item.commenter?.username ?? '').toLowerCase().includes(keyword) ||
       item.content.toLowerCase().includes(keyword) ||
@@ -205,6 +208,7 @@ const handleDelete = async (comment: CommentItem) => {
     await deleteAdminComment(documentId)
 
     comments.value = comments.value.filter((item) => item.commentId !== comment.commentId)
+    // filter会收集结果为true的item；或者直接fetch一次新数据
     ElMessage.success(TEXT.deleteSuccess)
   } catch (error) {
     if (error === 'cancel') {
@@ -243,6 +247,7 @@ onMounted(fetchComments)
   padding: 0;
   display: flex;
   flex-direction: column;
+  align-content:center;
 }
 
 .comment-card {
@@ -250,7 +255,7 @@ onMounted(fetchComments)
   background: #fff;
   display: flex;
   flex-direction: column;
-  flex: 1;
+  width: 100%;
   min-height: 0;
 }
 
@@ -285,12 +290,11 @@ onMounted(fetchComments)
 }
 
 .comment-card__search-select {
-  width: 140px;
+  width: 150px;
 }
 
 .comment-card__search-input {
-  flex: 1;
-  min-width: 200px;
+  width:50%;
 }
 
 .comment-card__refresh {

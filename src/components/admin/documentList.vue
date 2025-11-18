@@ -2,7 +2,6 @@
   <div class="document-list">
     <el-card class="document-card">
       <div class="document-card__header">
-        <div class="documnet-card__search">
           <el-input
             placeholder="请按照书名或者作者搜索"
             clearable
@@ -10,14 +9,14 @@
             class="document-card__search-input"
             @keyup.enter="handleSearch"
             @clear="handleClear"
+            size="large"
           >
             <template #append>
-              <el-button typr="primary" size="small" @click="handleSearch"
+              <el-button typr="primary" @click="handleSearch"
                 >搜索</el-button
               >
             </template>
           </el-input>
-        </div>
         <div class="document-card__actions">
           <el-button
             class="document-card__filter-btn"
@@ -43,83 +42,84 @@
         </div>
       </div>
 
-      <el-table
-        :data="displayedDocuments"
-        border
-        class="document-table"
-        v-loading="loading"
-        :element-loading-text="TEXT.loading"
-        :empty-text="TEXT.empty"
-      >
-        <el-table-column :label="TEXT.cover" width="120">
-          <template #default="{ row }">
-            <el-image
-              class="document-table__cover"
-              :src="row.cover"
-              :preview-src-list="row.cover ? [row.cover] : []"
-              fit="cover"
-            >
-              <template #error>
-                <div class="document-table__cover--fallback">
-                  {{ TEXT.noCover }}
-                </div>
-              </template>
-            </el-image>
-          </template>
-        </el-table-column>
+      <div class="document-card__table">
+        <el-table
+          :data="displayedDocuments"
+          border
+          class="document-table"
+          v-loading="loading"
+          :element-loading-text="TEXT.loading"
+          :empty-text="TEXT.empty"
+        >
+          <el-table-column :label="TEXT.cover" width="120" align="center">
+            <template #default="{ row }">
+              <el-image
+                class="document-table__cover"
+                :src="row.cover"
+                :preview-src-list="row.cover ? [row.cover] : []"
+                fit="cover"
+              >
+                <template #error>
+                  <div class="document-table__cover--fallback">
+                    {{ TEXT.noCover }}
+                  </div>
+                </template>
+              </el-image>
+            </template>
+          </el-table-column>
+          <el-table-column :label="TEXT.name" min-width="180" align="center">
+            <template #default="{ row }">
+              <el-link
+                type="primary"
+                :underline="false"
+                @click.prevent="handleGoDetail(row)"
+              >
+                {{ row.infoBrief?.name || TEXT.unknown }}
+              </el-link>
+            </template>
+          </el-table-column>
+          <el-table-column label="作者" min-width="180" align="center">
+            <template #default="{ row }">
+              {{ row.author || "未知作者" }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="TEXT.uploadTime" width="150" align="center">
+            <template #default="{ row }">
+              {{ row.infoBrief?.uploadTime || TEXT.unknown }}
+            </template>
+          </el-table-column>
 
-        <el-table-column :label="TEXT.name" min-width="180">
-          <template #default="{ row }">
-            <el-link
-              type="primary"
-              :underline="false"
-              @click.prevent="handleGoDetail(row)"
-            >
-              {{ row.infoBrief?.name || TEXT.unknown }}
-            </el-link>
-          </template>
-        </el-table-column>
-        <el-table-column label="作者" min-windth="180">
-          <template #default="{ row }">
-            {{ row.author || "未知作者" }}
-          </template>
-        </el-table-column>
-        <el-table-column :label="TEXT.uploadTime" width="150">
-          <template #default="{ row }">
-            {{ row.infoBrief?.uploadTime || TEXT.unknown }}
-          </template>
-        </el-table-column>
+          <el-table-column :label="TEXT.status" width="160" align="center">
+            <template #default="{ row }">
+              <el-select
+                v-model="row.infoBrief.status"
+                size="small"
+                @change="(value:any) => handleStatusChange(row, value)"
+              >
+                <el-option
+                  v-for="option in STATUS_OPTIONS"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"
+                />
+              </el-select>
+            </template>
+          </el-table-column>
 
-        <el-table-column :label="TEXT.status" width="160">
-          <template #default="{ row }">
-            <el-select
-              v-model="row.infoBrief.status"
-              size="small"
-              @change="(value:any) => handleStatusChange(row, value)"
-            >
-              <el-option
-                v-for="option in STATUS_OPTIONS"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </el-select>
-          </template>
-        </el-table-column>
-
-        <el-table-column :label="TEXT.action" width="100" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              type="primary"
-              link
-              size="small"
-              @click="openEditDialog(row)"
-            >
-              {{ TEXT.edit }}
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+          <el-table-column :label="TEXT.action" width="120" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                type="primary"
+                link
+                size="small"
+                @click="openEditDialog(row)"
+              >
+                {{ TEXT.edit }}
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </el-card>
     <!-- 修改资料的弹窗 -->
     <el-dialog
@@ -625,7 +625,8 @@ onMounted(fetchDocuments);
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  overflow: auto;
+  scrollbar-width: none;
 }
 
 :deep(.el-card.document-card) {
@@ -640,6 +641,9 @@ onMounted(fetchDocuments);
   background: #fff;
   display: flex;
   flex-direction: column;
+  flex: 1;
+  overflow: auto;
+  scrollbar-width: none;
 }
 
 .document-card :deep(.el-card__body) {
@@ -647,69 +651,77 @@ onMounted(fetchDocuments);
   border: none;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  flex: 1;
+  min-height: 0;
 }
 
 .document-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.documnet-card__search {
-  display: flex;
-}
+
 .document-card__search-input {
-  min-width: 400px;
+ width: 50%;
 }
 
 .document-card__actions {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-left: auto;
 }
 
 .document-card__filter-btn {
-  border: 1px solid rgba(255, 166, 183, 0.45);
+  border: 1px solid rgba(185, 148, 254, 0.45);
   background: #fff;
-  color: #ff6f91;
+  color: #5c3ca8;
   transition: all 0.3s ease;
 }
 
 .document-card__filter-btn:hover,
 .document-card__filter-btn--active {
-  background: rgba(255, 166, 183, 0.18);
+  background: rgba(185, 148, 254, 0.18);
 }
 
 .document-card__refresh-btn {
   border: none;
-  background: linear-gradient(135deg, #ffa6b7 0%, #ff867f 100%);
+  background: linear-gradient(135deg, #b994fe 0%, #8e47bd 100%);
   color: #fff;
   transition: all 0.3s ease;
 }
 
 .document-card__refresh-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(255, 140, 148, 0.35);
+  box-shadow: 0 8px 18px rgba(185, 148, 254, 0.35);
 }
 
-.document-table {
-  width: 100%;
+.document-card__table {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-:deep(.el-table) {
-  --el-table-border-color: rgba(255, 166, 183, 0.25);
+.document-card__table :deep(.el-table) {
+  flex: 1;
   background-color: #fff;
+  border-radius: 0;
 }
 
-:deep(.el-table th) {
-  background-color: rgba(255, 166, 183, 0.18);
-  color: #5b294a;
-  font-weight: 600;
+.document-card__table :deep(.el-table__body-wrapper) {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
+
+
 
 :deep(.el-table tr:hover > td) {
-  background-color: rgba(255, 166, 183, 0.15);
+  background-color: rgba(185, 148, 254, 0.18);
 }
 
 .document-table__cover {
@@ -717,7 +729,10 @@ onMounted(fetchDocuments);
   height: 96px;
   border-radius: 6px;
   overflow: hidden;
-  background: #f5f6fa;
+  background: linear-gradient(135deg, rgba(185, 148, 254, 0.15) 0%, rgba(185, 148, 254, 0.3) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .document-table__cover--fallback {
@@ -727,8 +742,8 @@ onMounted(fetchDocuments);
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  color: #999;
-  background: rgba(0, 0, 0, 0.05);
+  color: #4f377e;
+  background: rgba(185, 148, 254, 0.15);
   border-radius: 6px;
 }
 

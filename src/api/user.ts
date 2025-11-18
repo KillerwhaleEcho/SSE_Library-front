@@ -56,7 +56,7 @@ export const registerAPI = (data: RegisterParams): Promise<ApiResponse<{
 }
 
 
-export const sendEmailCode = (email: string): Promise<{
+export const sendEmailCode = (email: string,usage:string): Promise<{
   code: number;
   message: string;
   data: {
