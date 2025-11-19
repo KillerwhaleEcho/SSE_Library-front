@@ -20,17 +20,6 @@
                                 <div class="cover-wrapper">
                                     <img :src="coverSrc" alt="document cover" @error="handleImgError" />
                                 </div>
-                                <div class="cover-actions">
-                                    <button class="cover-action" :class="{ disabled: !canPreview }"
-                                        :disabled="!canPreview" @click="handlePreview">
-                                        <img :src="previewIcon" alt="预览" class="action-icon" />
-                                        <span>预览</span>
-                                    </button>
-                                    <button class="cover-action" @click="handleDownload">
-                                        <img :src="downloadIcon" alt="下载" class="action-icon" />
-                                        <span>下载</span>
-                                    </button>
-                                </div>
                             </div>
                             <div class="hero-info">
                                 <h1 class="doc-title">{{ brief?.name }}</h1>
@@ -59,20 +48,24 @@
                                         <span class="meta-value">{{ item.value || '暂无' }}</span>
                                     </div>
                                 </div>
-                                <div class="uploader-card" v-if="uploader">
-                                    <el-avatar :src="uploader.userAvatar" :size="48" class="uploader-avatar" />
-                                    <div class="uploader-info">
-                                        <span class="uploader-name">
-                                            上传者：{{ uploader.username }} (ID: {{ uploader.userId }})
-                                        </span>
-                                        <span class="uploader-meta">
-                                            角色：{{ uploader.role }} · 状态：{{ uploader.status }}
-                                        </span>
-                                        <span class="uploader-meta">
-                                            注册时间：{{ formattedDate(uploader.createTime) }} · 邮箱：{{ uploader.email }}
-                                        </span>
-                                    </div>
-                                </div>
+                            </div>
+                        </div>
+                        <div v-if="documentDetail" class="document-actions-card">
+                            <h2 class="section-title"></h2>
+                            <div class="document-actions-row">
+                                <button class="doc-action-button" @click="handleFavorite">
+                                    <img :src="favoriteIcon" alt="收藏" class="action-icon" />
+                                    <span>收藏</span>
+                                </button>
+                                <button class="doc-action-button" :class="{ disabled: !canPreview }"
+                                    :disabled="!canPreview" @click="handlePreview">
+                                    <img :src="previewIcon" alt="预览" class="action-icon" />
+                                    <span>预览</span>
+                                </button>
+                                <button class="doc-action-button" @click="handleDownload">
+                                    <img :src="downloadIcon" alt="下载" class="action-icon" />
+                                    <span>下载</span>
+                                </button>
                             </div>
                         </div>
                         <el-empty v-else description="未找到相关文档" />
@@ -86,7 +79,7 @@
             </section>
 
             <CommentSection :document-id="documentId" :document-brief="brief ?? null" :viewer="commentViewer"
-                :show-editor="true" :show-comment-user="true" :show-reply-button="true" :show-document-name="true" />
+                :show-editor="true" :show-comment-user="true" :show-reply-button="true" :show-document-name="false" />
         </div>
     </div>
 </template>
@@ -106,6 +99,7 @@ import {
     getDocumentDetail,
 } from '@/api/all.ts'
 import previewIcon from '@/assets/147_阅读.png'
+import favoriteIcon from '@/assets/喜欢_like.png'
 import downloadIcon from '@/assets/下载3_download-three.png'
 import { useAuthStore } from '@/stores/auth'
 
@@ -118,7 +112,6 @@ const detailLoading = ref(false)
 const documentDetail = ref<Document | null>(null)
 
 const brief = computed(() => documentDetail.value?.infoBrief ?? null)
-const uploader = computed<UserBrief | null>(() => documentDetail.value?.uploader ?? null)
 const coverSrc = computed(() => documentDetail.value?.cover || defaultCover)
 const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.value?.URL))
 const tags = computed(() => documentDetail.value?.tags ?? [])
@@ -223,6 +216,10 @@ const handleDownload = () => {
     triggerDocumentAction('attachment')
 }
 
+const handleFavorite = () => {
+    ElMessage.info('收藏功能即将上线')
+}
+
 watch(
     () => route.query.id,
     async (rawId) => {
@@ -274,7 +271,7 @@ watch(
 }
 
 .cover-column {
-    width: 280px;
+    width: 300px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -297,17 +294,26 @@ watch(
     border-radius: 16px;
 }
 
-.cover-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
+.document-actions-card {
+    margin-top: 24px;
+    padding: 24px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 }
 
-.cover-action {
-    width: 100%;
-    padding: 12px 16px;
+.document-actions-row {
     display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.doc-action-button {
+    flex: 1;
+    min-width: 160px;
+    padding: 14px 18px;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
@@ -318,22 +324,22 @@ watch(
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.cover-action:hover:not(.disabled) {
+.doc-action-button:hover:not(.disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 18px 32px rgba(15, 23, 42, 0.16);
+    box-shadow: 0 16px 30px rgba(79, 70, 229, 0.18);
 }
 
-.cover-action:active:not(.disabled) {
+.doc-action-button:active:not(.disabled) {
     transform: translateY(0);
-    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.16);
+    box-shadow: 0 8px 16px rgba(79, 70, 229, 0.18);
 }
 
-.cover-action.disabled,
-.cover-action:disabled {
+.doc-action-button.disabled,
+.doc-action-button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
 }
@@ -433,34 +439,10 @@ watch(
     font-weight: 500;
 }
 
-.uploader-card {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.08));
-    border-radius: 16px;
-    padding: 16px;
-}
-
-.uploader-avatar {
-    border: 2px solid #4c51bf;
-}
-
-.uploader-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.uploader-name {
-    font-size: 16px;
-    font-weight: 600;
-    color: #312e81;
-}
-
-.uploader-meta {
-    font-size: 13px;
-    color: #4338ca;
+.document-action-hint {
+    margin: 12px 0 0;
+    color: #64748b;
+    font-size: 14px;
 }
 
 .introduction-card {
