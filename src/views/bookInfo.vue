@@ -54,8 +54,8 @@
                             <h2 class="section-title"></h2>
                             <div class="document-actions-row">
                                 <button class="doc-action-button" @click="handleFavorite">
-                                    <img :src="favoriteIcon" alt="收藏" class="action-icon" />
-                                    <span>收藏</span>
+                                    <img :src="favoriteIconSrc" :alt="favoriteLabel" class="action-icon" />
+                                    <span>{{ favoriteLabel }}</span>
                                 </button>
                                 <button class="doc-action-button" :class="{ disabled: !canPreview }"
                                     :disabled="!canPreview" @click="handlePreview">
@@ -95,11 +95,16 @@ import defaultCover from '@/assets/coverexp.png'
 import {
     type ApiResponse,
     type Document,
+    type InfoBrief,
     type UserBrief,
     getDocumentDetail,
+    getUserCollectionList,
+    postUserAddFavor,
+    deleteUserFavor,
 } from '@/api/all.ts'
 import previewIcon from '@/assets/147_阅读.png'
-import favoriteIcon from '@/assets/喜欢_like.png'
+import likeIcon from '@/assets/喜欢_like.png'
+import unlikeIcon from '@/assets/不喜欢_unlike.png'
 import downloadIcon from '@/assets/下载3_download-three.png'
 import { useAuthStore } from '@/stores/auth'
 
@@ -110,11 +115,27 @@ const { userInfo } = storeToRefs(authStore)
 const documentId = ref<string>('')
 const detailLoading = ref(false)
 const documentDetail = ref<Document | null>(null)
+const userCollections = ref<InfoBrief[]>([])
+const collectionsLoading = ref(false)
+const favoriteProcessing = ref(false)
 
 const brief = computed(() => documentDetail.value?.infoBrief ?? null)
 const coverSrc = computed(() => documentDetail.value?.cover || defaultCover)
 const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.value?.URL))
 const tags = computed(() => documentDetail.value?.tags ?? [])
+
+const normalizeDocumentId = (value?: number | string | null) => {
+    if (value === undefined || value === null) return null
+    return String(value)
+}
+
+const isFavorited = computed(() => {
+    const currentId = normalizeDocumentId(brief.value?.documentId)
+    if (!currentId) return false
+    return userCollections.value.some((item) => normalizeDocumentId(item.documentId) === currentId)
+})
+const favoriteLabel = computed(() => (isFavorited.value ? '取消收藏' : '收藏'))
+const favoriteIconSrc = computed(() => (isFavorited.value ? unlikeIcon : likeIcon))
 
 const typeMap: Record<string, string> = {
     book: '书籍',
@@ -216,8 +237,91 @@ const handleDownload = () => {
     triggerDocumentAction('attachment')
 }
 
-const handleFavorite = () => {
-    ElMessage.info('收藏功能即将上线')
+const handleFavorite = async () => {
+    if (favoriteProcessing.value) return
+    const currentUserId = userInfo.value?.userId
+    const rawDocumentId = brief.value?.documentId
+    if (!currentUserId) {
+        ElMessage.warning('请先登录后再收藏')
+        return
+    }
+    if (rawDocumentId === undefined || rawDocumentId === null) {
+        ElMessage.warning('当前文档信息不完整，无法操作收藏')
+        return
+    }
+    const documentId = Number(rawDocumentId)
+    if (Number.isNaN(documentId)) {
+        ElMessage.warning('文档编号无效，无法操作收藏')
+        return
+    }
+
+    favoriteProcessing.value = true
+    const wasFavorited = isFavorited.value
+    const payload = { userId: currentUserId, documentId }
+
+    try {
+        const response = wasFavorited ? await deleteUserFavor(payload) : await postUserAddFavor(payload)
+        const updatedList = extractCollectionsFromResponse(response)
+        userCollections.value = updatedList
+        ElMessage.success(wasFavorited ? '取消收藏成功' : '收藏成功')
+    } catch (error: any) {
+        ElMessage.error(error?.message || (wasFavorited ? '取消收藏失败' : '收藏失败'))
+    } finally {
+        favoriteProcessing.value = false
+    }
+}
+
+const extractCollectionsFromResponse = (payload: unknown): InfoBrief[] => {
+    if (!payload) return []
+
+    const normalizeEntry = (entry: any): InfoBrief | null => {
+        if (!entry) return null
+        if (entry.infoBrief) return entry.infoBrief as InfoBrief
+        if (typeof entry === 'object' && 'documentId' in entry) {
+            return {
+                documentId: entry.documentId,
+                name: entry.name ?? '',
+                type: entry.type ?? null,
+                uploadTime: entry.uploadTime ?? '',
+                status: entry.status ?? '开放',
+                category: entry.category,
+                collections: entry.collections ?? 0,
+                readCounts: entry.readCounts ?? 0,
+                URL: entry.URL ?? '',
+            } as InfoBrief
+        }
+        return null
+    }
+
+    let rawList: any[] = []
+    if (Array.isArray(payload)) {
+        rawList = payload
+    } else if (typeof payload === 'object' && Array.isArray((payload as any).data)) {
+        rawList = (payload as any).data
+    }
+
+    return rawList
+        .map((item) => normalizeEntry(item))
+        .filter((item): item is InfoBrief => Boolean(item))
+}
+
+const loadUserCollections = async () => {
+    const currentUserId = userInfo.value?.userId
+    if (!currentUserId) {
+        userCollections.value = []
+        return
+    }
+    collectionsLoading.value = true
+    try {
+        const response = await getUserCollectionList(currentUserId)
+        const collectionList = extractCollectionsFromResponse(response)
+        userCollections.value = collectionList
+    } catch (error: any) {
+        userCollections.value = []
+        ElMessage.error(error?.message || '获取收藏列表失败')
+    } finally {
+        collectionsLoading.value = false
+    }
 }
 
 watch(
@@ -234,6 +338,15 @@ watch(
     },
     { immediate: true },
 )
+
+watch(
+    () => userInfo.value?.userId,
+    async () => {
+        await loadUserCollections()
+    },
+    { immediate: true },
+)
+
 </script>
 
 <style scoped>
@@ -324,13 +437,13 @@ watch(
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+    box-shadow: 0 0px 0px rgba(15, 23, 42, 0.1);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .doc-action-button:hover:not(.disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 16px 30px rgba(79, 70, 229, 0.18);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
 }
 
 .doc-action-button:active:not(.disabled) {
