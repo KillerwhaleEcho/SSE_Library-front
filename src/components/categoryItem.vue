@@ -3,12 +3,12 @@
     <span class="category-name">{{ category.name }}</span>
     <hr />
     <div class="category-stats">
-      <div class="category-count">
-        <img src="@/assets/147_阅读.png" alt="File Icon" style="width:25px; height:25px; margin-right:4px;" />
+      <div class="category-count" data-tooltip="文件量">
+        <img src="@/assets/147_阅读.png" alt="File Icon" data-tooltip="文件量" style="width:25px; height:25px; margin-right:4px;" />
         {{ category.fileCounts }}
       </div>
-      <div class="category-count">
-        <img src="@/assets/Fire (火热).png" alt="Collection Icon" style="width:20px; height:20px; margin-right:4px;" />
+      <div class="category-count" data-tooltip="浏览量">
+        <img src="@/assets/Fire (火热).png" alt="Collection Icon" data-tooltip="浏览量" style="width:20px; height:20px; margin-right:4px;" />
         {{ category.readCounts }}
       </div>
     </div>

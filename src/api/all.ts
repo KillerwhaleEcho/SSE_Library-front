@@ -117,6 +117,29 @@ export interface chatBox {
   unreadCount: number
 }
 
+export interface Post {
+  postId: number;
+  senderId: number;
+  senderName: string;
+  senderAvatar: string;
+  title: string;
+  content: string;
+  readCount: number;
+  commentCount: number;
+  likeCount: number;
+  sendTime: string;
+  documentId?: number;
+  cover?: string;
+}
+
+export interface Reminder {
+  reminderId: number;
+  type: "评论" | "点赞" | "收藏" | "系统消息" | "聊天";
+  content: string;
+  sendTime: string;
+  ifRead: boolean;
+}
+
 
 // 3.1 获取分类和课程
 export const getCategoriesAndCourses = (is_suggest?: boolean) => {
@@ -189,6 +212,27 @@ export const searchBooksOrFiles = (
 export const searchCategoriesAndCourses = (keyword: string, params?: { page?: number; pageSize?: number }) => {
   return service.get<ApiResponse<{ categories: Category[]; courses: any[]; total: number }>>('/categoriesAndCourses/search', {
     params: { keyword, ...params },
+  });
+};
+
+// 11. 获取帖子列表
+export const getPosts = ( key:string, order: "time"| "hot" ) => {
+  return service.get<ApiResponse<{ posts: Post[] }>>('/getPosts', {
+    params: { key, order },
+  });
+};
+
+// 12. 获取提醒列表
+export const getReminders = ( userId: number ) => {
+  return service.get<ApiResponse<{ reminders: Reminder[] }>>('/getReminder', {
+    params: { userId },
+  });
+};
+
+// 13. 标记提醒为已读
+export const markReminderAsRead = ( reminderId: number ) => {
+  return service.post<ApiResponse<null>>('/markReminderRead', {
+    reminderId,
   });
 };
 

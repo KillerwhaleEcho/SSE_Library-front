@@ -1,4 +1,5 @@
 ﻿<template>
+  <topbar class="topbar"></topbar>
   <div class="chat-view">
     <aside class="chat-list">
       <div class="notice" @click="handleNoticeSelect">
@@ -84,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import topbar from '@/layout/topbar.vue'
 import { ref, onMounted, computed, watch, nextTick } from "vue";
 import {
   sendMessageInterface,
