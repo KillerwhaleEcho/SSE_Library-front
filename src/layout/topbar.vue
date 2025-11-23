@@ -47,25 +47,26 @@
         </template>
       </el-popover>
 
-      <UploadModal 
-        :showUploadModal="showUploadModal"
-        :all-categories="allCategories"
-        :selected-upload-category-name="selectedUploadCategoryName"
-        @select-category="showCategoryDialog = true"
-        @submit="handleUploadSubmit"
-      />
-
-      <!-- 分类弹窗（如果需要） -->
-      <CategoryDialog 
-        :showCategoryDialog="showCategoryDialog"
-        :all-categories="allCategories"
-        @category-selected="onCategorySelected"
-      />
-
       <router-link to="/user" class="icon-container" data-tooltip="个人主页">
         <img src="@/assets/147_联系人.png" alt="个人主页">
       </router-link>
     </div>
+
+    <!-- 上传文件弹窗组件 -->
+     <UploadModal 
+      :showUploadModal="showUploadModal"
+      :all-categories="allCategories"
+      :selected-upload-category-name="selectedUploadCategoryName"
+      @select-category="showCategoryDialog = true"
+      @submit="handleUploadSubmit"
+    />
+
+    <!-- 分类弹窗（如果需要） -->
+    <CategoryDialog 
+      :showCategoryDialog="showCategoryDialog"
+      :all-categories="allCategories"
+      @category-selected="onCategorySelected"
+    />
   </header>
 </template>
 
@@ -77,19 +78,6 @@ import { ref, computed, onMounted } from 'vue';
 import * as allApi from '@/api/all.ts'
 import UploadModal from '@/components/UploadModal.vue'
 import CategoryDialog from '@/components/CategoryDialog.vue'
-
-//  props
-const props = defineProps<{
-  showUploadModal: boolean
-  showCategoryDialog:boolean
-}>()
-
-const emit = defineEmits<{
-  (e: 'update:showCategoryDialog', value: boolean): void
-  (e: 'update:showUploadModal', value: boolean): void
-  (e: 'category-selected', category: any): void
-  (e: 'reset-category'): void
-}>()
 
 const handleUploadClick = () => {
   showUploadModal.value = true;

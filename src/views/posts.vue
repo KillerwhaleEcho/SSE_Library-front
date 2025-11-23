@@ -36,12 +36,14 @@ import BookItem from '@/components/bookItem.vue';
 import PostItem from '@/components/postItem.vue';
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router'
-import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
+import * as allApi from '@/api/all.ts'
 
 const router = useRouter()
 const posts = ref<allApi.Post[]>([])
 const searchKey = ref<string>('');
 const sortOrder = ref<"time" | "hot">("time");
+const showCategoryDialog = ref(false)
+const showUploadModal = ref(false)
 
 const getPosts = async () => {
   try {

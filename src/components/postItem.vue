@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
+import * as allApi from '@/api/all.ts'
 
 import defaultCover from '@/assets/coverexp.png'; // 引入默认封面图
 

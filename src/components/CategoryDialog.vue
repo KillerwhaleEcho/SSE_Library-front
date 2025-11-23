@@ -163,6 +163,8 @@ const emit = defineEmits<{
   (e: 'reset-category'): void
 }>()
 
+const searchCatKeyword = ref('')
+
 const handleCategorySelect = (category: any) => {
   emit('category-selected', category)
   emit('update:showCategoryDialog', false)
@@ -172,6 +174,11 @@ const resetCategory = () => {
   emit('reset-category')
   emit('update:showCategoryDialog', false)
 }
+
+const handleCatSearch = () => {
+  // 可以在这里实现搜索逻辑
+  console.log('搜索分类关键词：', searchCatKeyword.value);
+};
 
 // 表单引用
 const categoryFormRef = ref();

@@ -1,9 +1,6 @@
 <template>
   <div class="home-container">
-    <topbar class="topbar"
-    :show-upload-modal="showUploadModal"
-    :show-category-dialog="showCategoryDialog"
-    ></topbar>
+    <topbar class="topbar"></topbar>
 
     <!-- 搜索表单 -->
     <div class="searchForm">
@@ -143,7 +140,6 @@ const selectedCategoryId = ref<number | null>(null)
 const selectedUploadCategoryName = ref<string | null>(null)
 const selectedDocument = ref<allApi.Document | null>(null)
 const searchKeyword = ref('')
-const searchCatKeyword = ref('')
 const showCategoryDialog = ref(false)
 const showUploadModal = ref(false)
 

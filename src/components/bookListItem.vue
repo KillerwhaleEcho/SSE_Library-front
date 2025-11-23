@@ -54,7 +54,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import defaultCover from '@/assets/coverexp.png'; // 引入默认封面图
-import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
+import * as allApi from '@/api/all.ts'
 
 // 接收父组件传入的图书数据
 const props = defineProps<{

@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
+import * as allApi from '@/api/all.ts'
 
 // 接收父组件传入的单个分类数据
 const props = defineProps<{
