@@ -1,6 +1,7 @@
+<!-- UploadModal.vue -->
 <template>
   <el-dialog 
-    :visible="showUploadModal" 
+    v-model="visible" 
     title="上传文件" 
     width="600px"
     class="upload-dialog"
@@ -43,7 +44,9 @@
 
         <!-- 上传后显示文件名和图片预览 -->
         <div v-if="uploadForm.cover" class="cover-preview">
+          <!-- 文件名 -->
           <div class="uploaded-file">{{ uploadForm.cover.name }}</div>
+          <!-- 图片预览（使用 FileReader 读取本地文件） -->
           <img 
             :src="coverPreviewUrl" 
             alt="封面预览" 
@@ -54,7 +57,9 @@
 
       <!-- 分类 -->
       <el-form-item label="分类" prop="category">
-        <button class="category-select-btn" @click="onSelectCategory">{{ selectedUploadCategoryName || 'category' }}</button>
+        <button type="button" class="category-select-btn" @click="$emit('open-category-dialog')">
+          {{ selectedCategoryName || 'category' }}
+        </button>
       </el-form-item>
 
       <!-- 资料类型 -->
@@ -88,7 +93,7 @@
         </el-tag>
         <el-input
           v-model="inputTag"
-          @keyup.enter.native="addTag"
+          @keyup.enter="addTag"
           placeholder="输入关键词，按回车添加"
           style="width: 200px; margin-top: 5px;"
         />
@@ -104,7 +109,7 @@
         <el-input v-model.number="uploadForm.uploaderId" type="number" />
       </el-form-item>
 
-      <!-- 上传时间 -->
+      <!-- 上传时间（自动生成，可隐藏） -->
       <el-form-item label="上传时间" prop="uploadTime">
         <el-date-picker
           v-model="uploadForm.uploadTime"
@@ -129,7 +134,7 @@
     </el-form>
 
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleCancel">取消</el-button>
       <el-button type="primary" @click="submitUpload">提交上传</el-button>
     </template>
   </el-dialog>
@@ -137,21 +142,21 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import type { UploadFile, ElForm } from 'element-plus'
-import { ElMessage } from 'element-plus'
+import type { ElMessage, UploadFile } from 'element-plus'
 
-//  props
-const props = defineProps<{
-  showUploadModal: boolean
-  allCategories: any[]
-  selectedUploadCategoryName?: string | null
-}>()
+// Props
+interface Props {
+  visible: boolean
+  selectedCategoryName?: string
+}
 
-//  emits
+const props = defineProps<Props>()
+
+// Emits
 const emit = defineEmits<{
-  (e: 'update:showUploadModal', value: boolean): void
-  (e: 'select-category'): void
-  (e: 'submit', formData: FormData): void
+  'update:visible': [value: boolean]
+  'open-category-dialog': []
+  'upload-success': []
 }>()
 
 // 表单数据
@@ -171,22 +176,19 @@ const uploadForm = reactive({
   videoURL: ''
 })
 
-// 关键词输入框临时变量
+// 响应式数据
 const inputTag = ref('')
 const coverPreviewUrl = ref('')
-// 表单引用
-const uploadFormRef = ref<InstanceType<typeof ElForm> | null>(null)
+const uploadFormRef = ref()
 
-// 文件上传变更事件（文件）
+// 方法
 const handleFileChange = (uploadFile: UploadFile) => {
   uploadForm.file = uploadFile.raw
 }
 
-// 封面上传变更事件
 const handleCoverChange = (uploadFile: UploadFile) => {
   uploadForm.cover = uploadFile.raw
-  // 生成预览图（仅针对图片文件）
-  if (uploadFile.raw?.type.startsWith('image/')) {
+  if (uploadFile.raw.type.startsWith('image/')) {
     const reader = new FileReader()
     reader.onload = (e) => {
       coverPreviewUrl.value = e.target?.result as string
@@ -195,7 +197,6 @@ const handleCoverChange = (uploadFile: UploadFile) => {
   }
 }
 
-// 添加关键词
 const addTag = () => {
   if (inputTag.value.trim()) {
     uploadForm.tags.push(inputTag.value.trim())
@@ -203,39 +204,31 @@ const addTag = () => {
   }
 }
 
-// 提交上传
 const submitUpload = () => {
-  uploadFormRef.value?.validate((valid) => {
+  uploadFormRef.value.validate((valid: boolean) => {
     if (valid) {
-      // 构造 FormData 用于文件上传
       const formData = new FormData()
       for (const key in uploadForm) {
-        const value = uploadForm[key as keyof typeof uploadForm]
         if (key === 'file' || key === 'cover') {
-          if (value) {
-            formData.append(key, value)
+          if (uploadForm[key]) {
+            formData.append(key, uploadForm[key])
           }
         } else if (key === 'tags') {
-          formData.append(key, (value as string[]).join(','))
+          formData.append(key, uploadForm[key].join(','))
         } else {
-          formData.append(key, value as string | Blob)
+          formData.append(key, uploadForm[key])
         }
       }
 
-      emit('submit', formData)
+      console.log('提交的表单数据：', formData)
       ElMessage.success('模拟上传成功（实际需对接接口）')
-      handleClose()
+      emit('update:visible', false)
       resetForm()
+      emit('upload-success')
     }
   })
 }
 
-// 关闭弹窗
-const handleClose = () => {
-  emit('update:showUploadModal', false)
-}
-
-// 重置表单
 const resetForm = () => {
   uploadFormRef.value?.resetFields()
   uploadForm.file = null
@@ -246,9 +239,9 @@ const resetForm = () => {
   coverPreviewUrl.value = ''
 }
 
-// 选择分类
-const onSelectCategory = () => {
-  emit('select-category')
+const handleCancel = () => {
+  emit('update:visible', false)
+  resetForm()
 }
 </script>
 
