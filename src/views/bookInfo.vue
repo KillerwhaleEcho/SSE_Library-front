@@ -57,10 +57,10 @@
                                     <img :src="favoriteIconSrc" :alt="favoriteLabel" class="action-icon" />
                                     <span>{{ favoriteLabel }}</span>
                                 </button>
-                                <button class="doc-action-button" :class="{ disabled: !canPreview }"
-                                    :disabled="!canPreview" @click="handlePreview">
+                                <button class="doc-action-button" :class="{ disabled: !canPreview || previewLoading }"
+                                    :disabled="!canPreview || previewLoading" @click="handlePreview">
                                     <img :src="previewIcon" alt="预览" class="action-icon" />
-                                    <span>预览</span>
+                                    <span>{{ previewButtonText }}</span>
                                 </button>
                                 <button class="doc-action-button" @click="handleDownload">
                                     <img :src="downloadIcon" alt="下载" class="action-icon" />
@@ -118,11 +118,13 @@ const documentDetail = ref<Document | null>(null)
 const userCollections = ref<InfoBrief[]>([])
 const collectionsLoading = ref(false)
 const favoriteProcessing = ref(false)
+const previewLoading = ref(false)
 
 const brief = computed(() => documentDetail.value?.infoBrief ?? null)
 const coverSrc = computed(() => documentDetail.value?.cover || defaultCover)
 const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.value?.URL))
 const tags = computed(() => documentDetail.value?.tags ?? [])
+const previewButtonText = computed(() => (previewLoading.value ? '加载中...' : '预览'))
 
 const normalizeDocumentId = (value?: number | string | null) => {
     if (value === undefined || value === null) return null
@@ -225,12 +227,59 @@ const triggerDocumentAction = (disposition: 'inline' | 'attachment') => {
     window.open(targetUrl, '_blank', 'noopener')
 }
 
-const handlePreview = () => {
+const PREVIEW_URL_RELEASE_DELAY_MS = 60 * 1000
+
+const fetchPdfBlob = async (targetUrl: string) => {
+    const response = await fetch(targetUrl, {
+        method: 'GET',
+        cache: 'no-store',
+        redirect: 'follow',
+    })
+    if (!response.ok) {
+        throw new Error('加载预览内容失败，请稍后重试')
+    }
+    const arrayBuffer = await response.arrayBuffer()
+    return new Blob([arrayBuffer], { type: 'application/pdf' })
+}
+
+const handlePreview = async () => {
     if (!canPreview.value) {
         ElMessage.info('该资料暂不支持在线预览')
         return
     }
-    triggerDocumentAction('inline')
+    const sourceUrl = brief.value?.URL
+    if (!sourceUrl) {
+        ElMessage.warning('暂无可用的预览链接')
+        return
+    }
+
+    if (previewLoading.value) return
+
+    previewLoading.value = true
+    let blobUrl: string | null = null
+    try {
+        const pdfBlob = await fetchPdfBlob(sourceUrl)
+        blobUrl = URL.createObjectURL(pdfBlob)
+        const previewWindow = window.open(blobUrl, '_blank', 'noopener')
+        if (!previewWindow) {
+            URL.revokeObjectURL(blobUrl)
+            blobUrl = null
+            ElMessage.error('浏览器阻止了新标签页，请允许弹出窗口后重试')
+            return
+        }
+        window.setTimeout(() => {
+            if (blobUrl) {
+                URL.revokeObjectURL(blobUrl)
+            }
+        }, PREVIEW_URL_RELEASE_DELAY_MS)
+    } catch (error: any) {
+        if (blobUrl) {
+            URL.revokeObjectURL(blobUrl)
+        }
+        ElMessage.error(error?.message || '加载预览失败')
+    } finally {
+        previewLoading.value = false
+    }
 }
 
 const handleDownload = () => {
