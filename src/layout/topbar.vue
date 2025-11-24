@@ -51,22 +51,6 @@
         <img src="@/assets/147_联系人.png" alt="个人主页">
       </router-link>
     </div>
-
-    <!-- 上传文件弹窗组件 -->
-     <UploadModal 
-      :showUploadModal="showUploadModal"
-      :all-categories="allCategories"
-      :selected-upload-category-name="selectedUploadCategoryName"
-      @select-category="showCategoryDialog = true"
-      @submit="handleUploadSubmit"
-    />
-
-    <!-- 分类弹窗（如果需要） -->
-    <CategoryDialog 
-      :showCategoryDialog="showCategoryDialog"
-      :all-categories="allCategories"
-      @category-selected="onCategorySelected"
-    />
   </header>
 </template>
 
@@ -76,20 +60,16 @@ import ReminderBox from '@/components/reminderBox.vue';
 import 'element-plus/dist/index.css';
 import { ref, computed, onMounted, watch } from 'vue';
 import * as allApi from '@/api/all.ts'
-import UploadModal from '@/components/UploadModal.vue'
-import CategoryDialog from '@/components/CategoryDialog.vue'
 
 const handlePostClick = () => {
 };
 
 const userId = Number(localStorage.getItem('userId') || '0'); 
 const reminders = ref<allApi.Reminder[]>([]);
-const showUploadModal = ref(false)
 const showCategoryDialog = ref(false)
 const allCategories = ref<any[]>([])
 const selectedCategoryName = ref<string | null>(null)
 const selectedCategoryId = ref<number | null>(null)
-const selectedUploadCategoryName = ref<string | null>(null)
 
 // 定义事件发射器，用于向父组件发送事件
 const emit = defineEmits(['open-upload-modal']);
@@ -132,36 +112,8 @@ const fetchReminders = async () => {
   }
 };
 
-// 获取所有分类
-const getAllCategories = async () => {
-  try {
-    const response = await allApi.getAllCategories()
-    allCategories.value = response.data || []
-  } catch (error) {
-    console.error('获取分类失败:', error)
-  }
-}
-
-// 处理分类选择
-const onCategorySelected = (category: any) => {
-  selectedCategoryName.value = category.name
-  selectedCategoryId.value = category.id
-  showCategoryDialog.value = false
-
-  emit('update:category', selectedCategoryName.value, selectedCategoryId.value);
-}
-
-// 处理上传提交
-const handleUploadSubmit = (formData: FormData) => {
-  // 实际上传逻辑
-  console.log('提交上传数据:', formData)
-  // 调用上传接口示例:
-  // await allApi.uploadFile(formData)
-}
-
 onMounted(() => {
   fetchReminders();
-  getAllCategories();
 })
 </script>
 

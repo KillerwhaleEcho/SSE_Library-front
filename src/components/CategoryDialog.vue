@@ -1,6 +1,13 @@
 <!-- CategoryDialog.vue -->
 <template>
-  <el-dialog v-model="visible" title="选择分类" :modal="false" append-to-body :z-index="2000">
+  <el-dialog 
+    :model-value="visible" 
+    @update:model-value="$emit('update:visible', $event)"
+    title="选择分类" 
+    :modal="false" 
+    append-to-body 
+    :z-index="2000"
+  >
     <div class="search-cat">
       <el-input 
         v-model="searchCatKeyword" 
@@ -144,11 +151,11 @@ import { ref, reactive } from 'vue'
 import ParentCategoryItem from '@/components/parentCategoryItem.vue'
 import type { ElMessage } from 'element-plus'
 
-// Props
+// Props - 修复类型定义
 interface Props {
   visible: boolean
   allCategories: any[]
-  selectedCategoryName?: string
+  selectedCategoryName?: string | null  // 修改为 string | null
 }
 
 const props = defineProps<Props>()

@@ -1,7 +1,8 @@
 <!-- UploadModal.vue -->
 <template>
   <el-dialog 
-    v-model="visible" 
+    :model-value="visible" 
+    @update:model-value="$emit('update:visible', $event)"
     title="上传文件" 
     width="600px"
     class="upload-dialog"
@@ -144,10 +145,10 @@
 import { ref, reactive } from 'vue'
 import type { ElMessage, UploadFile } from 'element-plus'
 
-// Props
+// Props - 修复类型定义
 interface Props {
   visible: boolean
-  selectedCategoryName?: string
+  selectedCategoryName?: string | null  // 修改为 string | null
 }
 
 const props = defineProps<Props>()
@@ -205,7 +206,7 @@ const addTag = () => {
 }
 
 const submitUpload = () => {
-  uploadFormRef.value.validate((valid: boolean) => {
+  uploadFormRef.value?.validate((valid: boolean) => {
     if (valid) {
       const formData = new FormData()
       for (const key in uploadForm) {

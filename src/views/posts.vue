@@ -1,6 +1,6 @@
 <template>
   <div class="posts-page">
-    <topbar class="topbar"></topbar>
+    <topbar class="topbar" @open-upload-modal="showUploadModal = true"></topbar>
 
     <div class="posts-container">
       <!-- 搜索和排序区域 -->
@@ -27,50 +27,126 @@
         />
       </div>
     </div>
+
+    <!-- 使用分离的组件 -->
+    <CategoryDialog 
+      v-model:visible="showCategoryDialog"
+      :all-categories="allCategories"
+      :selected-category-name="selectedCategoryName"
+      @category-selected="onCategorySelected"
+      @reset-category="resetCategory"
+    />
+
+    <UploadModal 
+      v-model:visible="showUploadModal"
+      :selected-category-name="selectedUploadCategoryName"
+      @open-category-dialog="showCategoryDialog = true"
+      @upload-success="handleUploadSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import topbar from '@/layout/topbar.vue'
-import BookItem from '@/components/bookItem.vue';
-import PostItem from '@/components/postItem.vue';
-import { onMounted, ref } from 'vue';
+import PostItem from '@/components/postItem.vue'
+import CategoryDialog from '@/components/CategoryDialog.vue'
+import UploadModal from '@/components/UploadModal.vue'
+import { onMounted, ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import * as allApi from '@/api/all.ts'
 
 const router = useRouter()
+
+// 帖子相关数据
 const posts = ref<allApi.Post[]>([])
-const searchKey = ref<string>('');
-const sortOrder = ref<"time" | "hot">("time");
+const searchKey = ref<string>('')
+const sortOrder = ref<"time" | "hot">("time")
+
+// 弹窗控制
 const showCategoryDialog = ref(false)
 const showUploadModal = ref(false)
 
+// 分类相关数据
+const allCategories = ref<allApi.Category[]>([])
+const selectedCategoryName = ref<string | null>(null)
+const selectedCategoryId = ref<number | null>(null)
+const selectedUploadCategoryName = ref<string | null>(null)
+
+// 获取帖子列表
 const getPosts = async () => {
   try {
-
-    const response = await allApi.getPosts(searchKey.value, sortOrder.value);
+    const response = await allApi.getPosts(searchKey.value, sortOrder.value)
     if (response.data) {
-      posts.value = response.data; 
+      posts.value = response.data 
     } else {
-      posts.value = [];
-      console.warn('获取热门资料数据格式不正确');
+      posts.value = []
+      console.warn('获取帖子数据格式不正确')
     }
-    return posts.value;
+    return posts.value
   } catch (error) {
-    console.error('获取热门资料失败:', error);
-    posts.value = [];
-    throw error;
+    console.error('获取帖子失败:', error)
+    posts.value = []
+    throw error
   }
-};
+}
 
+// 帖子点击事件
 const onPostSelected = (post: allApi.Post) => {
-  console.log('选中的帖子:', post);
-  router.push('/post/' + post.postId);
-};
+  console.log('选中的帖子:', post)
+  router.push('/post/' + post.postId)
+}
+
+// 分类相关方法
+const onCategorySelected = (selected: allApi.Category) => {
+  console.log('选中的分类：', selected) 
+  showCategoryDialog.value = false
+  selectedCategoryId.value = selected.id
+  
+  if (showUploadModal.value === false) {
+    // 如果在搜索场景下选择分类
+    selectedCategoryName.value = selected.name
+  } else {
+    // 如果在上传场景下选择分类
+    selectedUploadCategoryName.value = selected.name
+  }
+}
+
+// 重置分类
+const resetCategory = () => {
+  selectedCategoryName.value = null
+  selectedUploadCategoryName.value = null
+  selectedCategoryId.value = null
+}
+
+// 上传成功处理
+const handleUploadSuccess = () => {
+  console.log('上传成功，可以刷新数据')
+  // 可以在这里刷新帖子列表或执行其他操作
+  getPosts()
+}
+
+// 获取所有分类
+const getAllCategories = async () => {
+  try {
+    const response = await allApi.getAllCategories()
+    if (response.data) {
+      allCategories.value = response.data
+    } else {
+      allCategories.value = []
+      console.warn('获取分类数据格式不正确')
+    }
+    return allCategories.value
+  } catch (error) {
+    console.error('获取所有分类失败:', error)
+    allCategories.value = []
+    throw error
+  }
+}
 
 onMounted(async () => {
-  getPosts();
-});
+  getPosts()
+  getAllCategories() // 初始化时加载分类数据
+})
 </script>
 
 <style scoped>

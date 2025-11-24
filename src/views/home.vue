@@ -121,7 +121,8 @@
 
     <!-- 使用分离的组件 -->
     <CategoryDialog 
-      v-model:visible="showCategoryDialog"
+      :visible="showCategoryDialog"
+      @update:visible="showCategoryDialog = $event"
       :all-categories="allCategories"
       :selected-category-name="selectedCategoryName"
       @category-selected="onCategorySelected"
@@ -129,7 +130,8 @@
     />
 
     <UploadModal 
-      v-model:visible="showUploadModal"
+      :visible="showUploadModal"
+      @update:visible="showUploadModal = $event"
       :selected-category-name="selectedUploadCategoryName"
       @open-category-dialog="showCategoryDialog = true"
       @upload-success="handleUploadSuccess"
