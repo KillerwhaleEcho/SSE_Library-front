@@ -60,9 +60,7 @@ import ReminderBox from '@/components/reminderBox.vue';
 import 'element-plus/dist/index.css';
 import { ref, computed, onMounted, watch } from 'vue';
 import * as allApi from '@/api/all.ts'
-
-const handlePostClick = () => {
-};
+import router from '@/router';
 
 const userId = Number(localStorage.getItem('userId') || '0'); 
 const reminders = ref<allApi.Reminder[]>([]);
@@ -77,6 +75,11 @@ const emit = defineEmits(['open-upload-modal']);
 const handleUploadClick = () => {
   emit('open-upload-modal'); // 触发事件，通知父组件打开弹窗
 };
+
+const handlePostClick = () => {
+  router.push('/sendPost');
+};
+
 
 watch(showCategoryDialog, (newVal, oldVal) => {
   console.log('showCategoryDialog 变化:', {

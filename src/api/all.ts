@@ -215,12 +215,17 @@ export const searchCategoriesAndCourses = (keyword: string, params?: { page?: nu
   });
 };
 
-// 11. 获取帖子列表
+// 11.1 获取帖子列表
 export const getPosts = ( key:string, order: "time"| "hot" ) => {
   return service.get<ApiResponse<{ posts: Post[] }>>('/getPosts', {
     params: { key, order },
   });
 };
+
+// 11.2 发帖
+export const createPost = ( payload: { senderId: number; title: string; content: string; documentId?: number } ) => {
+  return service.post<ApiResponse<{ postId: number }>>('/createPost', payload);
+}
 
 // 12. 获取提醒列表
 export const getReminders = ( userId: number ) => {

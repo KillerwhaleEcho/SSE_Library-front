@@ -374,30 +374,6 @@ const confirmCategory = async () => {
 }
 
 const handleSearch = async () => {
-  // 定义表单项校验规则（键名对应表单项，值为提示文本）
-  const validations = [
-    {
-      value: type_value.value,
-      message: '请选择资料类型（书籍or文件）'
-    },
-    {
-      value: selectedCategoryName.value,
-      message: '请选择分类'
-    },
-    {
-      value: year_value.value,
-      message: '请选择年份'
-    },
-    {
-      value: key_type_value.value,
-      message: '请选择关键词类型'
-    },
-    {
-      value: key_value.value.trim(),
-      message: '请输入文件名字或关键字'
-    }
-  ]
-
   try {
     const response = await allApi.searchBooksOrFiles(
       type_value.value,

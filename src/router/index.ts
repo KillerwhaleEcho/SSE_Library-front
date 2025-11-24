@@ -54,6 +54,12 @@ const routes: Array<RouteRecordRaw> = [
     component: Chat,
     meta: { requiresAuth: true },
   },
+  {
+    path: '/sendPost',
+    name: 'SendPost',
+    component: () => import('@/views/sendPost.vue'),
+    meta: { requiresAuth: true },
+  },
 ];
 
 const router = createRouter({

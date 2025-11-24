@@ -138,7 +138,7 @@
       />
     </div>
     <template #footer>
-      <el-button type="primary" @click="handleResetCategory">
+      <el-button type="primary" class="reset-button" @click="handleResetCategory">
         重置分类
       </el-button>
     </template>
@@ -234,6 +234,12 @@ const handleResetCategory = () => {
 }
 
 .search-cat .el-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
+}
+
+.reset-button{
   background-color: #b994fe;
   color: white;
   border: none;
