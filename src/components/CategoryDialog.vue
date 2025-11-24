@@ -128,7 +128,7 @@
         <ParentCategoryItem 
           v-for="category in allCategories" 
           :key="category.id"
-          @category-selected="CategorySelected"
+          @category-selected="handleCategorySelect"
           :category="category"
         />
       </div>

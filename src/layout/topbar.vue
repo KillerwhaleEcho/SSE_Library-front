@@ -74,14 +74,10 @@
 import { defineEmits } from 'vue';
 import ReminderBox from '@/components/reminderBox.vue';
 import 'element-plus/dist/index.css';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import * as allApi from '@/api/all.ts'
 import UploadModal from '@/components/UploadModal.vue'
 import CategoryDialog from '@/components/CategoryDialog.vue'
-
-const handleUploadClick = () => {
-  showUploadModal.value = true;
-};
 
 const handlePostClick = () => {
 };
@@ -91,7 +87,23 @@ const reminders = ref<allApi.Reminder[]>([]);
 const showUploadModal = ref(false)
 const showCategoryDialog = ref(false)
 const allCategories = ref<any[]>([])
+const selectedCategoryName = ref<string | null>(null)
+const selectedCategoryId = ref<number | null>(null)
 const selectedUploadCategoryName = ref<string | null>(null)
+
+// 定义事件发射器，用于向父组件发送事件
+const emit = defineEmits(['open-upload-modal']);
+
+const handleUploadClick = () => {
+  emit('open-upload-modal'); // 触发事件，通知父组件打开弹窗
+};
+
+watch(showCategoryDialog, (newVal, oldVal) => {
+  console.log('showCategoryDialog 变化:', {
+    旧值: oldVal,
+    新值: newVal, // true 表示弹窗显示，false 表示弹窗隐藏
+  });
+});
 
 const handleClearAll = () => {
   // 先标记所有未读通知为已读
@@ -132,8 +144,11 @@ const getAllCategories = async () => {
 
 // 处理分类选择
 const onCategorySelected = (category: any) => {
-  selectedUploadCategoryName.value = category.name
+  selectedCategoryName.value = category.name
+  selectedCategoryId.value = category.id
   showCategoryDialog.value = false
+
+  emit('update:category', selectedCategoryName.value, selectedCategoryId.value);
 }
 
 // 处理上传提交
