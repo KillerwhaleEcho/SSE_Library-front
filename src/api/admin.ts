@@ -1,5 +1,5 @@
 import request from '../utils/request'
-import { type InfoBrief, type User, type Document } from './all.ts'
+import { type InfoBrief, type User } from './all.ts'
 
 interface ApiResponse<T = any> {
   code: number
