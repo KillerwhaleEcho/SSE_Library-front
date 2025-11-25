@@ -110,7 +110,7 @@ import {
   getReminder,
   markReminderRead,
 } from "@/api/all";
-import { type message, type chatBox, type reminder } from "@/api/all";
+import { type message, type chatBox, type Reminder } from "@/api/all";
 import { ElMessage } from "element-plus";
 import { chatBoxFallback, fallbackAdminInfo, messageFallback, fallbackReminders } from "./admin/mockData";
 import reminderIcon from '@/assets/147_通知.png'
@@ -152,7 +152,7 @@ const chatInput = ref("");
 const currentSessionId = ref(0);
 const searchInput = ref("");
 const appliedInput = ref('')
-const reminders = ref<reminder[]>([])
+const reminders = ref<Reminder[]>([])
 const reminderIconUrl = ref(reminderIcon)
 const unreadUrl = ref(unreadIcon)
 const isReminder = ref(false)
@@ -235,7 +235,7 @@ const formatReminderTime = (time: string) => {
 const getReminderLabel = (type: string) => reminderTypeDict[type] ?? '未知'
 
 
-const markRead = async (item: reminder) => {
+const markRead = async (item: Reminder) => {
   item.isRead = true;
 
   try {

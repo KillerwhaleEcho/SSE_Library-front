@@ -76,8 +76,8 @@ export interface UploadFile {
   tags: string[],
   author: string | '默认佚名',
   createYear: string | '未知',
-  uploaderId: number | null,
-  uploadTime: Date | null,
+  uploaderId: number,
+  uploadTime: Date,
   introduction: string | '无',
   videoURL: string | '无'
 }
@@ -117,13 +117,42 @@ export interface chatBox {
   unreadCount: number
 }
 
-export interface reminder {
-  reminderId: number;   
-  receiverId:number;
-  type: string;
+
+export interface Post {
+  postId: number;
+  senderId: number;
+  senderName: string;
+  senderAvatar: string;
+  title: string;
   content: string;
-  isRead: boolean;
+  readCount: number;
+  commentCount: number;
+  likeCount: number;
   sendTime: string;
+  documentId?: number;
+  cover?: string;
+}
+
+export interface UploadPostForm {
+  senderId: number;
+  senderName: string;
+  senderAvatar: string;
+  title: string;
+  content: string;
+  sendTime: Date;
+  documents?:[
+    documentId: number,
+    cover: string
+  ];
+}
+
+export interface Reminder {
+  reminderId: number;
+  receiverId: number;
+  type: "评论" | "点赞" | "收藏" | "系统消息" | "聊天";
+  content: string;
+  sendTime: string;
+  isRead: boolean;
 }
 
 
@@ -157,14 +186,65 @@ export const getHotDocuments = () => {
 // 4. 上传资料
 export const uploadFile = (data: UploadFile) => {
   const formData = new FormData();
+  
+  // 添加文件字段
   formData.append('file', data.file);
+  formData.append('cover', data.cover);
+  
+  // 添加其他字段
+  formData.append('categoryId', data.categoryId.toString());
+  formData.append('type', data.type);
   formData.append('name', data.name);
-  if (data.description) formData.append('description', data.description);
-  if (data.categoryId) formData.append('categoryId', data.categoryId);
-  return service.post<ApiResponse<{ fileId: string }>>('/files/upload', formData, {
+  formData.append('uploaderId', data.uploaderId.toString());
+  formData.append('uploadTime', data.uploadTime.toISOString());
+  formData.append('introduction', data.introduction);
+  
+  // 处理可能为空的字段
+  if (data.tags !== null){
+    formData.append('tags', data.tags.join(',')); // 数组转字符串
+  }
+  if (data.createYear !== null){
+    formData.append('createYear', data.createYear);
+  }
+  if (data.author !== null){
+    formData.append('author', data.author);
+  }
+  if (data.ISBN !== null){
+    formData.append('ISBN', data.ISBN);
+  }
+  if (data.videoURL !== null){
+    formData.append('videoURL', data.videoURL);
+  }
+  
+  return service.post<ApiResponse<{ document: Document }>>('/user/document', formData, {
     headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+};
+
+// 上传帖子接口
+export const uploadPost = (data: UploadPostForm) => {
+  const formData = new FormData();
+  
+  // 添加必需字段
+  formData.append('senderId', data.senderId.toString());
+  formData.append('title', data.title);
+  formData.append('content', data.content);
+  formData.append('sendTime', data.sendTime.toISOString());
+  formData.append('senderName', data.senderName);
+  formData.append('senderAvatar', data.senderAvatar);
+  
+  // 处理可选字段
+  if (data.documents && data.documents.length > 0) {
+    // 假设 documents 是一个数组，需要序列化
+    formData.append('documents', JSON.stringify(data.documents));
+  }
+  
+  return service.post<ApiResponse< string >>('/post', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   });
 };
 
@@ -198,6 +278,32 @@ export const searchBooksOrFiles = (
 export const searchCategoriesAndCourses = (keyword: string, params?: { page?: number; pageSize?: number }) => {
   return service.get<ApiResponse<{ categories: Category[]; courses: any[]; total: number }>>('/categoriesAndCourses/search', {
     params: { keyword, ...params },
+  });
+};
+
+// 11.1 获取帖子列表
+export const getPosts = ( key:string, order: "time"| "hot" ) => {
+  return service.get<ApiResponse<{ posts: Post[] }>>('/getPosts', {
+    params: { key, order },
+  });
+};
+
+// 11.2 发帖
+export const createPost = ( payload: { senderId: number; title: string; content: string; documentId?: number } ) => {
+  return service.post<ApiResponse<{ postId: number }>>('/createPost', payload);
+}
+
+// 12. 获取提醒列表
+export const getReminders = ( userId: number ) => {
+  return service.get<ApiResponse<{ reminders: Reminder[] }>>('/getReminder', {
+    params: { userId },
+  });
+};
+
+// 13. 标记提醒为已读
+export const markReminderAsRead = ( reminderId: number ) => {
+  return service.post<ApiResponse<null>>('/markReminderRead', {
+    reminderId,
   });
 };
 
@@ -257,6 +363,23 @@ export const deleteAdminComment = (commentId: string | number) => {
   });
 };
 
+
+// 获取用户收藏列表
+export const getUserCollectionList = (userId: string | number) => {
+  return service.get<ApiResponse<Document[]>>(`/user/${userId}/collectionList`);
+};
+
+// 收藏资料
+export const postUserAddFavor = (payload: { userId: number; documentId: number }) => {
+  return service.post<ApiResponse<Document[]>>('/user/collect', payload);
+};
+
+// 取消收藏
+export const deleteUserFavor = (payload: { userId: number; documentId: number }) => {
+  return service.delete<ApiResponse<Document[]>>('/user/collect', { data: payload });
+};
+
+
 // 发送消息,接口名加上interface避免重名
 export const sendMessageInterface = (sessionId: number, receiverId: number, content: string) => {
   return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/send', { sessionId, receiverId, content })
@@ -275,7 +398,7 @@ export const getMessageList = (sessionId: number, userId: number) => {
 
 //获取提醒（通知）
 export const getReminder=(userId: number) => {
-  return service.get<ApiResponse<reminder[]>>('/getReminder',{params:{userId}})
+  return service.get<ApiResponse<Reminder[]>>('/getReminder',{params:{userId}})
 }
 
 

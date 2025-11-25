@@ -5,6 +5,8 @@ import Home from '@/views/home.vue';
 import Admin from '@/views/admin.vue';
 import BookInfo from '@/views/bookInfo.vue';
 import User from '@/views/user.vue';
+import Posts from '@/views/posts.vue';
+import Chat from '@/components/chatView.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -38,6 +40,24 @@ const routes: Array<RouteRecordRaw> = [
     path: '/user',
     name: 'User',
     component: User,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/posts',
+    name: 'Posts',
+    component: Posts,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/chat',
+    name: 'Chat',
+    component: Chat,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/sendPost',
+    name: 'SendPost',
+    component: () => import('@/views/sendPost.vue'),
     meta: { requiresAuth: true },
   },
 ];

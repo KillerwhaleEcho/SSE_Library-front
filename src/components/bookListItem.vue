@@ -12,7 +12,7 @@
     <div class="book-info">
       <!-- 书名和简介 -->
       <h4 class="book-title">
-        {{ document.infoBrief.name }}
+        {{ document.infoBrief.name }} 
       </h4>
       <p class="book-desc" v-if="document.introduction">
         {{ document.introduction }}
@@ -27,11 +27,11 @@
       <div class="book-stats">
         <div class="book-stat-item">
           <img src="@/assets/147_喜欢.png" alt="File Icon" style="width:25px; height:25px; margin-right:4px;" />
-          <span>{{ document.infoBrief.collections || 0 }}</span>
+          <span>{{ document.infoBrief.collections || 0 }} 收藏</span>
         </div>
         <div class="book-stat-item">
           <img src="@/assets/Fire (火热).png" alt="File Icon" style="width:20px; height:20px; margin-right:4px;" />
-          <span>{{ document.infoBrief.readCounts || 0 }}</span>
+          <span>{{ document.infoBrief.readCounts || 0 }} 阅读</span>
         </div>
       </div>
       
@@ -54,7 +54,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import defaultCover from '@/assets/coverexp.png'; // 引入默认封面图
-import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
+import * as allApi from '@/api/all.ts'
 
 // 接收父组件传入的图书数据
 const props = defineProps<{

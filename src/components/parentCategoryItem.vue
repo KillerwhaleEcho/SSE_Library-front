@@ -27,7 +27,7 @@ import {
   Timer,
   ChatDotRound
 } from '@element-plus/icons-vue'
-import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
+import * as allApi from '@/api/all.ts'
 import CategoryItem from '@/components/categoryItem.vue';
 import { defineProps, defineEmits } from 'vue';
 

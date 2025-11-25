@@ -13,11 +13,11 @@
       <div class="book-stats">
         <div class="book-count">
             <img src="@/assets/147_喜欢.png" alt="File Icon" style="width:30px; height:30px; margin-right:4px;" />
-            {{ document.infoBrief.collections }}
+            {{ document.infoBrief.collections }} 收藏
         </div>
         <div class="book-count">
             <img src="@/assets/Fire (火热).png" alt="Office Building Icon" style="width:20px; height:20px; margin-right:4px;vertical-align: bottom;" />
-            {{ document.infoBrief.readCounts }}
+            {{ document.infoBrief.readCounts }} 阅读
         </div>
       </div>
     </div>
@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import defaultCover from '@/assets/coverexp.png'; // 引入默认封面图
-import * as allApi from 'C:/Users/Echo/Desktop/SSE_Library/front/src/api/all.ts'
+import * as allApi from '@/api/all.ts'
 
 // 接收父组件传入的图书数据
 const props = defineProps<{
@@ -78,7 +78,6 @@ const handleImgError = (e: Event) => {
   font-size: 16px;
   font-weight: 600;
   color: #333;
-  white-space: nowrap; /* 标题不换行 */
   overflow: hidden;
   text-overflow: ellipsis; /* 超出部分显示省略号 */
 }
