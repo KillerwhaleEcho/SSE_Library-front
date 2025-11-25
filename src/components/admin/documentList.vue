@@ -51,7 +51,7 @@
           :element-loading-text="TEXT.loading"
           :empty-text="TEXT.empty"
         >
-          <el-table-column :label="TEXT.cover" width="120" align="center">
+          <el-table-column :label="TEXT.cover" width="150" align="center">
             <template #default="{ row }">
               <el-image
                 class="document-table__cover"
@@ -78,7 +78,7 @@
               </el-link>
             </template>
           </el-table-column>
-          <el-table-column label="作者" min-width="180" align="center">
+          <el-table-column label="作者" min-width="120" align="center">
             <template #default="{ row }">
               {{ row.author || "未知作者" }}
             </template>

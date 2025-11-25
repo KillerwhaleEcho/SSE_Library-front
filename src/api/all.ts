@@ -117,6 +117,15 @@ export interface chatBox {
   unreadCount: number
 }
 
+export interface reminder {
+  reminderId: number;   
+  receiverId:number;
+  type: string;
+  content: string;
+  isRead: boolean;
+  sendTime: string;
+}
+
 
 // 3.1 获取分类和课程
 export const getCategoriesAndCourses = (is_suggest?: boolean) => {
@@ -248,7 +257,7 @@ export const deleteAdminComment = (commentId: string | number) => {
   });
 };
 
-// 11.发送消息,接口名加上interface避免重名
+// 发送消息,接口名加上interface避免重名
 export const sendMessageInterface = (sessionId: number, receiverId: number, content: string) => {
   return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/send', { sessionId, receiverId, content })
 }
@@ -263,6 +272,18 @@ export const getSessionList = (userId: number) => {
 export const getMessageList = (sessionId: number, userId: number) => {
   return service.get<ApiResponse<message[]>>('/chat/messages', { params: { sessionId, userId } })
 }
+
+//获取提醒（通知）
+export const getReminder=(userId: number) => {
+  return service.get<ApiResponse<reminder[]>>('/getReminder',{params:{userId}})
+}
+
+
+//标记消息已读
+export const markReminderRead = (reminderId: number)=>{
+  return service.post<ApiResponse<string>>('/markReminderRead',{reminderId},{ headers: { noLoading: true }})
+}// 给“轻量请求”加一个开关，不显示全屏 Loading
+
 
 // 获取用户的详细信息
 export const getUserDetail = (userId: string) => {

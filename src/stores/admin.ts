@@ -9,21 +9,14 @@ import {
   type AdminPasswordPayload,
 } from '../api/admin'
 import type { User } from '@/api/all'
+import { fallbackAdminInfo } from '@/components/admin/mockData'
 
 const STORAGE_KEY = 'adminInfo'
 const storage = typeof window === 'undefined' ? null : window.localStorage
 // typeof window === 'undefined' - 检查 window 对象是否存在，在 浏览器环境 中，window 对象存在
 
 
-const fallbackAdminInfo: UserBrief = {
-  userId: 0,
-  username: 'Sample Admin',
-  userAvatar: '',
-  status: 'active',
-  createTime: '2024-01-01',
-  email: 'admin@example.com',
-  role: 'admin',
-}
+
 
 export const useAdminStore = defineStore('admin', () => {
   const adminInfo = ref<UserBrief | null>(null)

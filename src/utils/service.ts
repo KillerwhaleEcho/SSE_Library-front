@@ -71,13 +71,15 @@ service.interceptors.request.use(
 
     pendingRequests++ // 请求数 +1
 
-    if (!loadingInstance) {
-      loadingInstance = ElLoading.service({
-        lock: true,
-        text: '加载中...',
-        background: 'rgba(0, 0, 0, 0.7)',
-      })
-    }
+    //只有没写 noLoading 的请求才开全屏遮罩
+  const noLoading = (config.headers as any)?.noLoading
+  if (!noLoading && !loadingInstance) {
+    loadingInstance = ElLoading.service({
+      lock: true,
+      text: '加载中...',
+      background: 'rgba(0, 0, 0, 0.7)',
+    })
+  }
 
     // 处理 token
     const userStore = useAuthStore()

@@ -332,7 +332,7 @@ onMounted(() => {
 }
 
 .profile-sidebar {
-  width: 15%;
+  width: 25%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -442,15 +442,25 @@ onMounted(() => {
 
 .profile-field :deep(.el-input__wrapper) {
   background: #fff;
-  box-shadow: none;
   border: 1px solid #dcd7f0;
-  border-radius: 5px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(40, 20, 60, 0.08);
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
 }
 
 
+
+
+.profile-field :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 4px 14px rgba(40, 20, 60, 0.12);
+  transform: translateY(-1px);
+  border-color: #cbb6fb;
+}
+
 .profile-field :deep(.is-focus .el-input__wrapper) {
   border-color: #b994fe;
-  box-shadow: 0 0 0 2px rgba(185, 148, 254, 0.18);
+  box-shadow: 0 0 0 3px rgba(185, 148, 254, 0.18), 0 6px 18px rgba(40, 20, 60, 0.12);
+  transform: translateY(-1px);
 }
 
 .profile-field :deep(.el-input__inner) {
@@ -492,18 +502,63 @@ ease 是过渡的时间函数，表示过渡效果的速度曲线。ease 是默�
   color: #5d4d74;
 }
 
+
+
+.profile-ver-form :deep(.el-input__wrapper) {
+  background: #fff;
+  border: 1px solid #dcd7f0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(40, 20, 60, 0.08);
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+.profile-ver-form :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 4px 14px rgba(40, 20, 60, 0.12);
+  transform: translateY(-1px);
+  border-color: #cbb6fb;
+}
+
+.profile-ver-form :deep(.is-focus .el-input__wrapper) {
+  border-color: #b994fe;
+  box-shadow: 0 0 0 3px rgba(185, 148, 254, 0.18), 0 6px 18px rgba(40, 20, 60, 0.12);
+  transform: translateY(-1px);
+}
+
 .profile-ver__button{
   margin-left: 10px;
   background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
   border: none;
-  transition: all 0.3s ease;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(91, 36, 127, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+
+
+.profile-ver__button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(91, 36, 127, 0.30);
+  filter: brightness(1.03);
+}
+
+.profile-ver__button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 8px rgba(91, 36, 127, 0.18);
+  filter: brightness(0.98);
+}
+
+.profile-ver__button.is-disabled,
+.profile-ver__button:disabled {
+  transform: none;
+  box-shadow: none;
+  filter: none;
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .profile-ver-form{
   display: flex;
 }
-
-/* .profile-verification__ */
 
 .profile-divider {
   margin: 8px 0 0px;

@@ -1,8 +1,17 @@
-import { type Document } from '@/api/all.ts'
-import { type CommentItem } from '@/api/admin';
-import {type UserRow } from '@/api/admin';
-import {type message,type chatBox} from'@/api/all'
+import { type Document, type message, type chatBox, type reminder, type UserBrief } from '@/api/all.ts'
+import { type CommentItem, type UserRow } from '@/api/admin';
 import avatarIcon from '@/assets/icon_user.png'
+
+export const fallbackAdminInfo: UserBrief = {
+  userId: 1,
+  username: 'Sample Admin',
+  userAvatar: '',
+  status: 'active',
+  createTime: '2024-01-01',
+  email: 'admin@example.com',
+  role: 'admin',
+}
+
 
 export const MOCK_DOCUMENTS: Document[] = [
     {
@@ -403,9 +412,68 @@ export const chatBoxFallback: chatBox[] = [
     lastMessage: "谢谢你的帮助！",
     lastTime: "2024-01-15 09:30:55",
     unreadCount: 0
-  }
+	},
+  {
+    sessionId: 1007,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	},
+  {
+    sessionId: 1008,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	},
+  {
+    sessionId: 1009,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	},
+  {
+    sessionId: 1010,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	},
+  {
+    sessionId: 1011,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	}
 ];
-
 
 export const messageFallback: message[] = [
   {
@@ -414,7 +482,7 @@ export const messageFallback: message[] = [
     sendTime: "2024-01-15 14:30:25",
     senderName: "李四",
     senderAvatar: avatarIcon,
-    content: "你好，请问这个商品还有货吗？",
+    content: "你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好",
     status: '已发送'
   },
   {
@@ -533,5 +601,150 @@ export const messageFallback: message[] = [
     senderAvatar: avatarIcon,
     content: "谢谢你的帮助！",
     status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
   }
+];
+
+
+export const fallbackReminders: reminder[] = [
+  // 评论
+  {
+    reminderId: 1001,
+    receiverId: 1,
+    type: "comment",
+    content: "用户「小麦研究生」评论了你的帖子：‘这个启动子根部表达很强，你的qPCR结果能分享下吗？’",
+    ifRead: false,
+    sendTime: "2025-11-21T09:12:33+08:00",
+  },
+  {
+    reminderId: 1002,  receiverId: 1,
+    type: "comment",
+    content: "用户「Alex」回复了你：‘我也遇到ABD同源问题，你可以试试在3'端加错配。’",
+    ifRead: true,
+    sendTime: "2025-11-20T18:45:10+08:00",
+  },
+
+  // 点赞
+  {
+    reminderId: 2001,  receiverId: 1,
+    type: "like",
+    content: "用户「PlantLab」点赞了你的评论。",
+    ifRead: false,
+    sendTime: "2025-11-21T11:01:05+08:00",
+  },
+  {
+    reminderId: 2002,  receiverId: 1,
+    type: "like",
+    content: "用户「水文小助手」点赞了你的帖子《十五五规划-教育重点任务》。",
+    ifRead: true,
+    sendTime: "2025-11-19T22:30:00+08:00",
+  },
+
+  // 收藏
+  {
+    reminderId: 3001,  receiverId: 1,
+    type: "favorite",
+    content: "用户「BioInfo」收藏了你的帖子《根优势启动子筛选思路》。",
+    ifRead: false,
+    sendTime: "2025-11-21T14:22:48+08:00",
+  },
+  {
+    reminderId: 3002,  receiverId: 1,
+    type: "favorite",
+    content: "你的回答被「材料热模拟数据处理」专题收藏。",
+    ifRead: true,
+    sendTime: "2025-11-18T10:07:13+08:00",
+  },
+
+  // 聊天 / 私信
+  // {
+  //   reminderId: 4001,  receiverId: 1,
+  //   type: "chat",
+  //   content: "「导师助理」给你发来新消息：‘明天组会你准备的6个候选基因进展带上。’",
+  //   ifRead: false,
+  //   sendTime: "2025-11-21T20:05:00+08:00",
+  // },
+  // {
+  //   reminderId: 4002,  receiverId: 1,
+  //   type: "chat",
+  //   content: "「同事-供水处」：‘闸门检修表我已经更新到群里了。’",
+  //   ifRead: true,
+  //   sendTime: "2025-11-21T16:50:21+08:00",
+  // },
+
+  // 管理 / 系统通知
+  {
+    reminderId: 5001,  receiverId: 1,
+    type: "admin",
+    content: "系统通知：你的帖子《Auto-HSCT后PGF二次回输病例》已通过审核并公开展示。",
+    ifRead: false,
+    sendTime: "2025-11-21T08:00:00+08:00",
+  },
+  {
+    reminderId: 5002,  receiverId: 1,
+    type: "admin",
+    content: "管理通知：你提交的资料缺少封面页，请在 48 小时内补齐，否则将退回。",
+    ifRead: true,
+    sendTime: "2025-11-19T09:30:00+08:00",
+  },
+  {
+    reminderId: 5003,  receiverId: 1,
+    type: "admin",
+    content: "安全提醒：检测到你的账号在新设备登录，如非本人操作请及时修改密码。",
+    ifRead: false,
+    sendTime: "2025-11-18T23:59:59+08:00",
+  },
 ];
