@@ -15,14 +15,16 @@
       ref="uploadFormRef" 
       :model="uploadForm" 
       label-width="100px"
+      :rules="formRules"
     >
       <!-- 文件上传 -->
-      <el-form-item label="要上传的文件" prop="file">
+      <el-form-item label="要上传的文件" prop="file" required>
         <el-upload
           action="#"
           :on-change="handleFileChange"
           :auto-upload="false"
           accept=".pdf,.doc,.docx,.txt,.mp4"
+          :show-file-list="false"
         >
           <el-button type="primary">点击上传文件</el-button>
         </el-upload>
@@ -32,13 +34,13 @@
       </el-form-item>
 
       <!-- 封面图片上传（带预览功能） -->
-      <el-form-item label="封面图片" prop="cover">
+      <el-form-item label="封面图片" prop="cover" required>
         <el-upload
           action="#" 
           :on-change="handleCoverChange"
           :auto-upload="false"
           accept="image/*"
-          :show-file-list="true"
+          :show-file-list="false"
         >
           <el-button type="primary">点击上传封面</el-button>
         </el-upload>
@@ -57,14 +59,17 @@
       </el-form-item>
 
       <!-- 分类 -->
-      <el-form-item label="分类" prop="category">
+      <el-form-item label="分类" prop="categoryId" required>
         <button type="button" class="category-select-btn" @click="$emit('open-category-dialog')">
-          {{ selectedCategoryName || 'category' }}
+          {{ selectedCategoryName || '请选择分类' }}
         </button>
+        <div v-if="selectedCategoryId" class="selected-category-id">
+          分类ID: {{ selectedCategoryId }}
+        </div>
       </el-form-item>
 
       <!-- 资料类型 -->
-      <el-form-item label="资料类型" prop="type">
+      <el-form-item label="资料类型" prop="type" required>
         <el-select v-model="uploadForm.type" placeholder="请选择">
           <el-option label="书籍" value="book"></el-option>
           <el-option label="文件" value="file"></el-option>
@@ -73,25 +78,28 @@
       </el-form-item>
 
       <!-- 名称 -->
-      <el-form-item label="名称" prop="name">
-        <el-input v-model="uploadForm.name" />
+      <el-form-item label="名称" prop="name" required>
+        <el-input v-model="uploadForm.name" placeholder="请输入资料名称" />
       </el-form-item>
 
       <!-- ISBN -->
       <el-form-item label="ISBN" prop="ISBN">
-        <el-input v-model="uploadForm.ISBN" />
+        <el-input v-model="uploadForm.ISBN" placeholder="请输入ISBN号(可选)" />
       </el-form-item>
 
       <!-- 关键词 -->
       <el-form-item label="关键词" prop="tags">
-        <el-tag
-          v-for="(tag, index) in uploadForm.tags"
-          :key="index"
-          closable
-          @close="uploadForm.tags.splice(index, 1)"
-        >
-          {{ tag }}
-        </el-tag>
+        <div class="tags-container">
+          <el-tag
+            v-for="(tag, index) in uploadForm.tags"
+            :key="index"
+            closable
+            @close="removeTag(index)"
+            class="tag-item"
+          >
+            {{ tag }}
+          </el-tag>
+        </div>
         <el-input
           v-model="inputTag"
           @keyup.enter="addTag"
@@ -101,27 +109,35 @@
       </el-form-item>
 
       <!-- 作者 -->
-      <el-form-item label="作者" prop="author">
-        <el-input v-model="uploadForm.author" />
+      <el-form-item label="作者" prop="author" required>
+        <el-input v-model="uploadForm.author" placeholder="请输入作者" />
+      </el-form-item>
+
+      <!-- 出版年份 -->
+      <el-form-item label="出版年份" prop="createYear" required>
+        <el-input v-model="uploadForm.createYear" placeholder="请输入出版年份" />
       </el-form-item>
 
       <!-- 上传者ID -->
-      <el-form-item label="上传者ID" prop="uploaderId">
-        <el-input v-model.number="uploadForm.uploaderId" type="number" />
-      </el-form-item>
 
-      <!-- 上传时间（自动生成，可隐藏） -->
+      <!-- 上传时间 -->
       <el-form-item label="上传时间" prop="uploadTime">
         <el-date-picker
           v-model="uploadForm.uploadTime"
           type="datetime"
           placeholder="选择上传时间"
+          style="width: 100%"
         />
       </el-form-item>
 
       <!-- 介绍 -->
       <el-form-item label="介绍" prop="introduction">
-        <el-input v-model="uploadForm.introduction" type="textarea" />
+        <el-input 
+          v-model="uploadForm.introduction" 
+          type="textarea" 
+          :rows="3"
+          placeholder="请输入资料介绍"
+        />
       </el-form-item>
 
       <!-- 视频URL（类型为video时显示） -->
@@ -130,25 +146,32 @@
         prop="videoURL" 
         v-if="uploadForm.type === 'video'"
       >
-        <el-input v-model="uploadForm.videoURL" />
+        <el-input v-model="uploadForm.videoURL" placeholder="请输入视频URL" />
       </el-form-item>
     </el-form>
 
     <template #footer>
       <el-button @click="handleCancel">取消</el-button>
-      <el-button type="primary" @click="submitUpload">提交上传</el-button>
+      <el-button type="primary" @click="submitUpload" :loading="uploading">
+        {{ uploading ? '上传中...' : '提交上传' }}
+      </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import type { ElMessage, UploadFile } from 'element-plus'
+import { ref, reactive, computed } from 'vue'
+import type { UploadFile, FormInstance, FormRules } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import * as allApi from '@/api/all.ts'
+import { watch } from 'vue'
+import router from '@/router'
 
 // Props - 修复类型定义
 interface Props {
   visible: boolean
-  selectedCategoryName?: string | null  // 修改为 string | null
+  selectedCategoryName?: string | null
+  selectedCategoryId?: number | null
 }
 
 const props = defineProps<Props>()
@@ -160,27 +183,42 @@ const emit = defineEmits<{
   'upload-success': []
 }>()
 
-// 表单数据
+// 表单数据 - 根据接口定义调整
 const uploadForm = reactive({
-  file: null,
-  cover: null,
-  categoryId: null,
-  type: '',
+  file: null as File | null,
+  cover: null as File | null,
+  categoryId: null as number | null,
+  type: '' as 'book' | 'file' | 'video',
   name: '',
-  ISBN: '',
-  tags: [],
+  ISBN: null as number | null,
+  tags: [] as string[],
   author: '默认佚名',
-  createYear: '',
-  uploaderId: null,
-  uploadTime: new Date(),
-  introduction: '',
-  videoURL: ''
+  createYear: '未知',
+  uploaderId: null as number | null,
+  uploadTime: null as Date | null,
+  introduction: '无',
+  videoURL: '无'
 })
 
 // 响应式数据
 const inputTag = ref('')
 const coverPreviewUrl = ref('')
-const uploadFormRef = ref()
+const uploadFormRef = ref<FormInstance>()
+const uploading = ref(false)
+
+// 表单验证规则
+const formRules: FormRules = {
+  file: [{ required: true, message: '请上传文件', trigger: 'change' }],
+  cover: [{ required: true, message: '请上传封面图片', trigger: 'change' }],
+  categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
+  type: [{ required: true, message: '请选择资料类型', trigger: 'change' }],
+  name: [{ required: true, message: '请输入资料名称', trigger: 'blur' }],
+  author: [{ required: true, message: '请输入作者', trigger: 'blur' }],
+  createYear: [{ required: true, message: '请输入出版年份', trigger: 'blur' }],
+}
+
+// 计算属性
+const selectedCategoryId = computed(() => props.selectedCategoryId)
 
 // 方法
 const handleFileChange = (uploadFile: UploadFile) => {
@@ -189,7 +227,7 @@ const handleFileChange = (uploadFile: UploadFile) => {
 
 const handleCoverChange = (uploadFile: UploadFile) => {
   uploadForm.cover = uploadFile.raw
-  if (uploadFile.raw.type.startsWith('image/')) {
+  if (uploadFile.raw?.type.startsWith('image/')) {
     const reader = new FileReader()
     reader.onload = (e) => {
       coverPreviewUrl.value = e.target?.result as string
@@ -205,37 +243,74 @@ const addTag = () => {
   }
 }
 
-const submitUpload = () => {
-  uploadFormRef.value?.validate((valid: boolean) => {
-    if (valid) {
-      const formData = new FormData()
-      for (const key in uploadForm) {
-        if (key === 'file' || key === 'cover') {
-          if (uploadForm[key]) {
-            formData.append(key, uploadForm[key])
-          }
-        } else if (key === 'tags') {
-          formData.append(key, uploadForm[key].join(','))
-        } else {
-          formData.append(key, uploadForm[key])
-        }
-      }
+const removeTag = (index: number) => {
+  uploadForm.tags.splice(index, 1)
+}
 
-      console.log('提交的表单数据：', formData)
-      ElMessage.success('模拟上传成功（实际需对接接口）')
-      emit('update:visible', false)
-      resetForm()
-      emit('upload-success')
+const submitUpload = async () => {
+  if (!uploadFormRef.value) return
+
+  try {
+    const valid = await uploadFormRef.value.validate()
+    if (!valid) return
+
+    // 设置分类ID
+    if (props.selectedCategoryId) {
+      uploadForm.categoryId = props.selectedCategoryId
     }
-  })
+    // 设置上传者ID（假设从本地存储获取）
+    const userId = Number(localStorage.getItem('userId') || '0')
+    console.log('上传者ID:', userId)
+    uploadForm.uploaderId = userId
+
+    // 检查必需字段
+    if (!uploadForm.file || !uploadForm.cover || !uploadForm.categoryId) {
+      ElMessage.error('请完成必需字段的填写')
+      return
+    }
+
+    uploading.value = true
+
+    // 调用上传接口
+    const response = await allApi.uploadFile(uploadForm)
+    console.log('上传文件成功:', response)
+    ElMessage.success('上传成功！')
+    emit('update:visible', false)
+    resetForm()
+    emit('upload-success')
+
+    if (response.data?.infoBrief.documentId) {
+      router.push(`/bookInfo/${response.data.infoBrief.documentId}`)
+    } else {
+      router.push('/home')
+    }
+    
+  } catch (error: any) {
+    console.error('上传失败:', error)
+    ElMessage.error(error.message || '上传失败，请重试')
+  } finally {
+    uploading.value = false
+  }
 }
 
 const resetForm = () => {
   uploadFormRef.value?.resetFields()
-  uploadForm.file = null
-  uploadForm.cover = null
-  uploadForm.tags = []
-  uploadForm.uploadTime = new Date()
+  // 手动重置响应式数据
+  Object.assign(uploadForm, {
+    file: null,
+    cover: null,
+    categoryId: null,
+    type: '',
+    name: '',
+    ISBN: '',
+    tags: [],
+    author: '默认佚名',
+    createYear: '未知',
+    uploaderId: null,
+    uploadTime: null,
+    introduction: '无',
+    videoURL: '无'
+  })
   inputTag.value = ''
   coverPreviewUrl.value = ''
 }
@@ -244,12 +319,20 @@ const handleCancel = () => {
   emit('update:visible', false)
   resetForm()
 }
+
+// 监听分类选择变化
+watch(() => props.selectedCategoryId, (newId) => {
+  if (newId) {
+    uploadForm.categoryId = newId
+  }
+})
 </script>
 
 <style scoped>
 .uploaded-file {
   margin-top: 5px;
   color: #606266;
+  font-size: 14px;
 }
 
 .cover-preview {
@@ -286,5 +369,30 @@ const handleCancel = () => {
 
 .category-select-btn:hover {
   border-color: #c1a1fd;
+}
+
+.selected-category-id {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #666;
+}
+
+.tags-container {
+  margin-bottom: 8px;
+}
+
+.tag-item {
+  margin-right: 8px;
+  margin-bottom: 4px;
+}
+
+/* 移除焦点黑框 */
+button:focus {
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 2px solid #b994fe;
+  outline-offset: 2px;
 }
 </style>

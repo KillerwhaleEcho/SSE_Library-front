@@ -57,19 +57,19 @@
               >
                 <div class="file-cover">
                   <img 
-                    v-if="file.infoBrief.coverUrl" 
-                    :src="file.infoBrief.coverUrl" 
-                    :alt="file.infoBrief.title"
+                    v-if="file.cover" 
+                    :src="file.cover" 
+                    :alt="file.infoBrief.name"
                     class="cover-image"
                   >
                   <div v-else class="cover-placeholder">
-                    {{ file.infoBrief.title.substring(0, 2) }}
+                    {{ file.infoBrief.name.substring(0, 2) }}
                   </div>
                 </div>
                 <div class="file-info">
-                  <div class="file-title">{{ file.infoBrief.title }}</div>
+                  <div class="file-title">{{ file.infoBrief.name }}</div>
                   <div class="file-meta">
-                    <span class="file-author">{{ file.infoBrief.author }}</span>
+                    <span class="file-author">{{ file.author }}</span>
                     <span class="file-type">{{ file.infoBrief.type }}</span>
                   </div>
                 </div>
@@ -111,6 +111,8 @@ import FileLibraryModal from '@/components/FileLibraryModal.vue'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Document } from '@/api/all.ts'
+import * as allApi from '@/api/all.ts'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 
@@ -144,26 +146,54 @@ const handleSubmit = async () => {
   if (!canSubmit.value) return
 
   try {
+    // 获取当前用户ID（假设从本地存储获取）
+    const userId = Number(localStorage.getItem('userId') || '0')
+    const userName = localStorage.getItem('userName') || ''
+    const userAvatar = localStorage.getItem('userAvatar') || ''
+
+    if (!userId) {
+      ElMessage.error('请先登录')
+      return
+    }
+
     // 构造提交数据
-    const postData = {
+    const postData: allApi.UploadPostForm = {
+      senderId: userId,
+      senderName: userName,
+      senderAvatar: userAvatar,
       title: postTitle.value.trim(),
       content: postContent.value.trim(),
-      attachedDocuments: selectedFiles.value.map(file => file.infoBrief.documentId)
+      sendTime: new Date(),
+    }
+
+    // 添加可选字段
+    // 如果有选中的文件，添加到 documents 字段
+    if (selectedFiles.value.length > 0) {
+      postData.documents = selectedFiles.value.map(file => ({
+        documentId: file.infoBrief.documentId,
+        cover: file.cover || '' // 使用文件的封面，如果没有则为空字符串
+      }))
     }
 
     console.log('提交帖子数据:', postData)
     
-    // 这里调用发帖API
-    // await allApi.createPost(postData)
+    // 调用发帖API
+    const response = await allApi.uploadPost(postData)
     
-    // 模拟成功
-    // ElMessage.success('帖子发布成功！')
+    console.log('帖子发布成功:', response)
+    ElMessage.success('帖子发布成功！')
     
-    // 跳转到帖子列表页
-    router.push('/posts')
-  } catch (error) {
+    // 跳转到帖子列表页或帖子详情页
+    // 如果接口返回了帖子ID，可以跳转到帖子详情页
+    if (response.data?.postId) {
+      router.push(`/post/${response.data.postId}`)
+    } else {
+      router.push('/posts')
+    }
+    
+  } catch (error: any) {
     console.error('发布帖子失败:', error)
-    // ElMessage.error('发布失败，请重试')
+    ElMessage.error(error.message || '发布失败，请重试')
   }
 }
 

@@ -91,7 +91,7 @@ watch(showCategoryDialog, (newVal, oldVal) => {
 const handleClearAll = () => {
   // 先标记所有未读通知为已读
   reminders.value
-    .filter(item => !item.ifRead) // 筛选未读通知
+    .filter(item => !item.isRead) // 筛选未读通知
     .forEach(item => handleMarkRead(item.reminderId)); // 逐个标记
     
   // 清空本地通知列表
@@ -100,7 +100,7 @@ const handleClearAll = () => {
 
 const handleMarkRead = (reminderId: number) => {
   reminders.value = reminders.value.map(item => 
-    item.reminderId === reminderId ? { ...item, ifRead: true } : item
+    item.reminderId === reminderId ? { ...item, isRead: true } : item
   );
   allApi.markReminderAsRead(reminderId).then(() => console.log('通知已标记为已读'));
 };

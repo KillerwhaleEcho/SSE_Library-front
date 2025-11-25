@@ -125,14 +125,15 @@
       @update:visible="showCategoryDialog = $event"
       :all-categories="allCategories"
       :selected-category-name="selectedCategoryName"
+      :selected-category-id="selectedCategoryId"
       @category-selected="onCategorySelected"
       @reset-category="resetCategory"
     />
 
     <UploadModal 
-      :visible="showUploadModal"
-      @update:visible="showUploadModal = $event"
+      v-model:visible="showUploadModal"
       :selected-category-name="selectedUploadCategoryName"
+      :selected-category-id="selectedCategoryId"
       @open-category-dialog="showCategoryDialog = true"
       @upload-success="handleUploadSuccess"
     />

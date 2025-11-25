@@ -76,8 +76,8 @@ export interface UploadFile {
   tags: string[],
   author: string | '默认佚名',
   createYear: string | '未知',
-  uploaderId: number | null,
-  uploadTime: Date | null,
+  uploaderId: number,
+  uploadTime: Date,
   introduction: string | '无',
   videoURL: string | '无'
 }
@@ -132,12 +132,25 @@ export interface Post {
   cover?: string;
 }
 
+export interface UploadPostForm {
+  senderId: number;
+  senderName: string;
+  senderAvatar: string;
+  title: string;
+  content: string;
+  sendTime: Date;
+  documents?:[
+    documentId: number,
+    cover: string
+  ];
+}
+
 export interface Reminder {
   reminderId: number;
   type: "评论" | "点赞" | "收藏" | "系统消息" | "聊天";
   content: string;
   sendTime: string;
-  ifRead: boolean;
+  isRead: boolean;
 }
 
 
@@ -171,14 +184,65 @@ export const getHotDocuments = () => {
 // 4. 上传资料
 export const uploadFile = (data: UploadFile) => {
   const formData = new FormData();
+  
+  // 添加文件字段
   formData.append('file', data.file);
+  formData.append('cover', data.cover);
+  
+  // 添加其他字段
+  formData.append('categoryId', data.categoryId.toString());
+  formData.append('type', data.type);
   formData.append('name', data.name);
-  if (data.description) formData.append('description', data.description);
-  if (data.categoryId) formData.append('categoryId', data.categoryId);
-  return service.post<ApiResponse<{ fileId: string }>>('/files/upload', formData, {
+  formData.append('uploaderId', data.uploaderId.toString());
+  formData.append('uploadTime', data.uploadTime.toISOString());
+  formData.append('introduction', data.introduction);
+  
+  // 处理可能为空的字段
+  if (data.tags !== null){
+    formData.append('tags', data.tags.join(',')); // 数组转字符串
+  }
+  if (data.createYear !== null){
+    formData.append('createYear', data.createYear);
+  }
+  if (data.author !== null){
+    formData.append('author', data.author);
+  }
+  if (data.ISBN !== null){
+    formData.append('ISBN', data.ISBN);
+  }
+  if (data.videoURL !== null){
+    formData.append('videoURL', data.videoURL);
+  }
+  
+  return service.post<ApiResponse<{ document: Document }>>('/user/document', formData, {
     headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+};
+
+// 上传帖子接口
+export const uploadPost = (data: UploadPostForm) => {
+  const formData = new FormData();
+  
+  // 添加必需字段
+  formData.append('senderId', data.senderId.toString());
+  formData.append('title', data.title);
+  formData.append('content', data.content);
+  formData.append('sendTime', data.sendTime.toISOString());
+  formData.append('senderName', data.senderName);
+  formData.append('senderAvatar', data.senderAvatar);
+  
+  // 处理可选字段
+  if (data.documents && data.documents.length > 0) {
+    // 假设 documents 是一个数组，需要序列化
+    formData.append('documents', JSON.stringify(data.documents));
+  }
+  
+  return service.post<ApiResponse< string >>('/post', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   });
 };
 

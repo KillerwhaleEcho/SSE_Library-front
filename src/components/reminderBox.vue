@@ -25,7 +25,7 @@
             class="notification-item" 
             v-for="item in filteredReminders" 
             :key="item.reminderId"
-            :class="{ unread: !item.ifRead }"
+            :class="{ unread: !item.isRead }"
             @click="handleNotificationClick(item)"
           >
             <div class="notification-title">{{ item.type }}</div>
@@ -67,12 +67,12 @@ const router = useRouter();
 const isPanelVisible = ref(false); // 控制popover显示状态
 
 const unreadCount = computed(() => {
-  return props.reminders.filter(item => !item.ifRead).length;
+  return props.reminders.filter(item => !item.isRead).length;
 });
 
 const filteredReminders = computed(() => {
-  // 只返回未读的提醒（ifRead 为 false）
-  return props.reminders.filter(item => !item.ifRead);
+  // 只返回未读的提醒（isRead 为 false）
+  return props.reminders.filter(item => !item.isRead);
 });
 
 // 点击通知项处理
