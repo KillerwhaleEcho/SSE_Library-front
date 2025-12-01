@@ -1,4 +1,4 @@
-import { type Document, type message, type chatBox, type reminder, type UserBrief } from '@/api/all.ts'
+import { type Document, type message, type chatBox, type Reminder, type UserBrief } from '@/api/all.ts'
 import { type CommentItem, type UserRow } from '@/api/admin';
 import avatarIcon from '@/assets/icon_user.png'
 
@@ -70,6 +70,44 @@ export const MOCK_DOCUMENTS: Document[] = [
     introduction: '覆盖 Spring Boot 微服务架构的核心概念与落地方案。',
     createYear: '2022',
     tags: ['Spring', '微服务', 'Java'],
+  },
+    {
+    infoBrief: {
+    name: '数据分析入门',
+    documentId: 103,
+    type: 'file',
+    uploadTime: '2024-04-22 16:45:00',
+    status: '关闭',
+    category: '数据科学',
+    collections: 64,
+    readCounts: 308,
+    URL: 'https://example.com/docs/data-analysis', 
+      },
+    bookISBN: '978-7-302-76543-0',
+    author: '王五',
+    cover: 'https://picsum.photos/seed/data/120/160',
+    introduction: '以真实案例讲解 Pandas、NumPy 与可视化工具的使用。',
+    createYear: '2021',
+    tags: ['数据分析', 'Python', 'Pandas'],
+  },
+    {
+    infoBrief: {
+    name: '数据分析入门',
+    documentId: 103,
+    type: 'file',
+    uploadTime: '2024-04-22 16:45:00',
+    status: '关闭',
+    category: '数据科学',
+    collections: 64,
+    readCounts: 308,
+    URL: 'https://example.com/docs/data-analysis', 
+      },
+    bookISBN: '978-7-302-76543-0',
+    author: '王五',
+    cover: 'https://picsum.photos/seed/data/120/160',
+    introduction: '以真实案例讲解 Pandas、NumPy 与可视化工具的使用。',
+    createYear: '2021',
+    tags: ['数据分析', 'Python', 'Pandas'],
   },
     {
     infoBrief: {
@@ -659,53 +697,53 @@ export const messageFallback: message[] = [
 ];
 
 
-export const fallbackReminders: reminder[] = [
+export const fallbackReminders: Reminder[] = [
   // 评论
   {
     reminderId: 1001,
     receiverId: 1,
-    type: "comment",
+    type: "评论",
     content: "用户「小麦研究生」评论了你的帖子：‘这个启动子根部表达很强，你的qPCR结果能分享下吗？’",
-    ifRead: false,
+    isRead: false,
     sendTime: "2025-11-21T09:12:33+08:00",
   },
   {
     reminderId: 1002,  receiverId: 1,
-    type: "comment",
+    type: "评论",
     content: "用户「Alex」回复了你：‘我也遇到ABD同源问题，你可以试试在3'端加错配。’",
-    ifRead: true,
+    isRead: true,
     sendTime: "2025-11-20T18:45:10+08:00",
   },
 
   // 点赞
   {
     reminderId: 2001,  receiverId: 1,
-    type: "like",
+    type: "点赞",
     content: "用户「PlantLab」点赞了你的评论。",
-    ifRead: false,
+    isRead: false,
     sendTime: "2025-11-21T11:01:05+08:00",
   },
   {
     reminderId: 2002,  receiverId: 1,
-    type: "like",
+    type: "点赞",
     content: "用户「水文小助手」点赞了你的帖子《十五五规划-教育重点任务》。",
-    ifRead: true,
+    isRead: true,
     sendTime: "2025-11-19T22:30:00+08:00",
   },
 
   // 收藏
   {
     reminderId: 3001,  receiverId: 1,
-    type: "favorite",
+    type: "收藏",
     content: "用户「BioInfo」收藏了你的帖子《根优势启动子筛选思路》。",
-    ifRead: false,
+    isRead: false,
     sendTime: "2025-11-21T14:22:48+08:00",
   },
   {
     reminderId: 3002,  receiverId: 1,
-    type: "favorite",
+    type: "收藏",
     content: "你的回答被「材料热模拟数据处理」专题收藏。",
-    ifRead: true,
+    isRead: true,
     sendTime: "2025-11-18T10:07:13+08:00",
   },
 
@@ -725,26 +763,26 @@ export const fallbackReminders: reminder[] = [
   //   sendTime: "2025-11-21T16:50:21+08:00",
   // },
 
-  // 管理 / 系统通知
+  //系统通知
   {
     reminderId: 5001,  receiverId: 1,
-    type: "admin",
+    type: "系统消息",
     content: "系统通知：你的帖子《Auto-HSCT后PGF二次回输病例》已通过审核并公开展示。",
-    ifRead: false,
+    isRead: false,
     sendTime: "2025-11-21T08:00:00+08:00",
   },
   {
     reminderId: 5002,  receiverId: 1,
-    type: "admin",
+    type: "系统消息",
     content: "管理通知：你提交的资料缺少封面页，请在 48 小时内补齐，否则将退回。",
-    ifRead: true,
+    isRead: true,
     sendTime: "2025-11-19T09:30:00+08:00",
   },
   {
     reminderId: 5003,  receiverId: 1,
-    type: "admin",
+    type: "系统消息",
     content: "安全提醒：检测到你的账号在新设备登录，如非本人操作请及时修改密码。",
-    ifRead: false,
+    isRead: false,
     sendTime: "2025-11-18T23:59:59+08:00",
   },
 ];

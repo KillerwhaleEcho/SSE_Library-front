@@ -292,9 +292,9 @@ width: 50%;
     font-weight: 600;
   }
 
-  :deep(.el-table tr:hover > td) {
+  /* :deep(.el-table tr:hover > td) {
     background-color: rgba(185, 148, 254, 0.18);
-  }
+  } */
 
   :deep(.el-tag) {
     border: none;

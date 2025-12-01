@@ -62,14 +62,8 @@
       <div v-else-if="!isReminder && currentSessionId" class="chat-content-main">
         <div class="chat-panel">
           <div class="chat-messages" ref="messageListRef">
-             <div v-if="!messages.length" class="chat-content__empty"></div>
-     <transition-group
-  v-else
-  name="msg-fade"
-  :css="enableMsgAnim"
-  tag="div"
-  class="chat-messages__inner"
->
+            <div v-if="!messages.length" class="chat-content__empty"></div>
+            <transition-group v-else name="msg-fade" :css="enableMsgAnim" tag="div" class="chat-messages__inner">
               <div v-for="(msg, index) in messages" :key="`${msg.sessionId}-${msg.senderId}-${index}`"
                 class="message-row" :class="{ 'is-self': isSelfMessage(msg) }">
                 <img class="message-avatar" :src="msg.senderAvatar" alt="avatar">
@@ -81,6 +75,7 @@
                 </div>
               </div>
             </transition-group>
+            <!-- 一组可以带过渡 / 动画效果的列表元素容器 -->
           </div>
           <div class="chat-input-area">
 
@@ -483,12 +478,15 @@ onMounted(async () => {
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-gutter: stable;
-  padding: 10px 14px 10px 10px; /* right padding reserves scrollbar space */
+  padding: 10px 14px 10px 10px;
+  /* right padding reserves scrollbar space */
   gap: 8px;
-  scrollbar-width: none;        /* Firefox 隐藏滚动条 */
+  scrollbar-width: none;
+  /* Firefox 隐藏滚动条 */
 }
 
-.chat-list::-webkit-scrollbar { /* Chrome/Edge/Safari 隐藏滚动条 */
+.chat-list::-webkit-scrollbar {
+  /* Chrome/Edge/Safari 隐藏滚动条 */
   width: 0;
   height: 0;
 }
@@ -510,7 +508,7 @@ onMounted(async () => {
   height: auto;
   line-height: normal;
   padding: 0 !important;
-  border-radius: 12px;
+  border-radius: 8px;
   transition: background 0.2s ease, transform 0.15s ease;
 }
 
@@ -593,7 +591,7 @@ onMounted(async () => {
   width: 44px;
   height: 44px;
   margin: 0;
-  border-radius: 10px;
+  border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(17, 24, 39, 0.08);
 }
@@ -651,7 +649,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   flex: 1 1 0;
-  height: 100%;  
+  height: 100%;
   min-width: 0;
 }
 
@@ -956,7 +954,7 @@ onMounted(async () => {
 .message-avatar {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
+  border-radius: 6px;
   object-fit: cover;
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(17, 24, 39, 0.12);
@@ -1043,8 +1041,8 @@ onMounted(async () => {
   width: 100%;
   min-height: 90px;
   border: 1px solid #e9ecf5;
-  border-radius: 12px;
-  padding:10px 0;
+  border-radius: 6px;
+  padding: 10px 0;
   font-size: 15px;
   font-weight: 400;
   resize: vertical;

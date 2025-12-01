@@ -2,78 +2,43 @@
   <div class="document-list">
     <el-card class="document-card">
       <div class="document-card__header">
-          <el-input
-            placeholder="请按照书名或者作者搜索"
-            clearable
-            v-model="searchInput"
-            class="document-card__search-input"
-            @keyup.enter="handleSearch"
-            @clear="handleClear"
-            size="large"
-          >
-            <template #append>
-              <el-button typr="primary" @click="handleSearch"
-                >搜索</el-button
-              >
-            </template>
-          </el-input>
+        <el-input placeholder="请按照书名或者作者搜索" clearable v-model="searchInput" class="document-card__search-input"
+          @keyup.enter="handleSearch" @clear="handleClear" size="large">
+          <template #append>
+            <el-button typr="primary" @click="handleSearch">搜索</el-button>
+          </template>
+        </el-input>
         <div class="document-card__actions">
-          <el-button
-            class="document-card__filter-btn"
-            :class="{ 'document-card__filter-btn--active': showReviewingOnly }"
-            size="medium"
-            :type="showReviewingOnly ? 'primary' : 'info'"
-            :plain="!showReviewingOnly"
-            @click="toggleReviewingFilter"
-          >
+          <el-button class="document-card__filter-btn"
+            :class="{ 'document-card__filter-btn--active': showReviewingOnly }" size="medium"
+            :type="showReviewingOnly ? 'primary' : 'info'" :plain="!showReviewingOnly" @click="toggleReviewingFilter">
             {{
               showReviewingOnly ? TEXT.showAllDocuments : TEXT.filterReviewing
             }}
           </el-button>
-          <el-button
-            class="document-card__refresh-btn"
-            type="primary"
-            size="medium"
-            :loading="loading"
-            @click="fetchDocuments"
-          >
+          <el-button class="document-card__refresh-btn" type="primary" size="medium" :loading="loading"
+            @click="fetchDocuments">
             {{ TEXT.refresh }}
           </el-button>
         </div>
       </div>
 
       <div class="document-card__table">
-        <el-table
-          :data="displayedDocuments"
-          border
-          class="document-table"
-          v-loading="loading"
-          :element-loading-text="TEXT.loading"
-          :empty-text="TEXT.empty"
-        >
+        <el-table :data="displayedDocuments" border v-loading="loading" :element-loading-text="TEXT.loading"
+          :empty-text="TEXT.empty">
           <el-table-column :label="TEXT.cover" width="150" align="center">
             <template #default="{ row }">
-              <el-image
-                class="document-table__cover"
-                :src="row.cover"
-                :preview-src-list="row.cover ? [row.cover] : []"
-                fit="cover"
-              >
-                <template #error>
-                  <div class="document-table__cover--fallback">
-                    {{ TEXT.noCover }}
-                  </div>
-                </template>
-              </el-image>
+              <div class="cover">
+                <img v-if="row.cover" :src="row.cover" alt="封面" class="cover-img" />
+                <div v-else class="cover-placeholder">
+                  无封面
+                </div>
+              </div>
             </template>
           </el-table-column>
           <el-table-column :label="TEXT.name" min-width="180" align="center">
             <template #default="{ row }">
-              <el-link
-                type="primary"
-                :underline="false"
-                @click.prevent="handleGoDetail(row)"
-              >
+              <el-link type="primary" :underline="false" @click.prevent="handleGoDetail(row)">
                 {{ row.infoBrief?.name || TEXT.unknown }}
               </el-link>
             </template>
@@ -91,29 +56,17 @@
 
           <el-table-column :label="TEXT.status" width="160" align="center">
             <template #default="{ row }">
-              <el-select
-                v-model="row.infoBrief.status"
-                size="small"
-                @change="(value:any) => handleStatusChange(row, value)"
-              >
-                <el-option
-                  v-for="option in STATUS_OPTIONS"
-                  :key="option.value"
-                  :label="option.label"
-                  :value="option.value"
-                />
+              <el-select v-model="row.infoBrief.status" size="small"
+                @change="(value: any) => handleStatusChange(row, value)">
+                <el-option v-for="option in STATUS_OPTIONS" :key="option.value" :label="option.label"
+                  :value="option.value" />
               </el-select>
             </template>
           </el-table-column>
 
-          <el-table-column :label="TEXT.action" width="120" align="center" fixed="right">
+          <el-table-column :label="TEXT.action" width="120" align="center">
             <template #default="{ row }">
-              <el-button
-                type="primary"
-                link
-                size="small"
-                @click="openEditDialog(row)"
-              >
+              <el-button type="primary" link size="small" @click="openEditDialog(row)">
                 {{ TEXT.edit }}
               </el-button>
             </template>
@@ -122,13 +75,7 @@
       </div>
     </el-card>
     <!-- 修改资料的弹窗 -->
-    <el-dialog
-      v-model="editVisible"
-      :title="TEXT.editTitle"
-      width="560px"
-      destroy-on-close
-      @close="resetEditForm"
-    >
+    <el-dialog v-model="editVisible" :title="TEXT.editTitle" width="560px" destroy-on-close @close="resetEditForm">
       <el-form label-width="108px" :model="editForm" class="document-edit-form">
         <el-form-item :label="TEXT.form.category">
           <el-input v-model="editForm.category" clearable />
@@ -146,20 +93,11 @@
           <el-input v-model="editForm.author" clearable />
         </el-form-item>
         <el-form-item :label="TEXT.form.tags">
-          <el-input
-            v-model="editForm.tags"
-            :placeholder="TEXT.form.tagsPlaceholder"
-            clearable
-          />
+          <el-input v-model="editForm.tags" :placeholder="TEXT.form.tagsPlaceholder" clearable />
         </el-form-item>
         <el-form-item :label="TEXT.form.createYear">
-          <el-date-picker
-            v-model="editForm.createYear"
-            type="year"
-            value-format="YYYY"
-            :placeholder="TEXT.form.createYearPlaceholder"
-            clearable
-          />
+          <el-date-picker v-model="editForm.createYear" type="year" value-format="YYYY"
+            :placeholder="TEXT.form.createYearPlaceholder" clearable />
         </el-form-item>
         <el-form-item :label="TEXT.form.vedioURL">
           <el-input v-model="editForm.vedioURL" clearable />
@@ -168,34 +106,18 @@
           <el-input v-model="editForm.coverUrl" clearable />
         </el-form-item>
         <el-form-item :label="TEXT.form.coverFile">
-          <input
-            ref="coverInput"
-            class="document-edit-form__file-input"
-            type="file"
-            accept="image/*"
-            @change="handleCoverFile"
-          />
+          <input ref="coverInput" class="document-edit-form__file-input" type="file" accept="image/*"
+            @change="handleCoverFile" />
           <span v-if="editForm.coverUrl" class="document-edit-form__hint">
             {{ TEXT.form.coverHint }}
           </span>
         </el-form-item>
         <el-form-item :label="TEXT.form.file">
-          <input
-            ref="fileInput"
-            class="document-edit-form__file-input"
-            type="file"
-            @change="handleDocumentFile"
-          />
+          <input ref="fileInput" class="document-edit-form__file-input" type="file" @change="handleDocumentFile" />
         </el-form-item>
         <el-form-item :label="TEXT.form.introduction">
-          <el-input
-            v-model="editForm.introduction"
-            type="textarea"
-            :rows="4"
-            :placeholder="TEXT.form.introductionPlaceholder"
-            maxlength="500"
-            show-word-limit
-          />
+          <el-input v-model="editForm.introduction" type="textarea" :rows="4"
+            :placeholder="TEXT.form.introductionPlaceholder" maxlength="500" show-word-limit />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -215,7 +137,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import service from "../../utils/service";
-import { type ApiResponse } from "../../api/all";
+import { getBookList } from "../../api/all";
 import { type DocumentEditForm } from "../../types/api";
 import { type Document } from "@/api/all.ts";
 import { MOCK_DOCUMENTS } from "./mockData";
@@ -284,12 +206,12 @@ const delay = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
-const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
+const STATUS_OPTIONS= [
   { label: "开放", value: "开放" },
   { label: "审核中", value: "审核中" },
   { label: "关闭", value: "关闭" },
   { label: "已撤回", value: "已撤回" },
-];
+] as const;
 
 // 这段代码最终的结果是："开放" | "审核中" | "关闭" | "已撤回"
 type DocumentStatus = (typeof STATUS_OPTIONS)[number]["value"];
@@ -353,7 +275,7 @@ const normalizeDocument = (doc: Document): Document => {
     ...doc,
     infoBrief: {
       ...doc.infoBrief,
-      status: normalizedStatus,
+      status: normalizedStatus as DocumentStatus,
       uploadTime: doc.infoBrief.uploadTime || "",
       name: doc.infoBrief.name || "",
       category: doc.infoBrief.category || "",
@@ -375,11 +297,7 @@ const fetchDocuments = async () => {
       return;
     }
 
-    const res = await service.get<ApiResponse<Document[]>>("/documents", {
-      params: {
-        isSuggest: false,
-      },
-    });
+    const res = await getBookList(false)
 
     const list = Array.isArray(res.data) ? res.data : [];
     if (list.length === 0) {
@@ -416,10 +334,6 @@ const toggleReviewingFilter = () => {
 };
 
 const handleStatusChange = async (row: Document, nextStatus: string) => {
-  if (!row.infoBrief?.documentId) {
-    ElMessage.error(TEXT.editMissingId);
-    return;
-  }
 
   const previous = row.infoBrief.status;
   row.infoBrief.status = nextStatus as typeof row.infoBrief.status;
@@ -429,10 +343,10 @@ const handleStatusChange = async (row: Document, nextStatus: string) => {
       await delay(200);
       const mockIndex = MOCK_DOCUMENTS.findIndex(
         (item) => item.infoBrief.documentId === row.infoBrief.documentId
-      );
+      );   // find 和 findIndex 的本质区别:一个返回元素本身一个返回下标
       if (mockIndex !== -1) {
-        MOCK_DOCUMENTS[mockIndex].infoBrief.status =
-          nextStatus as (typeof MOCK_DOCUMENTS)[number]["infoBrief"]["status"];
+        MOCK_DOCUMENTS[mockIndex]!.infoBrief.status =
+          nextStatus as typeof MOCK_DOCUMENTS[number]["infoBrief"]["status"];//这里的number代表索引的类型，后面都是在选取属性
       }
     } else {
       await service.put("/admin/document/status", {
@@ -557,8 +471,8 @@ const handleSaveEdit = async () => {
 
   const current = USE_MOCK
     ? documents.value.find(
-        (item) => item.infoBrief.documentId === editForm.documentId
-      ) ?? null
+      (item) => item.infoBrief.documentId === editForm.documentId
+    ) ?? null
     : null;
 
   if (USE_MOCK && current === null) {
@@ -665,7 +579,7 @@ onMounted(fetchDocuments);
 
 
 .document-card__search-input {
- width: 50%;
+  width: 50%;
 }
 
 .document-card__actions {
@@ -703,11 +617,11 @@ onMounted(fetchDocuments);
   flex: 1;
   min-height: 0;
   display: flex;
-  flex-direction: column;
 }
 
 .document-card__table :deep(.el-table) {
   flex: 1;
+  --el-table-border-color: rgba(185, 148, 254, 0.2);
   background-color: #fff;
   border-radius: 0;
 }
@@ -718,34 +632,43 @@ onMounted(fetchDocuments);
   overflow-y: auto;
 }
 
-
-
-:deep(.el-table tr:hover > td) {
+:deep(.el-table th) {
   background-color: rgba(185, 148, 254, 0.18);
+  color: #3f2458;
+  font-weight: 600;
 }
 
-.document-table__cover {
-  width: 72px;
-  height: 96px;
-  border-radius: 6px;
+/* :deep(.el-table tr:hover > td) {
+  background-color: rgba(185, 148, 254, 0.18);
+} */
+
+/* 外层容器：把这一格变成一个居中的小方块 */
+.cover {
+  display: flex;             /* 用 flex 居中内部内容 */
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(185, 148, 254, 0.15) 0%, rgba(185, 148, 254, 0.3) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #f3f4f6;       /* 没图时有个淡背景 */
 }
 
-.document-table__cover--fallback {
-  width: 72px;
-  height: 96px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: #4f377e;
-  background: rgba(185, 148, 254, 0.15);
-  border-radius: 6px;
+
+.cover-img {
+  width: 80%;
+  height: 100%;
+  display: block;
+  object-fit: cover;         /* 按比例裁剪 */
+  object-position: center;  
 }
+
+/* 没有图片时的占位 */
+.cover-placeholder {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+
+
 
 .dialog-footer {
   display: flex;

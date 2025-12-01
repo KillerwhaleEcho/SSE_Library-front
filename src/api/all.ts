@@ -149,7 +149,7 @@ export interface UploadPostForm {
 export interface Reminder {
   reminderId: number;
   receiverId: number;
-  type: "评论" | "点赞" | "收藏" | "系统消息" | "聊天";
+  type: "评论" | "点赞" | "收藏" | "系统消息" ;
   content: string;
   sendTime: string;
   isRead: boolean;
