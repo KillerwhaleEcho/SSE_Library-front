@@ -49,7 +49,7 @@ export interface InfoBrief {
   name: string;
   type: 'book' | 'file' | 'video' | null;
   uploadTime: string;
-  status: '开放' | '审核中' | '关闭' | '已撤回'
+  status: 'open' | 'closed' | 'pending' | 'withdrawn' | string;
   category?: string;
   collections: number;
   readCounts: number;
@@ -377,6 +377,11 @@ export const deleteUserFavor = (payload: { userId: number; documentId: number })
 // 判断是否已收藏
 export const getUserFavoriteJudgement = (params: { userId: number; documentId: number }) => {
   return service.get<ApiResponse<{ judgement: boolean }>>('/user/checkFavorite', { params });
+};
+
+// 管理员调整文档状态
+export const updateDocumentStatus = (payload: { documentId: number; status: 'open' | 'closed' | 'pending' | 'withdrawn' }) => {
+  return service.put<ApiResponse<null>>('/admin/document/status', payload);
 };
 
 

@@ -67,6 +67,16 @@
                                     <span>下载</span>
                                 </button>
                             </div>
+                            <div v-if="isAdminViewer" class="document-actions-row admin-action-row">
+                                <button class="doc-action-button admin" :class="{ disabled: statusUpdating }"
+                                    :disabled="statusUpdating" @click="handleStatusUpdate('open')">
+                                    <span>开放 open</span>
+                                </button>
+                                <button class="doc-action-button admin" :class="{ disabled: statusUpdating }"
+                                    :disabled="statusUpdating" @click="handleStatusUpdate('closed')">
+                                    <span>关闭 closed</span>
+                                </button>
+                            </div>
                         </div>
                         <el-empty v-else description="未找到相关文档" />
                     </template>
@@ -100,6 +110,7 @@ import {
     getUserFavoriteJudgement,
     postUserAddFavor,
     deleteUserFavor,
+    updateDocumentStatus,
 } from '@/api/all.ts'
 import previewIcon from '@/assets/147_阅读.png'
 import likeIcon from '@/assets/喜欢_like.png'
@@ -117,12 +128,14 @@ const documentDetail = ref<Document | null>(null)
 const favoriteProcessing = ref(false)
 const favoriteJudgement = ref(false)
 const previewLoading = ref(false)
+const statusUpdating = ref(false)
 
 const brief = computed(() => documentDetail.value?.infoBrief ?? null)
 const coverSrc = computed(() => documentDetail.value?.cover || defaultCover)
 const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.value?.URL))
 const tags = computed(() => documentDetail.value?.tags ?? [])
 const previewButtonText = computed(() => (previewLoading.value ? '加载中...' : '预览'))
+const isAdminViewer = computed(() => userInfo.value?.role === 'admin')
 
 const favoriteLabel = computed(() => (favoriteJudgement.value ? '停止收藏' : '收藏'))
 const favoriteIconSrc = computed(() => (favoriteJudgement.value ? unlikeIcon : likeIcon))
@@ -148,9 +161,16 @@ const formattedDate = (value?: string | null) => {
     return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
+const docStatusDisplayMap: Record<string, string> = {
+    open: '开放',
+    closed: '关闭',
+    pending: '待审核',
+    withdrawn: '已撤回',
+}
+const currentDocumentStatus = computed(() => (brief.value?.status ? docStatusDisplayMap[brief.value.status] ?? brief.value.status : '未知'))
 const baseDetails = computed(() => {
     if (!documentDetail.value || !brief.value) return [] as Array<{ label: string; value: string }>
-    return [
+    const details: Array<{ label: string; value: string }> = [
         {
             label: '资料类型',
             value: typeMap[brief.value.type ?? ''] ?? (brief.value.type ?? '未知'),
@@ -160,6 +180,10 @@ const baseDetails = computed(() => {
         { label: '出版年份', value: documentDetail.value.createYear ?? '' },
         { label: 'ISBN', value: documentDetail.value.bookISBN ?? '' },
     ]
+    if (isAdminViewer.value && brief.value.status) {
+        details.unshift({ label: '状态', value: currentDocumentStatus.value })
+    }
+    return details
 })
 
 const commentViewer = computed<UserBrief | null>(() => {
@@ -307,6 +331,31 @@ const handleFavorite = async () => {
     }
 }
 
+const handleStatusUpdate = async (targetStatus: 'open' | 'closed') => {
+    if (!isAdminViewer.value || statusUpdating.value) return
+    const docNumericId = brief.value?.documentId ?? Number(documentId.value)
+    if (docNumericId === undefined || docNumericId === null) {
+        ElMessage.warning('未找到文档编号，无法修改状态')
+        return
+    }
+    if (brief.value?.status === targetStatus) {
+        ElMessage.info('状态已是最新，无需修改')
+        return
+    }
+    statusUpdating.value = true
+    try {
+        await updateDocumentStatus({ documentId: Number(docNumericId), status: targetStatus })
+        ElMessage.success('状态已更新')
+        if (documentId.value) {
+            await loadDocumentDetail(documentId.value)
+        }
+    } catch (error: any) {
+        ElMessage.error(error?.message || '更新状态失败')
+    } finally {
+        statusUpdating.value = false
+    }
+}
+
 const refreshFavoriteJudgement = async () => {
     const currentUserId = userInfo.value?.userId
     const currentDocumentId = brief.value?.documentId
@@ -427,6 +476,10 @@ watch(
     gap: 16px;
 }
 
+.admin-action-row {
+    margin-top: 12px;
+}
+
 .doc-action-button {
     flex: 1;
     min-width: 160px;
@@ -460,6 +513,11 @@ watch(
 .doc-action-button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+.doc-action-button.admin {
+    background: #eef2ff;
+    color: #1d4ed8;
 }
 
 .action-icon {
