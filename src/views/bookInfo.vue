@@ -95,10 +95,9 @@ import defaultCover from '@/assets/coverexp.png'
 import {
     type ApiResponse,
     type Document,
-    type InfoBrief,
     type UserBrief,
     getDocumentDetail,
-    getUserCollectionList,
+    getUserFavoriteJudgement,
     postUserAddFavor,
     deleteUserFavor,
 } from '@/api/all.ts'
@@ -115,9 +114,8 @@ const { userInfo } = storeToRefs(authStore)
 const documentId = ref<string>('')
 const detailLoading = ref(false)
 const documentDetail = ref<Document | null>(null)
-const userCollections = ref<InfoBrief[]>([])
-const collectionsLoading = ref(false)
 const favoriteProcessing = ref(false)
+const favoriteJudgement = ref(false)
 const previewLoading = ref(false)
 
 const brief = computed(() => documentDetail.value?.infoBrief ?? null)
@@ -126,18 +124,8 @@ const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.
 const tags = computed(() => documentDetail.value?.tags ?? [])
 const previewButtonText = computed(() => (previewLoading.value ? '加载中...' : '预览'))
 
-const normalizeDocumentId = (value?: number | string | null) => {
-    if (value === undefined || value === null) return null
-    return String(value)
-}
-
-const isFavorited = computed(() => {
-    const currentId = normalizeDocumentId(brief.value?.documentId)
-    if (!currentId) return false
-    return userCollections.value.some((item) => normalizeDocumentId(item.documentId) === currentId)
-})
-const favoriteLabel = computed(() => (isFavorited.value ? '取消收藏' : '收藏'))
-const favoriteIconSrc = computed(() => (isFavorited.value ? unlikeIcon : likeIcon))
+const favoriteLabel = computed(() => (favoriteJudgement.value ? '停止收藏' : '收藏'))
+const favoriteIconSrc = computed(() => (favoriteJudgement.value ? unlikeIcon : likeIcon))
 
 const typeMap: Record<string, string> = {
     book: '书籍',
@@ -305,13 +293,12 @@ const handleFavorite = async () => {
     }
 
     favoriteProcessing.value = true
-    const wasFavorited = isFavorited.value
+    const wasFavorited = favoriteJudgement.value
     const payload = { userId: currentUserId, documentId }
 
     try {
-        const response = wasFavorited ? await deleteUserFavor(payload) : await postUserAddFavor(payload)
-        const updatedList = extractCollectionsFromResponse(response)
-        userCollections.value = updatedList
+        await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
+        await refreshFavoriteJudgement()
         ElMessage.success(wasFavorited ? '取消收藏成功' : '收藏成功')
     } catch (error: any) {
         ElMessage.error(error?.message || (wasFavorited ? '取消收藏失败' : '收藏失败'))
@@ -320,56 +307,22 @@ const handleFavorite = async () => {
     }
 }
 
-const extractCollectionsFromResponse = (payload: unknown): InfoBrief[] => {
-    if (!payload) return []
-
-    const normalizeEntry = (entry: any): InfoBrief | null => {
-        if (!entry) return null
-        if (entry.infoBrief) return entry.infoBrief as InfoBrief
-        if (typeof entry === 'object' && 'documentId' in entry) {
-            return {
-                documentId: entry.documentId,
-                name: entry.name ?? '',
-                type: entry.type ?? null,
-                uploadTime: entry.uploadTime ?? '',
-                status: entry.status ?? '开放',
-                category: entry.category,
-                collections: entry.collections ?? 0,
-                readCounts: entry.readCounts ?? 0,
-                URL: entry.URL ?? '',
-            } as InfoBrief
-        }
-        return null
-    }
-
-    let rawList: any[] = []
-    if (Array.isArray(payload)) {
-        rawList = payload
-    } else if (typeof payload === 'object' && Array.isArray((payload as any).data)) {
-        rawList = (payload as any).data
-    }
-
-    return rawList
-        .map((item) => normalizeEntry(item))
-        .filter((item): item is InfoBrief => Boolean(item))
-}
-
-const loadUserCollections = async () => {
+const refreshFavoriteJudgement = async () => {
     const currentUserId = userInfo.value?.userId
-    if (!currentUserId) {
-        userCollections.value = []
+    const currentDocumentId = brief.value?.documentId
+    if (!currentUserId || currentDocumentId === undefined || currentDocumentId === null) {
+        favoriteJudgement.value = false
         return
     }
-    collectionsLoading.value = true
     try {
-        const response = await getUserCollectionList(currentUserId)
-        const collectionList = extractCollectionsFromResponse(response)
-        userCollections.value = collectionList
+        const response = (await getUserFavoriteJudgement({
+            userId: currentUserId,
+            documentId: Number(currentDocumentId),
+        })) as unknown as ApiResponse<{ judgement: boolean }>
+        favoriteJudgement.value = Boolean(response?.data?.judgement)
     } catch (error: any) {
-        userCollections.value = []
-        ElMessage.error(error?.message || '获取收藏列表失败')
-    } finally {
-        collectionsLoading.value = false
+        favoriteJudgement.value = false
+        console.error('获取收藏状态失败:', error)
     }
 }
 
@@ -389,9 +342,12 @@ watch(
 )
 
 watch(
-    () => userInfo.value?.userId,
+    [
+        () => userInfo.value?.userId,
+        () => brief.value?.documentId,
+    ],
     async () => {
-        await loadUserCollections()
+        await refreshFavoriteJudgement()
     },
     { immediate: true },
 )

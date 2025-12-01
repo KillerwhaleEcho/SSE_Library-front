@@ -364,11 +364,6 @@ export const deleteAdminComment = (commentId: string | number) => {
 };
 
 
-// 获取用户收藏列表
-export const getUserCollectionList = (userId: string | number) => {
-  return service.get<ApiResponse<Document[]>>(`/user/${userId}/collectionList`);
-};
-
 // 收藏资料
 export const postUserAddFavor = (payload: { userId: number; documentId: number }) => {
   return service.post<ApiResponse<Document[]>>('/user/collect', payload);
@@ -377,6 +372,11 @@ export const postUserAddFavor = (payload: { userId: number; documentId: number }
 // 取消收藏
 export const deleteUserFavor = (payload: { userId: number; documentId: number }) => {
   return service.delete<ApiResponse<Document[]>>('/user/collect', { data: payload });
+};
+
+// 判断是否已收藏
+export const getUserFavoriteJudgement = (params: { userId: number; documentId: number }) => {
+  return service.get<ApiResponse<{ judgement: boolean }>>('/user/checkFavorite', { params });
 };
 
 
