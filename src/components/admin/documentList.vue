@@ -58,8 +58,8 @@
             <template #default="{ row }">
               <el-select v-model="row.infoBrief.status" size="small"
                 @change="(value: any) => handleStatusChange(row, value)">
-                <el-option v-for="option in STATUS_OPTIONS" :key="option.value" :label="option.label"
-                  :value="option.value" />
+                <el-option v-for="option in STATUS_OPTIONS" :key="option.label" :label="option.value"
+                  :value="option.label" />
               </el-select>
             </template>
           </el-table-column>
@@ -81,7 +81,10 @@
           <el-input v-model="editForm.category" clearable />
         </el-form-item>
         <el-form-item :label="TEXT.form.type">
-          <el-input v-model="editForm.type" clearable />
+       <el-select v-model="editForm.type">
+        <el-option aria-label="书籍" value="book"></el-option>
+         <el-option  aria-label="文件" value="file"></el-option>
+       </el-select>
         </el-form-item>
         <el-form-item :label="TEXT.form.name">
           <el-input v-model="editForm.name" clearable />
@@ -136,8 +139,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
-import service from "../../utils/service";
-import { getBookList } from "../../api/all";
+import { getBookList, updateFileInfo, updateFileStatus } from "../../api/all";
 import { type DocumentEditForm } from "../../types/api";
 import { type Document } from "@/api/all.ts";
 import { MOCK_DOCUMENTS } from "./mockData";
@@ -207,21 +209,21 @@ const delay = (ms: number) =>
   });
 
 const STATUS_OPTIONS= [
-  { label: "开放", value: "开放" },
-  { label: "审核中", value: "审核中" },
-  { label: "关闭", value: "关闭" },
-  { label: "已撤回", value: "已撤回" },
+  { label: "open", value: "开放" },
+  { label: "pending", value: "审核中" },
+  { label: "closed", value: "关闭" },
+  { label: "withdrawn", value: "已撤回" },
 ] as const;
 
 // 这段代码最终的结果是："开放" | "审核中" | "关闭" | "已撤回"
-type DocumentStatus = (typeof STATUS_OPTIONS)[number]["value"];
+type DocumentStatusEH = (typeof STATUS_OPTIONS)[number]['label']
 
 // 按照要求返回资料，搜索逻辑也在其中。所以这个函数可以表示为：源数据 + 派生条件 -> 计算得到展示列表
 const filteredDocuments = computed<Document[]>(() => {
   const keyword = appliedKeyword.value.toLowerCase();
 
   const baseList = showReviewingOnly.value
-    ? documents.value.filter((item) => item.infoBrief.status === "审核中")
+    ? documents.value.filter((item) => item.infoBrief.status === "pending")
     : documents.value;
 
   if (!keyword) {
@@ -265,17 +267,16 @@ const editForm = reactive<DocumentEditForm>({
   vedioURL: "",
 });
 
+
 const normalizeDocument = (doc: Document): Document => {
-  const fallbackStatus: DocumentStatus = "审核中";
-  const normalizedStatus: DocumentStatus =
-    STATUS_OPTIONS.find((option) => option.value === doc.infoBrief.status)
-      ?.value ?? fallbackStatus;
+  const fallbackStatus='pending'
+  const normalizedStatus: DocumentStatusEH =STATUS_OPTIONS.find((option)=>option.label===doc.infoBrief.status)?.label??fallbackStatus
 
   return {
     ...doc,
     infoBrief: {
       ...doc.infoBrief,
-      status: normalizedStatus as DocumentStatus,
+      status: normalizedStatus as DocumentStatusEH,
       uploadTime: doc.infoBrief.uploadTime || "",
       name: doc.infoBrief.name || "",
       category: doc.infoBrief.category || "",
@@ -349,10 +350,7 @@ const handleStatusChange = async (row: Document, nextStatus: string) => {
           nextStatus as typeof MOCK_DOCUMENTS[number]["infoBrief"]["status"];//这里的number代表索引的类型，后面都是在选取属性
       }
     } else {
-      await service.put("/admin/document/status", {
-        documentId: row.infoBrief.documentId,
-        status: nextStatus,
-      });
+      await updateFileStatus(row.infoBrief.documentId,nextStatus)
     }
     ElMessage.success(TEXT.statusUpdated);
   } catch (error) {
@@ -436,54 +434,18 @@ const handleDocumentFile = (event: Event) => {
   editForm.file = file;
 };
 
-const buildSubmitFormData = () => {
-  const formData = new FormData();
-
-  formData.append("documentId", String(editForm.documentId));
-  formData.append("type", editForm.type.trim());
-  formData.append("category", editForm.category.trim());
-  formData.append("name", editForm.name.trim());
-  formData.append("isbn", editForm.isbn.trim());
-  formData.append("tags", editForm.tags.trim());
-  formData.append("author", editForm.author.trim());
-  formData.append("createYear", editForm.createYear.trim());
-  formData.append("introduction", editForm.introduction.trim());
-  formData.append("vedioURL", editForm.vedioURL.trim());
-
-  if (editForm.coverFile) {
-    formData.append("cover", editForm.coverFile);
-  } else if (editForm.coverUrl && !editForm.coverUrl.startsWith("blob:")) {
-    formData.append("cover", editForm.coverUrl.trim());
-  }
-
-  if (editForm.file) {
-    formData.append("file", editForm.file);
-  }
-
-  return formData;
-};
 
 const handleSaveEdit = async () => {
-  if (editForm.documentId === null) {
-    ElMessage.error(TEXT.editMissingId);
-    return;
-  }
+  if (saving.value) return 
 
-  const current = USE_MOCK
-    ? documents.value.find(
+  const current = documents.value.find(
       (item) => item.infoBrief.documentId === editForm.documentId
-    ) ?? null
-    : null;
-
-  if (USE_MOCK && current === null) {
-    ElMessage.error(TEXT.editMissingId);
-    return;
-  }
-
+  );
+    
   saving.value = true;
-  try {
-    if (USE_MOCK && current) {
-      await delay(400);
+
+  if (USE_MOCK && current) {
+         await delay(400);
       const tags = editForm.tags
         .split(",")
         .map((tag) => tag.trim())
@@ -499,9 +461,9 @@ const handleSaveEdit = async () => {
       current.cover = editForm.coverUrl.trim();
       current.introduction = editForm.introduction.trim();
       current.infoBrief.URL = editForm.vedioURL.trim();
-      current.tags = tags;
+    current.tags = tags;
 
-      const mockTarget = MOCK_DOCUMENTS.find(
+        const mockTarget = MOCK_DOCUMENTS.find(
         (item) => item.infoBrief.documentId === current.infoBrief.documentId
       );
       if (mockTarget) {
@@ -515,12 +477,16 @@ const handleSaveEdit = async () => {
         mockTarget.introduction = current.introduction;
         mockTarget.infoBrief.URL = current.infoBrief.URL;
         mockTarget.tags = [...current.tags];
-      }
-    } else {
-      const formData = buildSubmitFormData();
-      await service.put("/document", formData);
-      await fetchDocuments();
     }
+        ElMessage.success(TEXT.editSuccess);
+    editVisible.value = false;
+      return 
+  }
+
+  try {
+    console.log(2222222)
+      await updateFileInfo(editForm)
+      await fetchDocuments();
 
     ElMessage.success(TEXT.editSuccess);
     editVisible.value = false;

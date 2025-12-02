@@ -47,8 +47,8 @@
             <article v-for="item in sortedReminders" :key="item.reminderId" class="reminder-card"
               :class="{ 'is-unread': !item.isRead }">
               <div class="reminder-card__meta">
-                <span class="reminder-type" :class="`type-${item.type}`">
-                  {{ getReminderLabel(item.type) }}
+                <span class="reminder-type" :class="`type-${getReminderLabel(item.type) }`">
+                  {{item.type }}
                 </span>
                 <span class="reminder-time">{{ formatReminderTime(item.sendTime) }}</span>
               </div>
@@ -110,7 +110,7 @@ import { ElMessage } from "element-plus";
 import { chatBoxFallback, fallbackAdminInfo, messageFallback, fallbackReminders } from "./admin/mockData";
 import reminderIcon from '@/assets/147_通知.png'
 import unreadIcon from '@/assets/红点消息.png'
-import type { UserBrief } from "@/api/admin";
+import type { UserBrief } from "@/api/all";
 
 //聊天框应该显示的数据
 // export interface chatBox{
@@ -188,13 +188,11 @@ const sending = ref(false);
 
 const unreadReminderCount = computed(() => reminders.value.filter(item => !item.isRead).length)
 const reminderTypeDict: Record<string, string> = {
-  comment: '评论',
-  like: '点赞',
-  favorite: '收藏',
-  chat: '私信',
-  admin: '系统',
+  评论: 'comment',
+  点赞: 'like',
+  收藏: 'favorite',
+  系统消息: 'admin',
 }
-
 
 
 

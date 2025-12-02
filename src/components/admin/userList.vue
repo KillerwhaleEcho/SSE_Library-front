@@ -80,10 +80,9 @@ import { computed, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
   getUserList,
-  updateUserStatus,
-  type UserBrief,
+  updateUserStatus,type UserRow
 } from "../../api/admin";
-import {type UserRow } from "../../api/admin";
+import { type UserBrief} from "../../api/all";
 import {  DEMO_USERS} from "./mockData";
 
 const TEXT = {

@@ -1,5 +1,6 @@
 import service from '../utils/service'
 import request from '../utils/request'
+import type { DocumentEditForm } from '@/types/api'
 
 export interface ApiResponse<T = any> {
   code: number
@@ -12,7 +13,7 @@ export interface UserBrief {
   userId: number;
   username: string;
   userAvatar: string;
-  status: string;
+  status: 'active'|'inactive';
   createTime: string;
   email: string;
   role: string;
@@ -49,7 +50,7 @@ export interface InfoBrief {
   name: string;
   type: 'book' | 'file' | 'video' | null;
   uploadTime: string;
-  status: '开放' | '审核中' | '关闭' | '已撤回'
+  status: 'open' | 'pending' | 'closed' | 'withdrawn'
   category?: string;
   collections: number;
   readCounts: number;
@@ -255,10 +256,14 @@ export const getBookList = (is_suggest: boolean, categoryId?: number) => {
   });
 };
 
+// 修改资料状态
+export const updateFileStatus = (docId: number, newStatus: string)=>{return service.put<ApiResponse<null>>('/admin/document/status',{docId,newStatus})}
+
+
 // 6. 修改资料信息
-export const updateFileInfo = (fileId: string, data: { name?: string; description?: string; categoryId?: string }) => {
-  return service.put<ApiResponse<null>>(`/files/${fileId}`, data);
-};
+export const updateFileInfo = (data:DocumentEditForm) => {
+  return service.put<ApiResponse<null>>('/document',data)
+}
 
 // 7. 搜索书籍或文件
 export const searchBooksOrFiles = (
@@ -382,7 +387,7 @@ export const deleteUserFavor = (payload: { userId: number; documentId: number })
 
 // 发送消息,接口名加上interface避免重名
 export const sendMessageInterface = (sessionId: number, receiverId: number, content: string) => {
-  return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/send', { sessionId, receiverId, content })
+  return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/message', { sessionId, receiverId, content })
 }
 
 //获取聊天回话列表
@@ -404,7 +409,7 @@ export const getReminder=(userId: number) => {
 
 //标记消息已读
 export const markReminderRead = (reminderId: number)=>{
-  return service.post<ApiResponse<string>>('/markReminderRead',{reminderId},{ headers: { noLoading: true }})
+  return service.put<ApiResponse<string>>('/markReminderRead',{reminderId},{ headers: { noLoading: true }})
 }// 给“轻量请求”加一个开关，不显示全屏 Loading
 
 
