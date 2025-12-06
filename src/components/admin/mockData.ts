@@ -469,6 +469,52 @@ export const messageFallback: message[] = [
   },
   {
     sessionId: 1001,
+    senderId: 2,
+    sendTime: "2024-01-15 14:30:26",
+    senderName: "李四",
+    senderAvatar: avatarIcon,
+    content: "你1",
+    status: '已发送'
+  },
+    {
+    sessionId: 1001,
+    senderId: 2,
+    sendTime: "2024-01-15 14:30:26",
+    senderName: "李四",
+    senderAvatar: avatarIcon,
+    content: "你2",
+    status: '已发送'
+  },
+
+    {
+    sessionId: 1001,
+    senderId: 2,
+    sendTime: "2024-01-15 14:30:26",
+    senderName: "李四",
+    senderAvatar: avatarIcon,
+    content: "你3",
+    status: '已发送'
+  },
+    {
+    sessionId: 1001,
+    senderId: 2,
+    sendTime: "2024-01-15 14:30:26",
+    senderName: "李四",
+    senderAvatar: avatarIcon,
+    content: "你4",
+    status: '已发送'
+  },
+    {
+    sessionId: 1001,
+    senderId: 2,
+    sendTime: "2024-01-15 14:30:26",
+    senderName: "李四",
+    senderAvatar: avatarIcon,
+    content: "你5",
+    status: '已发送'
+  },
+  {
+    sessionId: 1001,
     senderId: 1,
     sendTime: "2024-01-15 14:31:10",
     senderName: "张三",

@@ -406,6 +406,11 @@ export const getMessageList = (sessionId: number, userId: number) => {
   return service.get<ApiResponse<message[]>>('/chat/messages', { params: { sessionId, userId } })
 }
 
+//搜索聊天记录
+export const searchMessage = (userId: number, searchKey: string) => {
+  return service.get<ApiResponse<message[]>>('/chat/search',{params:{userId,searchKey}})
+}
+
 //获取提醒（通知）
 export const getReminder=(userId: number) => {
   return service.get<ApiResponse<Reminder[]>>('/getReminder',{params:{userId}})

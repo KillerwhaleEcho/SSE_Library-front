@@ -1,4 +1,5 @@
 <template>
+  <topbar></topbar>
   <div class="chat-view">
     <aside class="chat-list">
       <div class="reminder" @click="handleReminderSelect">
@@ -8,7 +9,7 @@
           <span>{{ unreadReminderCount }}</span>
         </figure>
       </div>
-      <el-menu class="chat-menu" :default-active="String(currentSessionId || '')" @select="handleSelect">
+      <el-menu class="chat-menu" :default-active="String(currentSessionId !=-1|| '')" @select="handleSelect">
         <el-menu-item v-for="chatbox in appliedChatboxes" :index="String(chatbox.sessionId)">
           <div class="chatbox-item">
             <figure class="contact-avatar">
@@ -27,12 +28,12 @@
     <section class="chatview-content">
       <div class="chatview-top">
         <div class="chatview-search">
-          <input v-model="searchInput" @keyup.enter="handleSearch" placeholder="请输入搜索关键词，包括联系人和聊天内容">
+          <input v-model="searchInput" @keyup.enter="handleSearch" placeholder="请输入聊天记录的搜索关键词">
           </input>
-          <div class="chatview-button">搜索</div>
+          <div class="chatview-button" @click="handleSearch">搜索</div>
         </div>
-      </div>
-      <div v-if="isReminder" class="chat-content-main">
+      </div>     
+        <div v-if="isReminder" class="chat-content-main">
         <div class="reminder-panel">
           <div class="reminder-header">
             <div>
@@ -47,10 +48,10 @@
             <article v-for="item in sortedReminders" :key="item.reminderId" class="reminder-card"
               :class="{ 'is-unread': !item.isRead }">
               <div class="reminder-card__meta">
-                <span class="reminder-type" :class="`type-${getReminderLabel(item.type) }`">
-                  {{item.type }}
+                <span class="reminder-type" :class="`type-${getReminderLabel(item.type)}`">
+                  {{ item.type }}
                 </span>
-                <span class="reminder-time">{{ formatReminderTime(item.sendTime) }}</span>
+                <span class="reminder-time">{{ formatTime(item.sendTime) }}</span>
               </div>
               <p class="reminder-content">{{ item.content }}</p>
               <button v-if="!item.isRead" class="reminder-mark" @click="markRead(item)">标记已读</button>
@@ -59,19 +60,19 @@
           <div v-else class="reminder-empty">暂无通知</div>
         </div>
       </div>
-      <div v-else-if="!isReminder && currentSessionId" class="chat-content-main">
+      <div v-else-if="!isReminder && currentSessionId!=-1" class="chat-content-main">
         <div class="chat-panel">
           <div class="chat-messages" ref="messageListRef">
             <div v-if="!messages.length" class="chat-content__empty"></div>
             <transition-group v-else name="msg-fade" :css="enableMsgAnim" tag="div" class="chat-messages__inner">
-              <div v-for="(msg, index) in messages" :key="`${msg.sessionId}-${msg.senderId}-${index}`"
+              <div v-for="(msg, index) in messages" :key="`${msg.sessionId}-${msg.senderId}-${index}`" :id="`${msg.sessionId}-${msg.sendTime}`"
                 class="message-row" :class="{ 'is-self': isSelfMessage(msg) }">
                 <img class="message-avatar" :src="msg.senderAvatar" alt="avatar">
                 <div class="message-body">
                   <div class="message-bubble">
                     {{ msg.content }}
                   </div>
-                  <span class="message-time">{{ formatMessageTime(msg.sendTime) }}</span>
+                  <span class="message-time">{{ formatTime(msg.sendTime) }}</span>
                 </div>
               </div>
             </transition-group>
@@ -80,7 +81,7 @@
           <div class="chat-input-area">
 
             <textarea v-model="chatInput" class="chat-input" rows="3" placeholder="输入消息，Enter发送 / Shift+Enter换行"
-              @keydown.enter.exact.prevent="handleEnterSend">
+              @keydown.enter.exact.prevent="handleSendClick">
           </textarea>
             <button class="send-button" :disabled="!canSendMessage" @click="handleSendClick">
               发送
@@ -92,6 +93,22 @@
         <span>SSE-library</span>
       </div>
     </section>
+
+    <el-dialog v-model="visible" title="聊天记录" width="560px" destroy-on-close class="chat-record-dialog">
+        <el-menu @select="handleSearchMess">
+        <el-menu-item v-for="item in matchMessages" :index="item.sessionId+','+item.sendTime">
+          <div class="chatbox-item">
+            <figure class="contact-avatar">
+              <img :src="item.senderAvatar" >
+            </figure>
+            <div class="chatbox-content">
+              <span class="chatbox-content-name">{{ item.senderName }}</span>
+              <span>{{ item.content }}</span>
+            </div>
+          </div>
+        </el-menu-item>
+      </el-menu> 
+    </el-dialog>
   </div>
 </template>
 
@@ -104,6 +121,7 @@ import {
   getUserDetail,
   getReminder,
   markReminderRead,
+  searchMessage,
 } from "@/api/all";
 import { type message, type chatBox, type Reminder } from "@/api/all";
 import { ElMessage } from "element-plus";
@@ -111,31 +129,8 @@ import { chatBoxFallback, fallbackAdminInfo, messageFallback, fallbackReminders 
 import reminderIcon from '@/assets/147_通知.png'
 import unreadIcon from '@/assets/红点消息.png'
 import type { UserBrief } from "@/api/all";
-
-//聊天框应该显示的数据
-// export interface chatBox{
-//   sessionId: number
-//   userId1: number
-//   userAvatar1: string
-//   userName1: string
-//   userId2: number
-//   userAvatar2: string
-//   userName2: string
-//   lastMessage: string
-//   lastTime: string
-//   unreadCount:number
-// }
-
-//聊天消息相关
-// export interface message{
-//   sessionId: number,
-//   senderId: number
-//   sendTime: string,
-//   senderName: string
-//   senderAvatar: string
-//   content: string
-//   status:'已发送'|'未接收'|'未读'
-// }
+import topbar from "@/layout/topbar.vue";
+import type topbarVue from "@/layout/topbar.vue";
 
 //数据
 const userInfo = ref<UserBrief | null>()
@@ -144,16 +139,17 @@ const messages = ref<message[]>([]);//当前聊天界面的message而不是所�
 const chatInput = ref("");
 
 
-const currentSessionId = ref(0);
+const currentSessionId = ref(-1);
 const searchInput = ref("");
-const appliedInput = ref('')
 const reminders = ref<Reminder[]>([])
 const reminderIconUrl = ref(reminderIcon)
 const unreadUrl = ref(unreadIcon)
 const isReminder = ref(false)
 const messageListRef = ref<HTMLElement | null>(null)
 const enableMsgAnim = ref(true)
-
+const visible = ref(false)
+const matchMessages = ref<message[]>([])
+const isSearchJump=ref(false)
 
 //后者改变影响前者但是前者修改不会影响后者
 // 把username1固定为本人ID，构造appliedChatbox
@@ -200,9 +196,9 @@ const sortedReminders = computed(() => {
   return [...reminders.value].sort((a, b) => new Date(b.sendTime).getTime() - new Date(a.sendTime).getTime())
 })
 
-const canSendMessage = computed(() => chatInput.value.trim().length > 0 && !!currentSessionId.value)
+const canSendMessage = computed(() => chatInput.value.trim().length > 0 && currentSessionId.value!=-1)
 
-const formatMessageTime = (time: string) => {
+const formatTime = (time: string) => {
   if (!time) return ''
   const date = new Date(time)
   if (Number.isNaN(date.getTime())) return time
@@ -214,23 +210,11 @@ const formatMessageTime = (time: string) => {
 }
 
 
-const formatReminderTime = (time: string) => {
-  if (!time) return ''
-  const date = new Date(time)
-  if (Number.isNaN(date.getTime())) return time
-  const month = `${date.getMonth() + 1}`.padStart(2, '0')
-  const day = `${date.getDate()}`.padStart(2, '0')
-  const hours = date.getHours().toString().padStart(2, '0')
-  const minutes = date.getMinutes().toString().padStart(2, '0')
-  return `${date.getFullYear()}-${month}-${day} ${hours}:${minutes}`
-}
-
 const getReminderLabel = (type: string) => reminderTypeDict[type] ?? '未知'
 
 
 const markRead = async (item: Reminder) => {
   item.isRead = true;
-
   try {
     const reponse = await markReminderRead(item.reminderId)
     if (reponse.data.code === 200) {
@@ -246,17 +230,6 @@ const isSelfMessage = (msg: message) => {
   const currentUserId = userInfo.value?.userId
   if (!currentUserId) return false
   return Number(msg.senderId) === Number(currentUserId)
-}
-
-
-const scrollToLatest = () => {
-  nextTick(() => {
-    const container = messageListRef.value
-    if (!container) return
-    container.scrollTop = container.scrollHeight
-    // scrollTop：容器当前从顶部滚动下去的距离（可写）；scrollHeight：容器内部内容的总高度（只读）
-    // 把当前滚动距离设置为内容的最大高度→ 滚动条直接跳到最底部。
-  })
 }
 
 
@@ -322,14 +295,61 @@ const getReminders = async () => {
 }
 
 
-const handleReminderSelect = async () => {
+const handleSearchMess = async (key: string) => {
+  visible.value = false
+  const [sessionIdStr, sendTime] = key.split(',')
+  const sessionId = Number(sessionIdStr)
+
+  //先标记这是一次“搜索跳转”
+  isSearchJump.value = true
+
+  //等待会话切换 & 消息加载完成
+  await handleSelect(sessionId)
+
+  //等 DOM 更新完再去定位那条消息
+  await nextTick()
+  scrollMessage(sessionId, sendTime as string)
+}
+
+
+
+//定位到指定聊天记录的滚动逻辑
+const scrollMessage = (sessionId: number, sendTime: string) => {
+  const msgId = `${sessionId}-${sendTime}`
+  const el = document.getElementById(msgId)
+  const container = messageListRef.value
+  if (!el || !container) return
+
+  const offsetTop = el.offsetTop - container.offsetTop
+
+  // 对“消息列表容器”滚动
+  container.scrollTo({
+    top: offsetTop - 40,
+    behavior: "smooth",
+  })
+
+  // 搜索跳转已经完成，可以重新允许自动滚到底部
+  isSearchJump.value = false
+}
+
+
+const scrollToLatest = () => {
+  nextTick(() => {
+    const container = messageListRef.value
+    if (!container) return
+    container.scrollTop = container.scrollHeight
+    // scrollTop：容器当前从顶部滚动下去的距离；scrollHeight：容器内部内容的总高度（只读）
+    // 把当前滚动距离设置为内容的最大高度→ 滚动条直接跳到最底部。
+  })
+}
+
+const handleReminderSelect = () => {
   isReminder.value = true
 }
 
+
 //这个是聊天框的点击处理
-
-
-const handleSelect = async (sessionId: string | number) => {
+const handleSelect = async (sessionId: number) => {
   // 切换会话时先关闭动画
   enableMsgAnim.value = false
   isReminder.value = false
@@ -398,7 +418,7 @@ const sendMessage = async (
     sending.value = true;
     const { data } = await sendMessageInterface(sessionId, receiverId, content);
     if (data.code === 200) {
-      clearchatInput();
+      chatInput.value=''
     }
   } catch {
     ElMessage.error("发送失败");
@@ -407,13 +427,27 @@ const sendMessage = async (
   }
 };
 
-const clearchatInput = () => {
-  chatInput.value = "";
-};
 
-const handleSearch = () => {
+
+const handleSearch =async () => {
   if (searchInput.value.trim() === '') return
-  appliedInput.value = searchInput.value.trim()
+const  appliedInput = searchInput.value.trim()
+
+  if (useMockData.value) {
+  matchMessages.value=  messageFallback.filter((item) => 
+    item.content.includes(appliedInput)
+)
+  visible.value=true
+return 
+  }
+
+  try {
+    const response = await searchMessage(userInfo.value?.userId as number, appliedInput)
+    matchMessages.value = response.data.data
+    visible.value =true
+  } catch(error) {
+  ElMessage.error('聊天消息搜索失败')
+}
 };
 
 const getReceiverIdBySession = (sessionId: number) => {
@@ -425,32 +459,37 @@ const getReceiverIdBySession = (sessionId: number) => {
 }
 
 const handleSendClick = async () => {
-  if (!canSendMessage.value || !currentSessionId.value) return
+  if (!canSendMessage.value || currentSessionId.value!=-1) return
   const receiverId = getReceiverIdBySession(currentSessionId.value)
-  if (!receiverId) {
-    ElMessage.warning("Receiver not found")
-    return
-  }
+  if (!receiverId)  return
+
   await sendMessage(currentSessionId.value, receiverId, chatInput.value)
 }
 
-const handleEnterSend = () => {
-  handleSendClick()
-}
 
-watch(messages, () => {
-  scrollToLatest()
-}, { flush: 'post', deep: true })
+
+watch(
+  messages,
+  () => {
+    if (!isSearchJump.value) {
+      scrollToLatest()
+    }
+  },
+  { flush: 'post', deep: true }
+  //post表示DOM更新完再执行回调
+)
 
 watch(currentSessionId, () => {
-  scrollToLatest()
+  if (!isSearchJump.value) {
+    scrollToLatest()
+  }
 })
+
 
 onMounted(async () => {
   await fetchUserInfo()
   getSessions()
   getReminders()
-  scrollToLatest()
 })
 
 </script>
@@ -458,7 +497,7 @@ onMounted(async () => {
 <style scoped>
 .chat-view {
   display: flex;
-  height: calc(100vh - 70px);
+height: calc(100vh - 70px);
   width: 100%;
   background: #f6f7fb;
   border: none;
@@ -474,13 +513,8 @@ onMounted(async () => {
   background: linear-gradient(180deg, #fbfcff 0%, #f2f5ff 100%);
   border-right: 1px solid #e9ecf5;
   overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-gutter: stable;
   padding: 10px 14px 10px 10px;
-  /* right padding reserves scrollbar space */
   gap: 8px;
-  scrollbar-width: none;
-  /* Firefox 隐藏滚动条 */
 }
 
 .chat-list::-webkit-scrollbar {
@@ -497,35 +531,33 @@ onMounted(async () => {
   gap: 6px;
 }
 
-.chat-menu:deep(.el-menu) {
+
+.chat-menu.el-menu {
   background: transparent;
   border-right: none;
 }
 
-.chat-menu:deep(.el-menu-item) {
+.chat-menu .el-menu-item {
   height: auto;
   line-height: normal;
   padding: 0 !important;
   border-radius: 8px;
   transition: background 0.2s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 
-.chat-menu:deep(.el-menu-item:hover) {
+.chat-menu .el-menu-item:hover {
   background: rgba(255, 255, 255, 0.9);
   transform: translateX(2px);
 }
 
-.chat-menu:deep(.el-menu-item.is-active) {
+.chat-menu .el-menu-item.is-active {
   background: #ffffff;
   box-shadow: inset 0 0 0 1px #dfe5f7, 0 6px 16px rgba(17, 24, 39, 0.06);
 }
 
-.chat-menu:deep(.el-menu-item) {
-  display: flex;
-  align-content: center;
-  padding: 0 !important;
-  min-width: 0;
-}
 
 .reminder {
   position: sticky;
@@ -572,6 +604,12 @@ onMounted(async () => {
   flex: 1;
 }
 
+/* 在浏览器检查下，可以看到这两个玩意的DOM元素在渲染时都没有被加上scopedId，所以全部包在deep里来脱离scoped控制避免在实际编译时被加上scopedId */
+:deep(.chat-record-dialog .el-dialog__body) {
+  margin-top:15px ;
+  max-height: 420px;
+  overflow-y: auto;
+}
 
 .chatbox-item {
   display: flex;
@@ -625,8 +663,6 @@ onMounted(async () => {
   gap: 4px;
 }
 
-
-
 .chatbox-content span {
   display: block;
   line-height: 1.2;
@@ -649,14 +685,13 @@ onMounted(async () => {
   flex: 1 1 0;
   height: 100%;
   min-width: 0;
+  overflow:hidden;
 }
-
-
 
 .chatview-top {
   background-color: #f7f5f5;
   width: 100%;
-  height: 9%;
+  height: 55px;
 }
 
 .chatview-search {
@@ -664,13 +699,9 @@ onMounted(async () => {
   height: 70%;
   margin: 5px 5px 0px;
   border: 1px solid #ddd;
-  /* 容器边框 */
   display: flex;
-  /* 使用flex布局让输入框和按钮并排显示 */
   align-items: center;
-  /* 垂直居中对齐 */
   overflow: hidden;
-  /* 防止内部元素超出容器 */
   border-radius: 8px;
 }
 
@@ -718,6 +749,7 @@ onMounted(async () => {
   box-shadow: 0 0 8px 3px rgba(185, 148, 254, 0.3);
   /* 紫色外发光（荧光效果） */
 }
+
 
 .chat-content-main {
   flex: 1;
@@ -927,8 +959,6 @@ onMounted(async () => {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-
-
 
 .message-row {
   display: flex;
