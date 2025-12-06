@@ -41,6 +41,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'User',
     component: User,
     meta: { requiresAuth: true },
+    props: (route) => ({ userId: route.query.userId }),
   },
   {
     path: '/posts',
