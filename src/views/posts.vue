@@ -12,8 +12,16 @@
         
         <div class="sort-control">
           <span>排序方式：</span>
-          <button class="sort-btn active" data-sort="time" @click="sortOrder = 'time'; getPosts()">按发布时间</button>
-          <button class="sort-btn" data-sort="hot" @click="sortOrder = 'hot'; getPosts()">按热度</button>
+          <button 
+            class="sort-btn" 
+            :class="{ active: sortOrder === 'time' }" 
+            @click="setSortOrder('time')"
+          >按发布时间</button>
+          <button 
+            class="sort-btn" 
+            :class="{ active: sortOrder === 'hot' }" 
+            @click="setSortOrder('hot')"
+          >按热度</button>
         </div>
       </div>
       
@@ -71,6 +79,12 @@ const allCategories = ref<allApi.Category[]>([])
 const selectedCategoryName = ref<string | null>(null)
 const selectedCategoryId = ref<number | null>(null)
 const selectedUploadCategoryName = ref<string | null>(null)
+
+// 设置排序方式
+const setSortOrder = (order: "time" | "hot") => {
+  sortOrder.value = order
+  getPosts()
+}
 
 // 获取帖子列表
 const getPosts = async () => {
@@ -224,11 +238,17 @@ onMounted(async () => {
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s;
+  color: #666;
 }
 
 .sort-btn.active {
   background-color: #b994fe;
   color: white;
+  border-color: #b994fe;
+}
+
+.sort-btn:hover:not(.active) {
+  background-color: #f0f0f0;
   border-color: #b994fe;
 }
 
