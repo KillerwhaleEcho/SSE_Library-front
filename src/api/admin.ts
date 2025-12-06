@@ -1,21 +1,11 @@
 import request from '../utils/request'
-import { type InfoBrief, type User, type Document } from './all.ts'
+import {type UserBrief } from './all.ts'
+import { type InfoBrief, type User } from './all.ts'
 
 interface ApiResponse<T = any> {
   code: number
   message?: string
   data: T
-}
-
-//all.ts中没有这个，但是获取管理员信息是需要使用故添加
-export interface UserBrief {
-  userId: number
-  username: string
-  userAvatar: string
-  status: string
-  createTime: string
-  email: string
-  role: string
 }
 
 
@@ -35,12 +25,6 @@ export interface CommentItem {
   document: InfoBrief;
   create_at: string;
 }
-
-
-
-
-// 以下是接口部分
-
 
 
 //获取管理员信息相关

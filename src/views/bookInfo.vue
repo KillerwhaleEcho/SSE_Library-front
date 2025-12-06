@@ -67,6 +67,16 @@
                                     <span>下载</span>
                                 </button>
                             </div>
+                            <div v-if="isAdminViewer" class="document-actions-row admin-action-row">
+                                <button class="doc-action-button admin" :class="{ disabled: statusUpdating }"
+                                    :disabled="statusUpdating" @click="handleStatusUpdate('open')">
+                                    <span>开放 open</span>
+                                </button>
+                                <button class="doc-action-button admin" :class="{ disabled: statusUpdating }"
+                                    :disabled="statusUpdating" @click="handleStatusUpdate('closed')">
+                                    <span>关闭 closed</span>
+                                </button>
+                            </div>
                         </div>
                         <el-empty v-else description="未找到相关文档" />
                     </template>
@@ -95,12 +105,12 @@ import defaultCover from '@/assets/coverexp.png'
 import {
     type ApiResponse,
     type Document,
-    type InfoBrief,
     type UserBrief,
     getDocumentDetail,
-    getUserCollectionList,
+    getUserFavoriteJudgement,
     postUserAddFavor,
     deleteUserFavor,
+    updateDocumentStatus,
 } from '@/api/all.ts'
 import previewIcon from '@/assets/147_阅读.png'
 import likeIcon from '@/assets/喜欢_like.png'
@@ -115,29 +125,20 @@ const { userInfo } = storeToRefs(authStore)
 const documentId = ref<string>('')
 const detailLoading = ref(false)
 const documentDetail = ref<Document | null>(null)
-const userCollections = ref<InfoBrief[]>([])
-const collectionsLoading = ref(false)
 const favoriteProcessing = ref(false)
+const favoriteJudgement = ref(false)
 const previewLoading = ref(false)
+const statusUpdating = ref(false)
 
 const brief = computed(() => documentDetail.value?.infoBrief ?? null)
 const coverSrc = computed(() => documentDetail.value?.cover || defaultCover)
 const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.value?.URL))
 const tags = computed(() => documentDetail.value?.tags ?? [])
 const previewButtonText = computed(() => (previewLoading.value ? '加载中...' : '预览'))
+const isAdminViewer = computed(() => userInfo.value?.role === 'admin')
 
-const normalizeDocumentId = (value?: number | string | null) => {
-    if (value === undefined || value === null) return null
-    return String(value)
-}
-
-const isFavorited = computed(() => {
-    const currentId = normalizeDocumentId(brief.value?.documentId)
-    if (!currentId) return false
-    return userCollections.value.some((item) => normalizeDocumentId(item.documentId) === currentId)
-})
-const favoriteLabel = computed(() => (isFavorited.value ? '取消收藏' : '收藏'))
-const favoriteIconSrc = computed(() => (isFavorited.value ? unlikeIcon : likeIcon))
+const favoriteLabel = computed(() => (favoriteJudgement.value ? '停止收藏' : '收藏'))
+const favoriteIconSrc = computed(() => (favoriteJudgement.value ? unlikeIcon : likeIcon))
 
 const typeMap: Record<string, string> = {
     book: '书籍',
@@ -160,9 +161,16 @@ const formattedDate = (value?: string | null) => {
     return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
+const docStatusDisplayMap: Record<string, string> = {
+    open: '开放',
+    closed: '关闭',
+    pending: '待审核',
+    withdrawn: '已撤回',
+}
+const currentDocumentStatus = computed(() => (brief.value?.status ? docStatusDisplayMap[brief.value.status] ?? brief.value.status : '未知'))
 const baseDetails = computed(() => {
     if (!documentDetail.value || !brief.value) return [] as Array<{ label: string; value: string }>
-    return [
+    const details: Array<{ label: string; value: string }> = [
         {
             label: '资料类型',
             value: typeMap[brief.value.type ?? ''] ?? (brief.value.type ?? '未知'),
@@ -172,6 +180,10 @@ const baseDetails = computed(() => {
         { label: '出版年份', value: documentDetail.value.createYear ?? '' },
         { label: 'ISBN', value: documentDetail.value.bookISBN ?? '' },
     ]
+    if (isAdminViewer.value && brief.value.status) {
+        details.unshift({ label: '状态', value: currentDocumentStatus.value })
+    }
+    return details
 })
 
 const commentViewer = computed<UserBrief | null>(() => {
@@ -305,13 +317,12 @@ const handleFavorite = async () => {
     }
 
     favoriteProcessing.value = true
-    const wasFavorited = isFavorited.value
+    const wasFavorited = favoriteJudgement.value
     const payload = { userId: currentUserId, documentId }
 
     try {
-        const response = wasFavorited ? await deleteUserFavor(payload) : await postUserAddFavor(payload)
-        const updatedList = extractCollectionsFromResponse(response)
-        userCollections.value = updatedList
+        await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
+        await refreshFavoriteJudgement()
         ElMessage.success(wasFavorited ? '取消收藏成功' : '收藏成功')
     } catch (error: any) {
         ElMessage.error(error?.message || (wasFavorited ? '取消收藏失败' : '收藏失败'))
@@ -320,56 +331,47 @@ const handleFavorite = async () => {
     }
 }
 
-const extractCollectionsFromResponse = (payload: unknown): InfoBrief[] => {
-    if (!payload) return []
-
-    const normalizeEntry = (entry: any): InfoBrief | null => {
-        if (!entry) return null
-        if (entry.infoBrief) return entry.infoBrief as InfoBrief
-        if (typeof entry === 'object' && 'documentId' in entry) {
-            return {
-                documentId: entry.documentId,
-                name: entry.name ?? '',
-                type: entry.type ?? null,
-                uploadTime: entry.uploadTime ?? '',
-                status: entry.status ?? '开放',
-                category: entry.category,
-                collections: entry.collections ?? 0,
-                readCounts: entry.readCounts ?? 0,
-                URL: entry.URL ?? '',
-            } as InfoBrief
-        }
-        return null
-    }
-
-    let rawList: any[] = []
-    if (Array.isArray(payload)) {
-        rawList = payload
-    } else if (typeof payload === 'object' && Array.isArray((payload as any).data)) {
-        rawList = (payload as any).data
-    }
-
-    return rawList
-        .map((item) => normalizeEntry(item))
-        .filter((item): item is InfoBrief => Boolean(item))
-}
-
-const loadUserCollections = async () => {
-    const currentUserId = userInfo.value?.userId
-    if (!currentUserId) {
-        userCollections.value = []
+const handleStatusUpdate = async (targetStatus: 'open' | 'closed') => {
+    if (!isAdminViewer.value || statusUpdating.value) return
+    const docNumericId = brief.value?.documentId ?? Number(documentId.value)
+    if (docNumericId === undefined || docNumericId === null) {
+        ElMessage.warning('未找到文档编号，无法修改状态')
         return
     }
-    collectionsLoading.value = true
+    if (brief.value?.status === targetStatus) {
+        ElMessage.info('状态已是最新，无需修改')
+        return
+    }
+    statusUpdating.value = true
     try {
-        const response = await getUserCollectionList(currentUserId)
-        const collectionList = extractCollectionsFromResponse(response)
-        userCollections.value = collectionList
+        await updateDocumentStatus({ documentId: Number(docNumericId), status: targetStatus })
+        ElMessage.success('状态已更新')
+        if (documentId.value) {
+            await loadDocumentDetail(documentId.value)
+        }
     } catch (error: any) {
-        userCollections.value = []
-        ElMessage.error(error?.message || '获取收藏列表失败')
+        ElMessage.error(error?.message || '更新状态失败')
     } finally {
-        collectionsLoading.value = false
+        statusUpdating.value = false
+    }
+}
+
+const refreshFavoriteJudgement = async () => {
+    const currentUserId = userInfo.value?.userId
+    const currentDocumentId = brief.value?.documentId
+    if (!currentUserId || currentDocumentId === undefined || currentDocumentId === null) {
+        favoriteJudgement.value = false
+        return
+    }
+    try {
+        const response = (await getUserFavoriteJudgement({
+            userId: currentUserId,
+            documentId: Number(currentDocumentId),
+        })) as unknown as ApiResponse<{ judgement: boolean }>
+        favoriteJudgement.value = Boolean(response?.data?.judgement)
+    } catch (error: any) {
+        favoriteJudgement.value = false
+        console.error('获取收藏状态失败:', error)
     }
 }
 
@@ -389,9 +391,12 @@ watch(
 )
 
 watch(
-    () => userInfo.value?.userId,
+    [
+        () => userInfo.value?.userId,
+        () => brief.value?.documentId,
+    ],
     async () => {
-        await loadUserCollections()
+        await refreshFavoriteJudgement()
     },
     { immediate: true },
 )
@@ -471,6 +476,10 @@ watch(
     gap: 16px;
 }
 
+.admin-action-row {
+    margin-top: 12px;
+}
+
 .doc-action-button {
     flex: 1;
     min-width: 160px;
@@ -504,6 +513,11 @@ watch(
 .doc-action-button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+.doc-action-button.admin {
+    background: #eef2ff;
+    color: #1d4ed8;
 }
 
 .action-icon {

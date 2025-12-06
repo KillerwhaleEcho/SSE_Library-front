@@ -1,8 +1,17 @@
-import { type Document } from '@/api/all.ts'
-import { type CommentItem } from '@/api/admin';
-import {type UserRow } from '@/api/admin';
-import {type message,type chatBox} from'@/api/all'
+import { type Document, type message, type chatBox, type Reminder, type UserBrief } from '@/api/all.ts'
+import { type CommentItem, type UserRow } from '@/api/admin';
 import avatarIcon from '@/assets/icon_user.png'
+
+export const fallbackAdminInfo: UserBrief = {
+  userId: 1,
+  username: 'Sample Admin',
+  userAvatar: '',
+  status: 'active',
+  createTime: '2024-01-01',
+  email: 'admin@example.com',
+  role: 'admin',
+}
+
 
 export const MOCK_DOCUMENTS: Document[] = [
     {
@@ -11,7 +20,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     documentId: 101,
     type: 'book',
     uploadTime: '2024-05-12 09:30:00',
-    status: '开放',
+    status: 'open',
     category: '前端开发',
     collections: 128,
     readCounts: 532,
@@ -30,7 +39,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     documentId: 101,
     type: 'book',
     uploadTime: '2024-05-12 09:30:00',
-    status: '开放',
+    status: 'open',
     category: '前端开发',
     collections: 128,
     readCounts: 532,
@@ -49,7 +58,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     documentId: 102,
     type: 'book',
     uploadTime: '2024-06-01 14:15:00',
-    status: '审核中',
+    status: 'pending',
     category: '后端开发',
     collections: 86,
     readCounts: 421,
@@ -68,7 +77,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     documentId: 103,
     type: 'file',
     uploadTime: '2024-04-22 16:45:00',
-    status: '关闭',
+    status: 'closed',
     category: '数据科学',
     collections: 64,
     readCounts: 308,
@@ -81,25 +90,7 @@ export const MOCK_DOCUMENTS: Document[] = [
     createYear: '2021',
     tags: ['数据分析', 'Python', 'Pandas'],
   },
-    {
-        infoBrief: {
-    name: '产品原型设计规范',
-    documentId: 104,
-    type: 'file',
-    uploadTime: '2024-07-08 10:20:00',
-    status: '已撤回',
-    category: '产品设计',
-    collections: 25,
-    readCounts: 102,
-    URL: 'https://example.com/docs/ux',   
-      },
-    bookISBN: '978-7-900-12345-0',
-    author: '赵六',
-    cover: 'https://picsum.photos/seed/ux/120/160',
-    introduction: '梳理常见原型设计规范与组件库使用建议。',
-    createYear: '2020',
-    tags: ['产品设计', '原型', '交互'],
-  },
+ 
 ] as const
 
 
@@ -122,7 +113,7 @@ export const MOCK_DOCUMENTS: Document[] = [
       documentId: 9001,
       type: "file",
       uploadTime: "2024-03-10 18:32:00",
-      status: "开放",
+      status: "open",
       category: "教育学",
       collections: 87,
       readCounts: 423,
@@ -147,7 +138,7 @@ export const MOCK_DOCUMENTS: Document[] = [
       documentId: 9001,
       type: "file",
       uploadTime: "2024-03-10 18:32:00",
-      status: "开放",
+      status: "open",
       category: "教育学",
       collections: 87,
       readCounts: 423,
@@ -171,7 +162,7 @@ export const MOCK_DOCUMENTS: Document[] = [
       documentId: 9001,
       type: "file",
       uploadTime: "2024-03-10 18:32:00",
-      status: "开放",
+      status: "open",
       category: "教育学",
       collections: 87,
       readCounts: 423,
@@ -196,7 +187,7 @@ export const MOCK_DOCUMENTS: Document[] = [
       documentId: 9002,
       type: "file",
       uploadTime: "2024-02-26 11:48:00",
-      status: "开放",
+      status: "open",
       category: "计算机科学",
       collections: 132,
       readCounts: 1024,
@@ -221,7 +212,7 @@ export const MOCK_DOCUMENTS: Document[] = [
       documentId: 9003,
       type: "book",
       uploadTime: "2024-03-15 09:05:00",
-      status: "开放",
+      status: "open",
       category: "数学",
       collections: 65,
       readCounts: 358,
@@ -403,9 +394,68 @@ export const chatBoxFallback: chatBox[] = [
     lastMessage: "谢谢你的帮助！",
     lastTime: "2024-01-15 09:30:55",
     unreadCount: 0
-  }
+	},
+  {
+    sessionId: 1007,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	},
+  {
+    sessionId: 1008,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	},
+  {
+    sessionId: 1009,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	},
+  {
+    sessionId: 1010,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	},
+  {
+    sessionId: 1011,
+    userId1: 1,
+    userAvatar1: avatarIcon,
+    userName1: "张三",
+    userId2: 7,
+    userAvatar2: avatarIcon,
+    userName2: "周九",
+    lastMessage: "谢谢你的帮助！",
+    lastTime: "2024-01-15 09:30:55",
+    unreadCount: 0
+	}
 ];
-
 
 export const messageFallback: message[] = [
   {
@@ -414,7 +464,7 @@ export const messageFallback: message[] = [
     sendTime: "2024-01-15 14:30:25",
     senderName: "李四",
     senderAvatar: avatarIcon,
-    content: "你好，请问这个商品还有货吗？",
+    content: "你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好，请问这个商品还有货吗？你好",
     status: '已发送'
   },
   {
@@ -533,5 +583,150 @@ export const messageFallback: message[] = [
     senderAvatar: avatarIcon,
     content: "谢谢你的帮助！",
     status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
+  },
+  {
+    sessionId: 1006,
+    senderId: 7,
+    sendTime: "2024-01-15 09:30:55",
+    senderName: "周九",
+    senderAvatar: avatarIcon,
+    content: "谢谢你的帮助！",
+    status: '已发送'
   }
+];
+
+
+export const fallbackReminders: Reminder[] = [
+  // 评论
+  {
+    reminderId: 1001,
+    receiverId: 1,
+    type: "评论",
+    content: "用户「小麦研究生」评论了你的帖子：‘这个启动子根部表达很强，你的qPCR结果能分享下吗？’",
+    isRead: false,
+    sendTime: "2025-11-21T09:12:33+08:00",
+  },
+  {
+    reminderId: 1002,  receiverId: 1,
+    type: "评论",
+    content: "用户「Alex」回复了你：‘我也遇到ABD同源问题，你可以试试在3'端加错配。’",
+    isRead: true,
+    sendTime: "2025-11-20T18:45:10+08:00",
+  },
+
+  // 点赞
+  {
+    reminderId: 2001,  receiverId: 1,
+    type: "点赞",
+    content: "用户「PlantLab」点赞了你的评论。",
+    isRead: false,
+    sendTime: "2025-11-21T11:01:05+08:00",
+  },
+  {
+    reminderId: 2002,  receiverId: 1,
+    type: "点赞",
+    content: "用户「水文小助手」点赞了你的帖子《十五五规划-教育重点任务》。",
+    isRead: true,
+    sendTime: "2025-11-19T22:30:00+08:00",
+  },
+
+  // 收藏
+  {
+    reminderId: 3001,  receiverId: 1,
+    type: "收藏",
+    content: "用户「BioInfo」收藏了你的帖子《根优势启动子筛选思路》。",
+    isRead: false,
+    sendTime: "2025-11-21T14:22:48+08:00",
+  },
+  {
+    reminderId: 3002,  receiverId: 1,
+    type: "收藏",
+    content: "你的回答被「材料热模拟数据处理」专题收藏。",
+    isRead: true,
+    sendTime: "2025-11-18T10:07:13+08:00",
+  },
+
+  // 聊天 / 私信
+  // {
+  //   reminderId: 4001,  receiverId: 1,
+  //   type: "chat",
+  //   content: "「导师助理」给你发来新消息：‘明天组会你准备的6个候选基因进展带上。’",
+  //   ifRead: false,
+  //   sendTime: "2025-11-21T20:05:00+08:00",
+  // },
+  // {
+  //   reminderId: 4002,  receiverId: 1,
+  //   type: "chat",
+  //   content: "「同事-供水处」：‘闸门检修表我已经更新到群里了。’",
+  //   ifRead: true,
+  //   sendTime: "2025-11-21T16:50:21+08:00",
+  // },
+
+  //系统通知
+  {
+    reminderId: 5001,  receiverId: 1,
+    type: "系统消息",
+    content: "系统通知：你的帖子《Auto-HSCT后PGF二次回输病例》已通过审核并公开展示。",
+    isRead: false,
+    sendTime: "2025-11-21T08:00:00+08:00",
+  },
+  {
+    reminderId: 5002,  receiverId: 1,
+    type: "系统消息",
+    content: "管理通知：你提交的资料缺少封面页，请在 48 小时内补齐，否则将退回。",
+    isRead: true,
+    sendTime: "2025-11-19T09:30:00+08:00",
+  },
+  {
+    reminderId: 5003,  receiverId: 1,
+    type: "系统消息",
+    content: "安全提醒：检测到你的账号在新设备登录，如非本人操作请及时修改密码。",
+    isRead: false,
+    sendTime: "2025-11-18T23:59:59+08:00",
+  },
 ];

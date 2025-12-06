@@ -46,16 +46,16 @@
           border
         >
           <el-table-column prop="id" label="ID" width="80" align="center"/>
-          <el-table-column prop="name" :label="TEXT.name" min-width="140" align="center"/>
+          <el-table-column prop="name" :label="TEXT.name" width="200" align="center"/>
           <el-table-column prop="email" :label="TEXT.email" min-width="220" align="center"/>
-          <el-table-column :label="TEXT.status" width="120" align="center">
+          <el-table-column :label="TEXT.status" width="200" align="center">
             <template #default="{ row }">
               <el-tag :type="row.status === 'active' ? 'success' : 'info'">
                 {{ row.status === "active" ? TEXT.normal : TEXT.disabled }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column :label="TEXT.action" width="140">
+          <el-table-column :label="TEXT.action" width="200" align="center">
             <template #default="{ row }">
               <el-button
                 type="primary"
@@ -80,10 +80,9 @@ import { computed, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
   getUserList,
-  updateUserStatus,
-  type UserBrief,
+  updateUserStatus,type UserRow
 } from "../../api/admin";
-import {type UserRow } from "../../api/admin";
+import { type UserBrief} from "../../api/all";
 import {  DEMO_USERS} from "./mockData";
 
 const TEXT = {
@@ -292,9 +291,9 @@ width: 50%;
     font-weight: 600;
   }
 
-  :deep(.el-table tr:hover > td) {
+  /* :deep(.el-table tr:hover > td) {
     background-color: rgba(185, 148, 254, 0.18);
-  }
+  } */
 
   :deep(.el-tag) {
     border: none;

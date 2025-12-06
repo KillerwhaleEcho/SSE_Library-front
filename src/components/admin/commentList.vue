@@ -3,68 +3,42 @@
     <el-card class="comment-card">
       <header class="comment-card__header">
         <div class="comment-card__search">
-          <el-select
-            v-model="searchKey"
-            placeholder="请选择搜索类型"
-            class="comment-card__search-select"
-            clearable
-            @clear="resetSearch"
-            size="large"
-          >
+          <el-select v-model="searchKey" placeholder="请选择搜索类型" class="comment-card__search-select" size="large">
             <el-option label="姓名" value="name" />
             <el-option label="评论内容" value="content" />
             <el-option label="评论时间" value="time" />
           </el-select>
-          <el-input
-            v-model="searchInput"
-            placeholder="请输入搜索内容"
-            class="comment-card__search-input"
-            clearable
-            @clear="resetSearch"
-            @keyup.enter="handleSearch"
-            size="large"
-          >
+          <!-- 搜索内容：根据搜索类型切换输入/日期选择 -->
+          <el-input v-if="searchKey !== 'time'" v-model="searchInput" placeholder="请输入搜索内容"
+            class="comment-card__search-input" clearable @clear="resetSearch" @keyup.enter="handleSearch" size="large">
             <template #append>
-              <el-button type="primary" @click="handleSearch">
+              <el-button @click="handleSearch">
                 搜索
               </el-button>
             </template>
           </el-input>
+
+          <el-date-picker v-else v-model="searchDate" type="date" placeholder="请选择日期" class="comment-card__search-input"
+            clearable format="YYYY-MM-DD" value-format="YYYY-MM-DD" @change="handleSearch" @clear="resetSearch"
+            size="large" />
+          <!-- format是ui展示出来的数据格式，value-format是v-model绑定数据的格式 -->
+
         </div>
-        <el-button
-          class="comment-card__refresh"
-          type="primary"
-          :loading="loading"
-          @click="fetchComments"
-        >
+        <el-button class="comment-card__refresh" type="primary" :loading="loading" @click="fetchComments">
           {{ TEXT.refresh }}
         </el-button>
       </header>
 
-      <section
-        class="comment-card__body"
-        v-loading="loading"
-        :element-loading-text="TEXT.loading"
-      >
-        <el-empty
-          v-if="!loading && displayedComments.length === 0"
-          :description="TEXT.empty"
-        />
+      <section class="comment-card__body" v-loading="loading" :element-loading-text="TEXT.loading">
+        <el-empty v-if="!loading && displayedComments.length === 0" :description="TEXT.empty" />
+
         <el-timeline v-else class="comment-timeline">
-          <el-timeline-item
-            v-for="comment in displayedComments"
-            :key="comment.commentId"
-            :timestamp="formatDateTime(comment.create_at)"
-            placement="top"
-          >
+          <el-timeline-item v-for="comment in displayedComments" :key="comment.commentId"
+            :timestamp="formatDateTime(comment.create_at)" placement="top">
             <article class="comment-item">
               <header class="comment-item__meta">
                 <div class="comment-item__user">
-                  <el-avatar
-                    :src="comment.commenter?.userAvatar"
-                    :size="44"
-                    class="comment-item__avatar"
-                  >
+                  <el-avatar :src="comment.commenter?.userAvatar" :size="44" class="comment-item__avatar">
                     {{ getAvatarFallback(comment.commenter?.username) }}
                   </el-avatar>
                   <div class="comment-item__info">
@@ -78,20 +52,10 @@
                 </div>
 
                 <div class="comment-item__meta-right">
-                  <el-tag
-                    v-if="comment.document?.name"
-                    size="small"
-                    type="info"
-                    class="comment-item__doc"
-                  >
+                  <el-tag v-if="comment.document?.name" size="small" type="info" class="comment-item__doc">
                     {{ comment.document.name }}
                   </el-tag>
-                  <el-button
-                    type="danger"
-                    link
-                    size="small"
-                    @click="handleDelete(comment)"
-                  >
+                  <el-button type="danger" link size="small" @click="handleDelete(comment)">
                     {{ TEXT.delete }}
                   </el-button>
                 </div>
@@ -109,10 +73,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { deleteAdminComment, getAdminComments, type CommentItem } from '@/api/admin'
-import { createMockComments } from './mockData'
+import { createMockComments, fallbackAdminInfo } from './mockData'
+import { type UserBrief, getUserDetail } from '@/api/all'
 
 const TEXT = {
   refresh: '刷新',
@@ -134,7 +99,9 @@ const loading = ref(false)
 const comments = ref<CommentItem[]>(createMockComments())
 const searchKey = ref<'name' | 'content' | 'time' | ''>('')
 const searchInput = ref('')
+const searchDate = ref<string | null>('')
 const appliedKeyword = ref('')
+const userInfo = ref<UserBrief | null>()
 
 const displayedComments = computed(() => {
   const keyword = appliedKeyword.value.trim().toLowerCase()
@@ -181,13 +148,24 @@ const fetchComments = async () => {
 }
 
 const handleSearch = () => {
-  appliedKeyword.value = searchInput.value.trim()
+  if (searchKey.value === 'time') {
+    appliedKeyword.value = (searchDate.value || '').trim()
+  } else {
+    appliedKeyword.value = searchInput.value.trim()
+  }
 }
 
 const resetSearch = () => {
   searchInput.value = ''
+  searchDate.value = ''
   appliedKeyword.value = ''
 }
+
+
+// 切换搜索类型时重置输入，防止残留关键词/日期
+watch(searchKey, () => {
+  resetSearch()
+})
 
 const handleDelete = async (comment: CommentItem) => {
   const username = comment.commenter?.username || TEXT.unknownUser
@@ -239,7 +217,34 @@ const getAvatarFallback = (username?: string) => {
   return username.trim().charAt(0).toUpperCase() || 'U'
 }
 
-onMounted(fetchComments)
+const getUserId = () => {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('userId')
+}
+
+const fetchUserInfo = async () => {
+  const userId = getUserId()
+
+  if (!userId) {
+    userInfo.value = fallbackAdminInfo
+    return
+  }
+
+  try {
+    const { data } = await getUserDetail(userId as string)
+    userInfo.value = data.userBrief
+  } catch {
+    userInfo.value = fallbackAdminInfo
+    ElMessage.error('获取用户数据失败')
+  }
+
+}
+
+onMounted(() => {
+  fetchComments()
+  fetchUserInfo()
+})
+
 </script>
 
 <style scoped lang="css">
@@ -247,7 +252,7 @@ onMounted(fetchComments)
   padding: 0;
   display: flex;
   flex-direction: column;
-  align-content:center;
+  align-content: center;
 }
 
 .comment-card {
@@ -294,7 +299,13 @@ onMounted(fetchComments)
 }
 
 .comment-card__search-input {
-  width:50%;
+  width: 50%;
+}
+
+
+/* 让 el-date-picker 内部输入与普通输入同宽 */
+.comment-card__search-input :deep(.el-input__wrapper) {
+  width: 100%;
 }
 
 .comment-card__refresh {

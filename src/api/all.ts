@@ -1,5 +1,6 @@
 import service from '../utils/service'
 import request from '../utils/request'
+import type { DocumentEditForm } from '@/types/api'
 
 export interface ApiResponse<T = any> {
   code: number
@@ -12,7 +13,7 @@ export interface UserBrief {
   userId: number;
   username: string;
   userAvatar: string;
-  status: string;
+  status: 'active'|'inactive';
   createTime: string;
   email: string;
   role: string;
@@ -49,7 +50,7 @@ export interface InfoBrief {
   name: string;
   type: 'book' | 'file' | 'video' | null;
   uploadTime: string;
-  status: '开放' | '审核中' | '关闭' | '已撤回'
+  status: 'open' | 'closed' | 'pending' | 'withdrawn' | string;
   category?: string;
   collections: number;
   readCounts: number;
@@ -117,6 +118,7 @@ export interface chatBox {
   unreadCount: number
 }
 
+
 export interface Post {
   postId: number;
   senderId: number;
@@ -147,7 +149,8 @@ export interface UploadPostForm {
 
 export interface Reminder {
   reminderId: number;
-  type: "评论" | "点赞" | "收藏" | "系统消息" | "聊天";
+  receiverId: number;
+  type: "评论" | "点赞" | "收藏" | "系统消息" ;
   content: string;
   sendTime: string;
   isRead: boolean;
@@ -253,10 +256,14 @@ export const getBookList = (is_suggest: boolean, categoryId?: number) => {
   });
 };
 
+// 修改资料状态
+export const updateFileStatus = (docId: number, newStatus: string)=>{return service.put<ApiResponse<null>>('/admin/document/status',{docId,newStatus})}
+
+
 // 6. 修改资料信息
-export const updateFileInfo = (fileId: string, data: { name?: string; description?: string; categoryId?: string }) => {
-  return service.put<ApiResponse<null>>(`/files/${fileId}`, data);
-};
+export const updateFileInfo = (data:DocumentEditForm) => {
+  return service.put<ApiResponse<null>>('/document',data)
+}
 
 // 7. 搜索书籍或文件
 export const searchBooksOrFiles = (
@@ -361,10 +368,6 @@ export const deleteAdminComment = (commentId: string | number) => {
   });
 };
 
-// 获取用户收藏列表
-export const getUserCollectionList = (userId: string | number) => {
-  return service.get<ApiResponse<Document[]>>(`/user/${userId}/collectionList`);
-};
 
 // 收藏资料
 export const postUserAddFavor = (payload: { userId: number; documentId: number }) => {
@@ -376,9 +379,20 @@ export const deleteUserFavor = (payload: { userId: number; documentId: number })
   return service.delete<ApiResponse<Document[]>>('/user/collect', { data: payload });
 };
 
-// 11.发送消息,接口名加上interface避免重名
+// 判断是否已收藏
+export const getUserFavoriteJudgement = (params: { userId: number; documentId: number }) => {
+  return service.get<ApiResponse<{ judgement: boolean }>>('/user/checkFavorite', { params });
+};
+
+// 管理员调整文档状态
+export const updateDocumentStatus = (payload: { documentId: number; status: 'open' | 'closed' | 'pending' | 'withdrawn' }) => {
+  return service.put<ApiResponse<null>>('/admin/document/status', payload);
+};
+
+
+// 发送消息,接口名加上interface避免重名
 export const sendMessageInterface = (sessionId: number, receiverId: number, content: string) => {
-  return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/send', { sessionId, receiverId, content })
+  return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/message', { sessionId, receiverId, content })
 }
 
 //获取聊天回话列表
@@ -391,6 +405,18 @@ export const getSessionList = (userId: number) => {
 export const getMessageList = (sessionId: number, userId: number) => {
   return service.get<ApiResponse<message[]>>('/chat/messages', { params: { sessionId, userId } })
 }
+
+//获取提醒（通知）
+export const getReminder=(userId: number) => {
+  return service.get<ApiResponse<Reminder[]>>('/getReminder',{params:{userId}})
+}
+
+
+//标记消息已读
+export const markReminderRead = (reminderId: number)=>{
+  return service.put<ApiResponse<string>>('/markReminderRead',{reminderId},{ headers: { noLoading: true }})
+}// 给“轻量请求”加一个开关，不显示全屏 Loading
+
 
 // 获取用户的详细信息
 export const getUserDetail = (userId: string) => {
