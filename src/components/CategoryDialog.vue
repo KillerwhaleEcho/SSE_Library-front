@@ -28,7 +28,7 @@
           trigger="click"
           v-model:visible="popoverVisible"
         >
-          <!-- 表单内容 -->
+          <!-- 添加分类表单内容 -->
           <el-form 
             ref="categoryFormRef"
             :model="categoryFormData"
@@ -101,12 +101,14 @@
             <el-form-item style="margin-bottom: 0;">
               <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <el-button 
+                  class="cancel-button"
                   size="small" 
                   @click="resetCategoryForm"
                 >
                   取消
                 </el-button>
                 <el-button 
+                  class="reset-button"
                   size="small" 
                   type="primary" 
                   @click="submitCategoryForm"
@@ -238,11 +240,24 @@ const handleResetCategory = () => {
   color: white;
   border: none;
 }
+.search-cat .el-button:hover {
+  background-color: rgb(167, 129, 236);
+}
 
 .reset-button{
   background-color: #b994fe;
   color: white;
   border: none;
+}
+
+.reset-button:hover{
+  background-color: rgb(167, 129, 236);
+}
+
+.cancel-button{
+  color: #b994fe;
+  border-color: #b994fe;
+  border-width: 1.5px; 
 }
 
 .category-guide {
