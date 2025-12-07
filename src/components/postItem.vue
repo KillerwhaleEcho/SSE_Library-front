@@ -21,10 +21,10 @@
     
     <div class="post-stats">
       <span class="stat-item"><i class="icon-comment"></i> {{ post.commentCount }} 评论</span>
-      <span class="stat-item"><i class="icon-like"></i> {{ post.likeCount }} 点赞</span>
+      <span class="stat-item"><i class="icon-like"></i> {{ post.collectCount }} 收藏</span>
       <span class="stat-item">
-        <img src="@/assets/Fire (火热).png" alt="Office Building Icon" style="width:18px; height:18px; margin-right:4px;vertical-align: bottom;" />
-        {{ post.readCount }} 浏览</span>
+        <img src="@/assets/点赞.png" alt="点赞图标" style="width:16px; height:16px; margin-left:4px;"/>
+        {{ post.likeCount }} 点赞</span>
     </div>
   </div>
 </template>

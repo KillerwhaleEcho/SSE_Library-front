@@ -126,7 +126,7 @@ export interface Post {
   senderAvatar: string;
   title: string;
   content: string;
-  readCount: number;
+  collectCount: number;
   commentCount: number;
   likeCount: number;
   sendTime: string;
