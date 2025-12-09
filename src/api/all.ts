@@ -134,6 +134,20 @@ export interface Post {
   cover?: string;
 }
 
+export interface PostDetail {
+  postId: number;
+  senderId: number;
+  senderName: string;
+  senderAvatar: string;
+  title: string;
+  content: string;
+  commentCount: number;
+  collectCount: number;
+  likeCount: number;
+  sendTime: string;
+  documentList?: InfoBrief[];
+}
+
 export interface UploadPostForm {
   senderId: number;
   senderName: string;
@@ -291,6 +305,11 @@ export const getPosts = ( key:string, order: "time"| "hot" ) => {
   return service.get<ApiResponse<{ posts: Post[] }>>('/getPosts', {
     params: { key, order },
   });
+};
+
+// 11.1.1 获取帖子详情
+export const getPostDetail = (postId: number | string) => {
+  return service.get<ApiResponse<PostDetail>>(`/post/${postId}`);
 };
 
 // 11.2 发帖
