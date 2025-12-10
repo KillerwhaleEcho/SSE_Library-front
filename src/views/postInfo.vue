@@ -56,13 +56,8 @@
 			<section v-if="referencedDocuments.length" class="documents-section">
 				<h2 class="section-title">提及的文档</h2>
 				<div class="document-button-list">
-					<button
-						v-for="doc in referencedDocuments"
-						:key="doc.documentId"
-						type="button"
-						class="document-chip"
-						@click="handleDocumentNavigate(doc)"
-					>
+					<button v-for="doc in referencedDocuments" :key="doc.documentId" type="button" class="document-chip"
+						@click="handleDocumentNavigate(doc)">
 						{{ doc.name || `文档 #${doc.documentId}` }}
 					</button>
 				</div>
@@ -71,8 +66,7 @@
 			<section class="comments-section">
 				<h2 class="section-title">评论区</h2>
 				<CommentSection source-type="post" :source-id="postIdForComment" :source-data="postSourceData"
-					:show-editor="true" :show-comment-user="true" :show-reply-button="true"
-					:show-source-name="true" />
+					:show-editor="true" :show-comment-user="true" :show-reply-button="true" :show-source-name="false" />
 			</section>
 		</div>
 	</div>

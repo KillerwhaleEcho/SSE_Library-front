@@ -417,9 +417,11 @@ const sourceFallbackLabel = (source: CommentSourceData) => {
 
 const handleSourceNavigate = (source?: CommentSourceData | null) => {
     if (!source) return
-    const queryKey = source.sourceType === 'post' ? 'postId' : 'id'
-    const targetName = source.sourceType === 'post' ? 'PostInfo' : 'BookInfo'
-    router.push({ name: targetName, query: { [queryKey]: String(source.sourceId) } })
+    const idValue = source.sourceId
+    const targetUrl = source.sourceType === 'post'
+        ? `/postInfo?postId=${idValue}`
+        : `/bookInfo?id=${idValue}`
+    window.open(targetUrl, '_blank', 'noopener')
 }
 
 const deriveSourceData = (comment: DocumentComment): CommentSourceData | null => {
