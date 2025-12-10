@@ -107,6 +107,7 @@ import {
     type ApiResponse,
     type Document,
     type CommentSourceData,
+    type FavoriteActionPayload,
     type UserBrief,
     getDocumentDetail,
     getUserFavoriteJudgement,
@@ -317,24 +318,19 @@ const handleDownload = () => {
 const handleFavorite = async () => {
     if (favoriteProcessing.value) return
     const currentUserId = userInfo.value?.userId
-    const rawDocumentId = brief.value?.documentId
+    const sourceId = documentNumericId.value
     if (!currentUserId) {
         ElMessage.warning('请先登录后再收藏')
         return
     }
-    if (rawDocumentId === undefined || rawDocumentId === null) {
+    if (sourceId === null) {
         ElMessage.warning('当前文档信息不完整，无法操作收藏')
-        return
-    }
-    const documentId = Number(rawDocumentId)
-    if (Number.isNaN(documentId)) {
-        ElMessage.warning('文档编号无效，无法操作收藏')
         return
     }
 
     favoriteProcessing.value = true
     const wasFavorited = favoriteJudgement.value
-    const payload = { userId: currentUserId, documentId }
+    const payload: FavoriteActionPayload = { userId: currentUserId, sourceId, type: 'document' }
 
     try {
         await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
@@ -374,15 +370,16 @@ const handleStatusUpdate = async (targetStatus: 'open' | 'closed') => {
 
 const refreshFavoriteJudgement = async () => {
     const currentUserId = userInfo.value?.userId
-    const currentDocumentId = brief.value?.documentId
-    if (!currentUserId || currentDocumentId === undefined || currentDocumentId === null) {
+    const sourceId = documentNumericId.value
+    if (!currentUserId || sourceId === null) {
         favoriteJudgement.value = false
         return
     }
     try {
         const response = (await getUserFavoriteJudgement({
             userId: currentUserId,
-            documentId: Number(currentDocumentId),
+            sourceId,
+            type: 'document',
         })) as unknown as ApiResponse<{ judgement: boolean }>
         favoriteJudgement.value = Boolean(response?.data?.judgement)
     } catch (error: any) {
@@ -409,7 +406,7 @@ watch(
 watch(
     [
         () => userInfo.value?.userId,
-        () => brief.value?.documentId,
+        () => documentNumericId.value,
     ],
     async () => {
         await refreshFavoriteJudgement()

@@ -36,8 +36,10 @@
 								<button class="action-button" type="button" @click="handleLikePlaceholder">
 									👍 点赞功能开发中
 								</button>
-								<button class="action-button" type="button" @click="handleCollectPlaceholder">
-									📁 收藏功能开发中
+								<button class="action-button" type="button" :class="{ disabled: favoriteProcessing }"
+									:disabled="favoriteProcessing" @click="handleFavorite">
+									<img :src="favoriteIconSrc" :alt="favoriteLabel" class="action-icon" />
+									<span>{{ favoriteLabel }}</span>
 								</button>
 							</div>
 
@@ -65,7 +67,7 @@
 
 			<section class="comments-section">
 				<h2 class="section-title">评论区</h2>
-				<CommentSection source-type="post" :source-id="postIdForComment" :source-data="postSourceData"
+				<CommentSection source-type="post" :source-id="postNumericId" :source-data="postSourceData"
 					:show-editor="true" :show-comment-user="true" :show-reply-button="true" :show-source-name="false" />
 			</section>
 		</div>
@@ -74,6 +76,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import topbar from '@/layout/topbar.vue'
@@ -82,15 +85,26 @@ import {
 	type ApiResponse,
 	type CommentSourceData,
 	type InfoBrief,
+	type FavoriteActionPayload,
 	type PostDetail,
 	getPostDetail,
+	getUserFavoriteJudgement,
+	postUserAddFavor,
+	deleteUserFavor,
 } from '@/api/all.ts'
+import likeIcon from '@/assets/喜欢_like.png'
+import unlikeIcon from '@/assets/不喜欢_unlike.png'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const authStore = useAuthStore()
+const { userInfo } = storeToRefs(authStore)
 const detailLoading = ref(false)
 const postDetail = ref<PostDetail | null>(null)
 
 const normalizedPostId = ref<number | null>(null)
+const favoriteProcessing = ref(false)
+const favoriteJudgement = ref(false)
 
 const ensurePostId = (raw: unknown): number | null => {
 	if (Array.isArray(raw)) {
@@ -133,17 +147,20 @@ const postContentBlocks = computed(() => {
 		.filter((item) => item.length > 0)
 })
 
-const postIdForComment = computed<number | null>(() => {
-	if (postDetail.value?.postId) return postDetail.value.postId
-	return normalizedPostId.value
+const postNumericId = computed<number | null>(() => {
+	const rawId = postDetail.value?.postId ?? normalizedPostId.value
+	return typeof rawId === 'number' && Number.isFinite(rawId) ? rawId : null
 })
 
+const favoriteLabel = computed(() => (favoriteJudgement.value ? '取消收藏' : '收藏帖子'))
+const favoriteIconSrc = computed(() => (favoriteJudgement.value ? unlikeIcon : likeIcon))
+
 const postSourceData = computed<CommentSourceData | null>(() => {
-	if (postIdForComment.value === null) return null
+	if (postNumericId.value === null) return null
 	return {
-		sourceId: postIdForComment.value,
+		sourceId: postNumericId.value,
 		sourceType: 'post',
-		name: postDetail.value?.title || `帖子 #${postIdForComment.value}`,
+		name: postDetail.value?.title || `帖子 #${postNumericId.value}`,
 	}
 })
 
@@ -179,8 +196,51 @@ const handleLikePlaceholder = () => {
 	ElMessage.info('点赞功能开发中，敬请期待')
 }
 
-const handleCollectPlaceholder = () => {
-	ElMessage.info('收藏功能开发中，敬请期待')
+const handleFavorite = async () => {
+	if (favoriteProcessing.value) return
+	const currentUserId = userInfo.value?.userId
+	const sourceId = postNumericId.value
+	if (!currentUserId) {
+		ElMessage.warning('请先登录后再收藏')
+		return
+	}
+	if (sourceId === null) {
+		ElMessage.warning('帖子信息不完整，无法收藏')
+		return
+	}
+
+	favoriteProcessing.value = true
+	const wasFavorited = favoriteJudgement.value
+	const payload: FavoriteActionPayload = { userId: currentUserId, sourceId, type: 'post' }
+	try {
+		await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
+		await refreshFavoriteJudgement()
+		ElMessage.success(wasFavorited ? '已取消收藏' : '收藏成功')
+	} catch (error: any) {
+		ElMessage.error(error?.message || (wasFavorited ? '取消收藏失败' : '收藏失败'))
+	} finally {
+		favoriteProcessing.value = false
+	}
+}
+
+const refreshFavoriteJudgement = async () => {
+	const currentUserId = userInfo.value?.userId
+	const sourceId = postNumericId.value
+	if (!currentUserId || sourceId === null) {
+		favoriteJudgement.value = false
+		return
+	}
+	try {
+		const response = (await getUserFavoriteJudgement({
+			userId: currentUserId,
+			sourceId,
+			type: 'post',
+		})) as unknown as ApiResponse<{ judgement: boolean }>
+		favoriteJudgement.value = Boolean(response?.data?.judgement)
+	} catch (error) {
+		favoriteJudgement.value = false
+		console.error('获取收藏状态失败:', error)
+	}
 }
 
 watch(
@@ -194,6 +254,17 @@ watch(
 			return
 		}
 		loadPostDetail(id)
+	},
+	{ immediate: true },
+)
+
+watch(
+	[
+		() => userInfo.value?.userId,
+		() => postNumericId.value,
+	],
+	async () => {
+		await refreshFavoriteJudgement()
 	},
 	{ immediate: true },
 )
@@ -263,23 +334,44 @@ watch(
 
 .post-actions {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 16px;
 	margin: 24px 0;
 }
 
 .action-button {
-	border: 1px dashed #94a3b8;
-	border-radius: 999px;
-	padding: 10px 20px;
-	background: transparent;
+	flex: 1;
+	min-width: 200px;
+	padding: 14px 18px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	background: #ffffff;
+	color: #1f2937;
+	border: none;
+	border-radius: 12px;
+	font-size: 16px;
+	font-weight: 600;
 	cursor: pointer;
-	font-size: 14px;
-	color: #475569;
-	transition: background 0.2s ease;
+	box-shadow: 0 0px 0px rgba(15, 23, 42, 0.1);
+	transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
-.action-button:hover {
-	background: rgba(59, 130, 246, 0.08);
+.action-button:hover:not(.disabled):not(:disabled) {
+	transform: translateY(-2px);
+	box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+}
+
+.action-button:active:not(.disabled):not(:disabled) {
+	transform: translateY(0);
+	box-shadow: 0 8px 16px rgba(79, 70, 229, 0.18);
+}
+
+.action-icon {
+	width: 18px;
+	height: 18px;
+	object-fit: contain;
 }
 
 .post-content {
