@@ -35,11 +35,21 @@ export interface Comment {
   document: Document;
   create_at: string;
 }
+
+export type CommentSourceType = 'document' | 'post'
+
+export interface CommentSourceData {
+  sourceId: number
+  name: string
+  sourceType: CommentSourceType | string
+}
+
 export interface DocumentComment {
   commentId: number;
   parentId?: number | null;
   commenter: UserBrief;
-  document: InfoBrief;
+  document?: InfoBrief;
+  sourceData?: CommentSourceData | null;
   createdAt: string;
   content: string | null;
 }
@@ -334,7 +344,7 @@ export const markReminderAsRead = ( reminderId: number ) => {
 // 书籍/文件评论相关类型
 export interface CreateCommentPayload {
   commenter: UserBrief;
-  document: InfoBrief;
+  sourceData: CommentSourceData;
   content: string;
   createTime: string;
   parentId: number | null;
@@ -345,9 +355,9 @@ export const getDocumentDetail = (documentId: string | number) => {
   return service.get<ApiResponse<Document>>(`/document/${documentId}`);
 };
 
-// 获取指定书籍/文件的评论
-export const getDocumentComments = (documentId: string | number) => {
-  return service.get<ApiResponse<DocumentComment[]>>(`/${documentId}/comments`);
+// 根据来源获取评论
+export const getCommentsBySource = (sourceType: CommentSourceType | string, sourceId: string | number) => {
+  return service.get<ApiResponse<DocumentComment[]>>(`/${sourceType}/${sourceId}/comments`);
 };
 
 // 获取指定用户发表过的所有评论
@@ -366,11 +376,10 @@ export const getSingleComment = (commentId: string | number) => {
 };
 
 // 发表评论
-export const createDocumentComment = (
-  documentId: string | number,
+export const createComment = (
   payload: CreateCommentPayload,
 ) => {
-  return service.post<ApiResponse<DocumentComment[]>>(`/user/${documentId}/comments`, payload);
+  return service.post<ApiResponse<DocumentComment[]>>('/user/comments', payload);
 };
 
 // 普通用户删除自己的评论

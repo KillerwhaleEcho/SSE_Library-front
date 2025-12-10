@@ -88,8 +88,9 @@
                 </div>
             </section>
 
-            <CommentSection :document-id="documentId" :document-brief="brief ?? null" :viewer="commentViewer"
-                :show-editor="true" :show-comment-user="true" :show-reply-button="true" :show-document-name="false" />
+            <CommentSection source-type="document" :source-id="documentNumericId" :source-data="documentSourceData"
+                :viewer="commentViewer" :show-editor="true" :show-comment-user="true" :show-reply-button="true"
+                :show-source-name="false" />
         </div>
     </div>
 </template>
@@ -105,6 +106,7 @@ import defaultCover from '@/assets/coverexp.png'
 import {
     type ApiResponse,
     type Document,
+    type CommentSourceData,
     type UserBrief,
     getDocumentDetail,
     getUserFavoriteJudgement,
@@ -131,6 +133,20 @@ const previewLoading = ref(false)
 const statusUpdating = ref(false)
 
 const brief = computed(() => documentDetail.value?.infoBrief ?? null)
+const documentNumericId = computed<number | null>(() => {
+    const raw = brief.value?.documentId ?? Number(documentId.value)
+    if (typeof raw === 'number' && !Number.isNaN(raw)) return raw
+    const parsed = Number(documentId.value)
+    return Number.isNaN(parsed) ? null : parsed
+})
+const documentSourceData = computed<CommentSourceData | null>(() => {
+    if (!brief.value || documentNumericId.value === null) return null
+    return {
+        sourceId: documentNumericId.value,
+        sourceType: 'document',
+        name: brief.value.name || `文档 #${documentNumericId.value}`,
+    }
+})
 const coverSrc = computed(() => documentDetail.value?.cover || defaultCover)
 const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.value?.URL))
 const tags = computed(() => documentDetail.value?.tags ?? [])
@@ -192,7 +208,7 @@ const commentViewer = computed<UserBrief | null>(() => {
         userId: userInfo.value.userId,
         username: userInfo.value.username,
         userAvatar: userInfo.value.userAvatar,
-        status: userInfo.value.status,
+        status: (userInfo.value.status as UserBrief['status']) ?? 'active',
         createTime: userInfo.value.createTime,
         email: userInfo.value.email,
         role: userInfo.value.role,

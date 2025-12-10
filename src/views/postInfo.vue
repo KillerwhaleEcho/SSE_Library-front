@@ -69,10 +69,10 @@
 			</section>
 
 			<section class="comments-section">
-				<h2 class="section-title">评论区（开发中）</h2>
-				<CommentSection :document-id="null" :viewer="null" :show-editor="false" :show-comment-user="false"
-					:show-reply-button="false" :show-document-name="false" />
-				<p class="comment-placeholder">帖子评论能力即将上线，当前内容为空。</p>
+				<h2 class="section-title">评论区</h2>
+				<CommentSection source-type="post" :source-id="postIdForComment" :source-data="postSourceData"
+					:show-editor="true" :show-comment-user="true" :show-reply-button="true"
+					:show-source-name="true" />
 			</section>
 		</div>
 	</div>
@@ -86,6 +86,7 @@ import topbar from '@/layout/topbar.vue'
 import CommentSection from '@/components/comments/CommentSection.vue'
 import {
 	type ApiResponse,
+	type CommentSourceData,
 	type InfoBrief,
 	type PostDetail,
 	getPostDetail,
@@ -136,6 +137,20 @@ const postContentBlocks = computed(() => {
 		.split(/\r?\n/)
 		.map((item) => item.trim())
 		.filter((item) => item.length > 0)
+})
+
+const postIdForComment = computed<number | null>(() => {
+	if (postDetail.value?.postId) return postDetail.value.postId
+	return normalizedPostId.value
+})
+
+const postSourceData = computed<CommentSourceData | null>(() => {
+	if (postIdForComment.value === null) return null
+	return {
+		sourceId: postIdForComment.value,
+		sourceType: 'post',
+		name: postDetail.value?.title || `帖子 #${postIdForComment.value}`,
+	}
 })
 
 const referencedDocuments = computed<InfoBrief[]>(() => {
