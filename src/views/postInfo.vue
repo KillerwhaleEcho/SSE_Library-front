@@ -55,7 +55,17 @@
 
 			<section v-if="referencedDocuments.length" class="documents-section">
 				<h2 class="section-title">提及的文档</h2>
-				<bookListItem v-for="doc in referencedDocuments" :key="doc.infoBrief.documentId" :document="doc" />
+				<div class="document-button-list">
+					<button
+						v-for="doc in referencedDocuments"
+						:key="doc.documentId"
+						type="button"
+						class="document-chip"
+						@click="handleDocumentNavigate(doc)"
+					>
+						{{ doc.name || `文档 #${doc.documentId}` }}
+					</button>
+				</div>
 			</section>
 
 			<section class="comments-section">
@@ -74,10 +84,8 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import topbar from '@/layout/topbar.vue'
 import CommentSection from '@/components/comments/CommentSection.vue'
-import bookListItem from '@/components/bookListItem.vue'
 import {
 	type ApiResponse,
-	type Document,
 	type InfoBrief,
 	type PostDetail,
 	getPostDetail,
@@ -130,12 +138,20 @@ const postContentBlocks = computed(() => {
 		.filter((item) => item.length > 0)
 })
 
-const referencedDocuments = computed<Document[]>(() => {
+const referencedDocuments = computed<InfoBrief[]>(() => {
 	const list = postDetail.value?.documentList ?? []
-	return list.map((doc: InfoBrief) => ({
-		infoBrief: doc,
-	}))
+	return list.filter((doc): doc is InfoBrief => Boolean(doc?.documentId))
 })
+
+const handleDocumentNavigate = (doc: InfoBrief) => {
+	const docId = doc.documentId
+	if (typeof docId !== 'number') {
+		ElMessage.warning('文档编号无效，无法打开详情')
+		return
+	}
+	const targetUrl = `/bookInfo?id=${docId}`
+	window.open(targetUrl, '_blank', 'noopener')
+}
 
 const loadPostDetail = async (id: number) => {
 	detailLoading.value = true
@@ -281,6 +297,30 @@ watch(
 	border-radius: 16px;
 	padding: 28px;
 	box-shadow: 0 8px 24px rgba(15, 36, 84, 0.05);
+}
+
+.document-button-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.document-chip {
+	width: 100%;
+	border: 1px solid #cbd5f5;
+	border-radius: 10px;
+	padding: 12px 18px;
+	text-align: left;
+	background: #f8f9ff;
+	color: #1f2a44;
+	font-size: 15px;
+	cursor: pointer;
+	transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.document-chip:hover {
+	background: #e6edff;
+	transform: translateX(3px);
 }
 
 .section-title {
