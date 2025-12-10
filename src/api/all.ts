@@ -62,6 +62,11 @@ export interface FavoriteActionPayload {
   type: FavoriteTargetType
 }
 
+export interface PostLikePayload {
+  userId: number
+  postId: number
+}
+
 // 书籍/文件相关类型
 export interface InfoBrief {
   documentId: number;
@@ -420,6 +425,21 @@ export const deleteUserFavor = (payload: FavoriteActionPayload) => {
 // 判断是否已收藏
 export const getUserFavoriteJudgement = (params: FavoriteActionPayload) => {
   return service.get<ApiResponse<{ judgement: boolean }>>('/user/checkFavorite', { params });
+};
+
+// 点赞帖子
+export const postUserLikePost = (payload: PostLikePayload) => {
+  return service.post<ApiResponse<unknown>>('/user/like', payload);
+};
+
+// 取消点赞帖子
+export const deleteUserLikePost = (payload: PostLikePayload) => {
+  return service.delete<ApiResponse<unknown>>('/user/like', { data: payload });
+};
+
+// 判断是否点赞
+export const getUserLikeJudgement = (params: PostLikePayload) => {
+  return service.get<ApiResponse<{ judgement: boolean }>>('/user/checkLike', { params });
 };
 
 // 管理员调整文档状态

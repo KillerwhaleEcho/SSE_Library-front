@@ -33,8 +33,10 @@
 							</div>
 
 							<div class="post-actions">
-								<button class="action-button" type="button" @click="handleLikePlaceholder">
-									👍 点赞功能开发中
+								<button class="action-button" type="button" :class="{ disabled: likeProcessing }"
+									:disabled="likeProcessing" @click="handleLike">
+									<img :src="likeIconSrc" :alt="likeLabel" class="action-icon" />
+									<span>{{ likeLabel }}</span>
 								</button>
 								<button class="action-button" type="button" :class="{ disabled: favoriteProcessing }"
 									:disabled="favoriteProcessing" @click="handleFavorite">
@@ -86,14 +88,20 @@ import {
 	type CommentSourceData,
 	type InfoBrief,
 	type FavoriteActionPayload,
+	type PostLikePayload,
 	type PostDetail,
 	getPostDetail,
 	getUserFavoriteJudgement,
+	getUserLikeJudgement,
 	postUserAddFavor,
 	deleteUserFavor,
+	postUserLikePost,
+	deleteUserLikePost,
 } from '@/api/all.ts'
-import likeIcon from '@/assets/喜欢_like.png'
-import unlikeIcon from '@/assets/不喜欢_unlike.png'
+import favoriteIcon from '@/assets/喜欢_like.png'
+import unfavoriteIcon from '@/assets/不喜欢_unlike.png'
+import likedIcon from '@/assets/赞_good-two.png'
+import unlikedIcon from '@/assets/没赞_no-good.png'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -105,6 +113,8 @@ const postDetail = ref<PostDetail | null>(null)
 const normalizedPostId = ref<number | null>(null)
 const favoriteProcessing = ref(false)
 const favoriteJudgement = ref(false)
+const likeProcessing = ref(false)
+const likeJudgement = ref(false)
 
 const ensurePostId = (raw: unknown): number | null => {
 	if (Array.isArray(raw)) {
@@ -153,7 +163,10 @@ const postNumericId = computed<number | null>(() => {
 })
 
 const favoriteLabel = computed(() => (favoriteJudgement.value ? '取消收藏' : '收藏帖子'))
-const favoriteIconSrc = computed(() => (favoriteJudgement.value ? unlikeIcon : likeIcon))
+const favoriteIconSrc = computed(() => (favoriteJudgement.value ? unfavoriteIcon : favoriteIcon))
+
+const likeLabel = computed(() => (likeJudgement.value ? '取消点赞' : '点赞'))
+const likeIconSrc = computed(() => (likeJudgement.value ? likedIcon : unlikedIcon))
 
 const postSourceData = computed<CommentSourceData | null>(() => {
 	if (postNumericId.value === null) return null
@@ -192,8 +205,31 @@ const loadPostDetail = async (id: number) => {
 	}
 }
 
-const handleLikePlaceholder = () => {
-	ElMessage.info('点赞功能开发中，敬请期待')
+const handleLike = async () => {
+	if (likeProcessing.value) return
+	const currentUserId = userInfo.value?.userId
+	const sourceId = postNumericId.value
+	if (!currentUserId) {
+		ElMessage.warning('请先登录后再点赞')
+		return
+	}
+	if (sourceId === null) {
+		ElMessage.warning('帖子信息不完整，无法操作点赞')
+		return
+	}
+
+	likeProcessing.value = true
+	const wasLiked = likeJudgement.value
+	const payload: PostLikePayload = { userId: currentUserId, postId: sourceId }
+	try {
+		await (wasLiked ? deleteUserLikePost(payload) : postUserLikePost(payload))
+		await refreshLikeJudgement()
+		ElMessage.success(wasLiked ? '已取消点赞' : '点赞成功')
+	} catch (error: any) {
+		ElMessage.error(error?.message || (wasLiked ? '取消点赞失败' : '点赞失败'))
+	} finally {
+		likeProcessing.value = false
+	}
 }
 
 const handleFavorite = async () => {
@@ -243,6 +279,25 @@ const refreshFavoriteJudgement = async () => {
 	}
 }
 
+const refreshLikeJudgement = async () => {
+	const currentUserId = userInfo.value?.userId
+	const sourceId = postNumericId.value
+	if (!currentUserId || sourceId === null) {
+		likeJudgement.value = false
+		return
+	}
+	try {
+		const response = (await getUserLikeJudgement({
+			userId: currentUserId,
+			postId: sourceId,
+		})) as unknown as ApiResponse<{ judgement: boolean }>
+		likeJudgement.value = Boolean(response?.data?.judgement)
+	} catch (error) {
+		likeJudgement.value = false
+		console.error('获取点赞状态失败:', error)
+	}
+}
+
 watch(
 	() => route.query.postId,
 	(rawPostId) => {
@@ -264,7 +319,7 @@ watch(
 		() => postNumericId.value,
 	],
 	async () => {
-		await refreshFavoriteJudgement()
+		await Promise.all([refreshFavoriteJudgement(), refreshLikeJudgement()])
 	},
 	{ immediate: true },
 )
