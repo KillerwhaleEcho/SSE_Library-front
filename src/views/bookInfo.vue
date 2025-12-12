@@ -90,7 +90,7 @@
 
             <section class="discussion-section">
                 <div class="discussion-header">
-                    <h2 class="section-title">互动区</h2>
+                    <h2 class="section-title"></h2>
                     <div class="discussion-tabs">
                         <button type="button" class="discussion-tab"
                             :class="{ active: activeDiscussionTab === 'comment' }" @click="setDiscussionTab('comment')">

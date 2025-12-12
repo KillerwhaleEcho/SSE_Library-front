@@ -328,7 +328,7 @@ watch(
 <style scoped>
 .post-info-page {
 	min-height: 100vh;
-	background: linear-gradient(180deg, #f6f7fb 0%, #ffffff 40%);
+	background: #f7f6f9;
 	display: flex;
 	flex-direction: column;
 }
@@ -339,7 +339,7 @@ watch(
 
 .page-body {
 	width: 100%;
-	max-width: 960px;
+	max-width: 1080px;
 	margin: 24px auto 64px;
 	padding: 0 20px 40px;
 	display: flex;
@@ -452,7 +452,13 @@ watch(
 	background: #fff;
 	border-radius: 16px;
 	padding: 28px;
-	box-shadow: 0 8px 24px rgba(15, 36, 84, 0.05);
+	box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.comments-section> :deep(.comments-section) {
+	background: transparent;
+	box-shadow: none;
+	padding: 16px;
 }
 
 .document-button-list {

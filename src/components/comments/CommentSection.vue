@@ -633,7 +633,7 @@ watch(
 .comments-section {
     background: #fff;
     border-radius: 16px;
-    padding: 32px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 24px;
