@@ -1,5 +1,4 @@
 import service from '../utils/service'
-import request from '../utils/request'
 import type { DocumentEditForm } from '@/types/api'
 
 export interface ApiResponse<T = any> {
@@ -88,6 +87,7 @@ export interface Document {
   tags?: string[];
   introduction?: string;
   createYear?: string;
+  postList?: Post[];
 }
 
 export interface UploadFile {

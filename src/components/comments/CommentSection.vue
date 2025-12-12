@@ -19,7 +19,6 @@ CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选�
 <template>
     <section class="comments-section">
         <div v-if="shouldShowEditor" class="comment-editor">
-            <h2 class="section-title">评论</h2>
             <el-input v-model="commentContent" type="textarea" :rows="4" maxlength="500" show-word-limit
                 placeholder="轻轻敲醒沉睡的心灵，让我看看你的点评..." />
             <div class="editor-actions">
@@ -635,7 +634,6 @@ watch(
     background: #fff;
     border-radius: 16px;
     padding: 32px;
-    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
     display: flex;
     flex-direction: column;
     gap: 24px;
