@@ -177,7 +177,7 @@ const appliedChatboxes = computed(() => {
 
 
 //状态控制变量
-const useMockData = ref(true)
+const useMockData = ref(false)
 const loadingSession = ref(false);
 const laodingMessages = ref(false);
 const sending = ref(false);

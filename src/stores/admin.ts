@@ -24,7 +24,6 @@ export const useAdminStore = defineStore('admin', () => {
   const error = ref('')
   const collectionList = ref<User['collectionList']>([])
   const historyList = ref<User['historyList']>([])
-// <AdminDetailResponse['collectionList']> 是 TypeScript 的泛型，它使用了索引访问类型（indexed access type）来获取 AdminDetailResponse 类型中的 collectionList 属性的类型。
 
 
   //从存储中水合/激活

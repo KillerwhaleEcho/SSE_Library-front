@@ -194,7 +194,7 @@ const router = useRouter();
 const searchInput = ref("");
 const appliedKeyword = ref("");
 
-const USE_MOCK = true;
+const USE_MOCK = false;
 const documents = ref<Document[]>([]);
 const loading = ref(false);
 const editVisible = ref(false);
