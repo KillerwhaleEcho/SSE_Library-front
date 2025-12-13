@@ -39,7 +39,7 @@ interface documentInfo {
 } 
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref('')
+const token = ref(localStorage.getItem('token') || '')
   const userInfo = ref<UserInfo | null>(null)
 
   const login = async (email: string, password: string) => {

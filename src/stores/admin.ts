@@ -4,10 +4,10 @@ import {
   getAdminDetail,
   updateAdminProfile,
   updateAdminPassword,
-  type UserBrief,
   type AdminUpdatePayload,
   type AdminPasswordPayload,
 } from '../api/admin'
+import type { UserBrief } from '@/api/all'
 import type { User } from '@/api/all'
 import { fallbackAdminInfo } from '@/components/admin/mockData'
 

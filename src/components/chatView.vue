@@ -54,7 +54,7 @@
                 <span class="reminder-time">{{ formatTime(item.sendTime) }}</span>
               </div>
               <p class="reminder-content">{{ item.content }}</p>
-              <button v-if="!item.isRead" class="reminder-mark" @click="markRead(item)">标记已读</button>
+              <button v-if="!item.isRead" class="reminder-button" @click="markRead(item)">标记已读</button>
             </article>
           </div>
           <div v-else class="reminder-empty">暂无通知</div>
@@ -130,7 +130,7 @@ import reminderIcon from '@/assets/147_通知.png'
 import unreadIcon from '@/assets/红点消息.png'
 import type { UserBrief } from "@/api/all";
 import topbar from "@/layout/topbar.vue";
-import type topbarVue from "@/layout/topbar.vue";
+
 
 //数据
 const userInfo = ref<UserBrief | null>()
@@ -903,15 +903,17 @@ height: calc(100vh - 70px);
   color: #3a3652;
 }
 
-.reminder-mark {
-  padding: 0;
-  font-size: 14px;
+.reminder-button {
+margin-left: auto;
+  padding: 4px;
+  font-size:15px;
   line-height: 2;
   border-radius: 5px;
+  font-weight: 350;
 }
 
-.reminder-mark:hover {
-  border-color: rgb(242, 242, 207);
+.reminder-button:hover {
+  border-color: rgb(164, 211, 242);
 }
 
 
@@ -950,15 +952,15 @@ height: calc(100vh - 70px);
   gap: 14px;
 }
 
-.chat-messages::-webkit-scrollbar {
+/* .chat-messages::-webkit-scrollbar {
   width: 0;
   height: 0;
-}
+} */
 
-.chat-messages {
+/* .chat-messages {
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
+} */
 
 .message-row {
   display: flex;
