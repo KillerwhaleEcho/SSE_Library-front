@@ -49,7 +49,31 @@ const routes: Array<RouteRecordRaw> = [
     name: 'User',
     component: User,
     meta: { requiresAuth: true },
-    props: (route) => ({ userId: route.query.userId }),
+    // 当缺少 userId 时，使用本地存储的真实 ID 进行重定向
+    beforeEnter: (to, _from, next) => {
+      const normalizeUserId = (value: unknown): number | null => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+      };
+
+      const fromQuery = normalizeUserId(to.query.userId);
+      if (fromQuery !== null) {
+        next();
+        return;
+      }
+
+      const storedId = normalizeUserId(localStorage.getItem('userId'));
+      if (storedId !== null) {
+        next({ path: '/user', query: { userId: storedId.toString() }, replace: true });
+        return;
+      }
+
+      next('/login');
+    },
+    props: (route) => {
+      const parsed = Number(route.query.userId);
+      return { userId: Number.isFinite(parsed) ? parsed : undefined };
+    },
   },
   {
     path: '/posts',
