@@ -1,5 +1,4 @@
 import service from '../utils/service'
-import request from '../utils/request'
 import type { DocumentEditForm } from '@/types/api'
 
 export interface ApiResponse<T = any> {
@@ -13,7 +12,7 @@ export interface UserBrief {
   userId: number;
   username: string;
   userAvatar: string;
-  status: 'active'|'inactive';
+  status: 'active' | 'inactive';
   createTime: string;
   email: string;
   role: string;
@@ -35,13 +34,36 @@ export interface Comment {
   document: Document;
   create_at: string;
 }
+
+export type CommentSourceType = 'document' | 'post'
+
+export interface CommentSourceData {
+  sourceId: number
+  name: string
+  sourceType: CommentSourceType | string
+}
+
 export interface DocumentComment {
   commentId: number;
   parentId?: number | null;
   commenter: UserBrief;
-  document: InfoBrief;
+  document?: InfoBrief;
+  sourceData?: CommentSourceData | null;
   createdAt: string;
   content: string | null;
+}
+
+export type FavoriteTargetType = 'document' | 'post'
+
+export interface FavoriteActionPayload {
+  userId: number
+  sourceId: number
+  type: FavoriteTargetType
+}
+
+export interface PostLikePayload {
+  userId: number
+  postId: number
 }
 
 // 书籍/文件相关类型
@@ -65,6 +87,7 @@ export interface Document {
   tags?: string[];
   introduction?: string;
   createYear?: string;
+  postList?: Post[];
 }
 
 export interface UploadFile {
@@ -134,6 +157,20 @@ export interface Post {
   cover?: string;
 }
 
+export interface PostDetail {
+  postId: number;
+  senderId: number;
+  senderName: string;
+  senderAvatar: string;
+  title: string;
+  content: string;
+  commentCount: number;
+  collectCount: number;
+  likeCount: number;
+  sendTime: string;
+  documentList?: InfoBrief[];
+}
+
 export interface UploadPostForm {
   senderId: number;
   senderName: string;
@@ -141,7 +178,7 @@ export interface UploadPostForm {
   title: string;
   content: string;
   sendTime: Date;
-  documents?:[
+  documents?: [
     documentId: number,
     cover: string
   ];
@@ -150,7 +187,7 @@ export interface UploadPostForm {
 export interface Reminder {
   reminderId: number;
   receiverId: number;
-  type: "评论" | "点赞" | "收藏" | "系统消息" ;
+  type: "评论" | "点赞" | "收藏" | "系统消息";
   content: string;
   sendTime: string;
   isRead: boolean;
@@ -187,11 +224,11 @@ export const getHotDocuments = () => {
 // 4. 上传资料
 export const uploadFile = (data: UploadFile) => {
   const formData = new FormData();
-  
+
   // 添加文件字段
   formData.append('file', data.file);
   formData.append('cover', data.cover);
-  
+
   // 添加其他字段
   formData.append('categoryId', data.categoryId.toString());
   formData.append('type', data.type);
@@ -199,24 +236,24 @@ export const uploadFile = (data: UploadFile) => {
   formData.append('uploaderId', data.uploaderId.toString());
   formData.append('uploadTime', data.uploadTime.toISOString());
   formData.append('introduction', data.introduction);
-  
+
   // 处理可能为空的字段
-  if (data.tags !== null){
+  if (data.tags !== null) {
     formData.append('tags', data.tags.join(',')); // 数组转字符串
   }
-  if (data.createYear !== null){
+  if (data.createYear !== null) {
     formData.append('createYear', data.createYear);
   }
-  if (data.author !== null){
+  if (data.author !== null) {
     formData.append('author', data.author);
   }
-  if (data.ISBN !== null){
+  if (data.ISBN !== null) {
     formData.append('ISBN', data.ISBN);
   }
-  if (data.videoURL !== null){
+  if (data.videoURL !== null) {
     formData.append('videoURL', data.videoURL);
   }
-  
+
   return service.post<ApiResponse<{ document: Document }>>('/user/document', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
@@ -227,7 +264,7 @@ export const uploadFile = (data: UploadFile) => {
 // 上传帖子接口
 export const uploadPost = (data: UploadPostForm) => {
   const formData = new FormData();
-  
+
   // 添加必需字段
   formData.append('senderId', data.senderId.toString());
   formData.append('title', data.title);
@@ -235,14 +272,14 @@ export const uploadPost = (data: UploadPostForm) => {
   formData.append('sendTime', data.sendTime.toISOString());
   formData.append('senderName', data.senderName);
   formData.append('senderAvatar', data.senderAvatar);
-  
+
   // 处理可选字段
   if (data.documents && data.documents.length > 0) {
     // 假设 documents 是一个数组，需要序列化
     formData.append('documents', JSON.stringify(data.documents));
   }
-  
-  return service.post<ApiResponse< string >>('/post', formData, {
+
+  return service.post<ApiResponse<string>>('/post', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -257,12 +294,12 @@ export const getBookList = (is_suggest: boolean, categoryId?: number) => {
 };
 
 // 修改资料状态
-export const updateFileStatus = (docId: number, newStatus: string)=>{return service.put<ApiResponse<null>>('/admin/document/status',{docId,newStatus})}
+export const updateFileStatus = (docId: number, newStatus: string) => { return service.put<ApiResponse<null>>('/admin/document/status', { docId, newStatus }) }
 
 
 // 6. 修改资料信息
-export const updateFileInfo = (data:DocumentEditForm) => {
-  return service.put<ApiResponse<null>>('/document',data)
+export const updateFileInfo = (data: DocumentEditForm) => {
+  return service.put<ApiResponse<null>>('/document', data)
 }
 
 // 7. 搜索书籍或文件
@@ -287,26 +324,31 @@ export const searchCategoriesAndCourses = (keyword: string, params?: { page?: nu
 };
 
 // 11.1 获取帖子列表
-export const getPosts = ( key:string, order: "time"| "hot" ) => {
+export const getPosts = (key: string, order: "time" | "hot") => {
   return service.get<ApiResponse<{ posts: Post[] }>>('/getPosts', {
     params: { key, order },
   });
 };
 
+// 11.1.1 获取帖子详情
+export const getPostDetail = (postId: number | string) => {
+  return service.get<ApiResponse<PostDetail>>(`/post/${postId}`);
+};
+
 // 11.2 发帖
-export const createPost = ( payload: { senderId: number; title: string; content: string; documentId?: number } ) => {
+export const createPost = (payload: { senderId: number; title: string; content: string; documentId?: number }) => {
   return service.post<ApiResponse<{ postId: number }>>('/createPost', payload);
 }
 
 // 12. 获取提醒列表
-export const getReminders = ( userId: number ) => {
+export const getReminders = (userId: number) => {
   return service.get<ApiResponse<{ reminders: Reminder[] }>>('/getReminder', {
     params: { userId },
   });
 };
 
 // 13. 标记提醒为已读
-export const markReminderAsRead = ( reminderId: number ) => {
+export const markReminderAsRead = (reminderId: number) => {
   return service.post<ApiResponse<null>>('/markReminderRead', {
     reminderId,
   });
@@ -315,7 +357,7 @@ export const markReminderAsRead = ( reminderId: number ) => {
 // 书籍/文件评论相关类型
 export interface CreateCommentPayload {
   commenter: UserBrief;
-  document: InfoBrief;
+  sourceData: CommentSourceData;
   content: string;
   createTime: string;
   parentId: number | null;
@@ -326,9 +368,9 @@ export const getDocumentDetail = (documentId: string | number) => {
   return service.get<ApiResponse<Document>>(`/document/${documentId}`);
 };
 
-// 获取指定书籍/文件的评论
-export const getDocumentComments = (documentId: string | number) => {
-  return service.get<ApiResponse<DocumentComment[]>>(`/${documentId}/comments`);
+// 根据来源获取评论
+export const getCommentsBySource = (sourceType: CommentSourceType | string, sourceId: string | number) => {
+  return service.get<ApiResponse<DocumentComment[]>>(`/${sourceType}/${sourceId}/comments`);
 };
 
 // 获取指定用户发表过的所有评论
@@ -343,15 +385,16 @@ export const getAllComments = () => {
 
 // 获取单条评论
 export const getSingleComment = (commentId: string | number) => {
-  return service.get<ApiResponse<DocumentComment>>(`/comment/${commentId}`);
+  return service
+    .get<ApiResponse<DocumentComment>>(`/comment/${commentId}`)
+    .then((response) => response.data);
 };
 
 // 发表评论
-export const createDocumentComment = (
-  documentId: string | number,
+export const createComment = (
   payload: CreateCommentPayload,
 ) => {
-  return service.post<ApiResponse<DocumentComment[]>>(`/user/${documentId}/comments`, payload);
+  return service.post<ApiResponse<DocumentComment[]>>('/user/comments', payload);
 };
 
 // 普通用户删除自己的评论
@@ -369,19 +412,34 @@ export const deleteAdminComment = (commentId: string | number) => {
 };
 
 
-// 收藏资料
-export const postUserAddFavor = (payload: { userId: number; documentId: number }) => {
-  return service.post<ApiResponse<Document[]>>('/user/collect', payload);
+// 收藏
+export const postUserAddFavor = (payload: FavoriteActionPayload) => {
+  return service.post<ApiResponse<unknown>>('/user/collect', payload);
 };
 
 // 取消收藏
-export const deleteUserFavor = (payload: { userId: number; documentId: number }) => {
-  return service.delete<ApiResponse<Document[]>>('/user/collect', { data: payload });
+export const deleteUserFavor = (payload: FavoriteActionPayload) => {
+  return service.delete<ApiResponse<unknown>>('/user/collect', { data: payload });
 };
 
 // 判断是否已收藏
-export const getUserFavoriteJudgement = (params: { userId: number; documentId: number }) => {
+export const getUserFavoriteJudgement = (params: FavoriteActionPayload) => {
   return service.get<ApiResponse<{ judgement: boolean }>>('/user/checkFavorite', { params });
+};
+
+// 点赞帖子
+export const postUserLikePost = (payload: PostLikePayload) => {
+  return service.post<ApiResponse<unknown>>('/user/like', payload);
+};
+
+// 取消点赞帖子
+export const deleteUserLikePost = (payload: PostLikePayload) => {
+  return service.delete<ApiResponse<unknown>>('/user/like', { data: payload });
+};
+
+// 判断是否点赞
+export const getUserLikeJudgement = (params: PostLikePayload) => {
+  return service.get<ApiResponse<{ judgement: boolean }>>('/user/checkLike', { params });
 };
 
 // 管理员调整文档状态
@@ -408,18 +466,18 @@ export const getMessageList = (sessionId: number, userId: number) => {
 
 //搜索聊天记录
 export const searchMessage = (userId: number, searchKey: string) => {
-  return service.get<ApiResponse<message[]>>('/chat/search',{params:{userId,searchKey}})
+  return service.get<ApiResponse<message[]>>('/chat/search', { params: { userId, searchKey } })
 }
 
 //获取提醒（通知）
-export const getReminder=(userId: number) => {
-  return service.get<ApiResponse<Reminder[]>>('/getReminder',{params:{userId}})
+export const getReminder = (userId: number) => {
+  return service.get<ApiResponse<Reminder[]>>('/getReminder', { params: { userId } })
 }
 
 
 //标记消息已读
-export const markReminderRead = (reminderId: number)=>{
-  return service.put<ApiResponse<string>>('/markReminderRead',{reminderId},{ headers: { noLoading: true }})
+export const markReminderRead = (reminderId: number) => {
+  return service.put<ApiResponse<string>>('/markReminderRead', { reminderId }, { headers: { noLoading: true } })
 }// 给“轻量请求”加一个开关，不显示全屏 Loading
 
 

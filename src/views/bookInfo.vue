@@ -88,8 +88,33 @@
                 </div>
             </section>
 
-            <CommentSection :document-id="documentId" :document-brief="brief ?? null" :viewer="commentViewer"
-                :show-editor="true" :show-comment-user="true" :show-reply-button="true" :show-document-name="false" />
+            <section class="discussion-section">
+                <div class="discussion-header">
+                    <h2 class="section-title"></h2>
+                    <div class="discussion-tabs">
+                        <button type="button" class="discussion-tab"
+                            :class="{ active: activeDiscussionTab === 'comment' }" @click="setDiscussionTab('comment')">
+                            评论
+                        </button>
+                        <span class="tab-divider">|</span>
+                        <button type="button" class="discussion-tab" :class="{ active: activeDiscussionTab === 'post' }"
+                            @click="setDiscussionTab('post')">
+                            帖子
+                        </button>
+                    </div>
+                </div>
+                <div v-if="activeDiscussionTab === 'comment'" class="discussion-panel">
+                    <CommentSection source-type="document" :source-id="documentNumericId"
+                        :source-data="documentSourceData" :viewer="commentViewer" :show-editor="true"
+                        :show-comment-user="true" :show-reply-button="true" :show-source-name="false" />
+                </div>
+                <div v-else class="discussion-panel">
+                    <div v-if="documentPosts.length" class="post-list">
+                        <PostItem v-for="post in documentPosts" :key="post.postId" :post="post" />
+                    </div>
+                    <el-empty v-else description="暂无相关帖子" />
+                </div>
+            </section>
         </div>
     </div>
 </template>
@@ -101,10 +126,14 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import topbar from '@/layout/topbar.vue'
 import CommentSection from '@/components/comments/CommentSection.vue'
+import PostItem from '@/components/postItem.vue'
 import defaultCover from '@/assets/coverexp.png'
 import {
     type ApiResponse,
     type Document,
+    type Post,
+    type CommentSourceData,
+    type FavoriteActionPayload,
     type UserBrief,
     getDocumentDetail,
     getUserFavoriteJudgement,
@@ -129,13 +158,29 @@ const favoriteProcessing = ref(false)
 const favoriteJudgement = ref(false)
 const previewLoading = ref(false)
 const statusUpdating = ref(false)
+const activeDiscussionTab = ref<'comment' | 'post'>('comment')
 
 const brief = computed(() => documentDetail.value?.infoBrief ?? null)
+const documentNumericId = computed<number | null>(() => {
+    const raw = brief.value?.documentId ?? Number(documentId.value)
+    if (typeof raw === 'number' && !Number.isNaN(raw)) return raw
+    const parsed = Number(documentId.value)
+    return Number.isNaN(parsed) ? null : parsed
+})
+const documentSourceData = computed<CommentSourceData | null>(() => {
+    if (!brief.value || documentNumericId.value === null) return null
+    return {
+        sourceId: documentNumericId.value,
+        sourceType: 'document',
+        name: brief.value.name || `文档 #${documentNumericId.value}`,
+    }
+})
 const coverSrc = computed(() => documentDetail.value?.cover || defaultCover)
 const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.value?.URL))
 const tags = computed(() => documentDetail.value?.tags ?? [])
 const previewButtonText = computed(() => (previewLoading.value ? '加载中...' : '预览'))
 const isAdminViewer = computed(() => userInfo.value?.role === 'admin')
+const documentPosts = computed<Post[]>(() => documentDetail.value?.postList ?? [])
 
 const favoriteLabel = computed(() => (favoriteJudgement.value ? '停止收藏' : '收藏'))
 const favoriteIconSrc = computed(() => (favoriteJudgement.value ? unlikeIcon : likeIcon))
@@ -192,7 +237,7 @@ const commentViewer = computed<UserBrief | null>(() => {
         userId: userInfo.value.userId,
         username: userInfo.value.username,
         userAvatar: userInfo.value.userAvatar,
-        status: userInfo.value.status,
+        status: (userInfo.value.status as UserBrief['status']) ?? 'active',
         createTime: userInfo.value.createTime,
         email: userInfo.value.email,
         role: userInfo.value.role,
@@ -201,6 +246,10 @@ const commentViewer = computed<UserBrief | null>(() => {
 
 const handleImgError = (event: Event) => {
     (event.target as HTMLImageElement).src = defaultCover
+}
+
+const setDiscussionTab = (tab: 'comment' | 'post') => {
+    activeDiscussionTab.value = tab
 }
 
 const ensureDocumentId = (raw: unknown): string | null => {
@@ -301,24 +350,19 @@ const handleDownload = () => {
 const handleFavorite = async () => {
     if (favoriteProcessing.value) return
     const currentUserId = userInfo.value?.userId
-    const rawDocumentId = brief.value?.documentId
+    const sourceId = documentNumericId.value
     if (!currentUserId) {
         ElMessage.warning('请先登录后再收藏')
         return
     }
-    if (rawDocumentId === undefined || rawDocumentId === null) {
+    if (sourceId === null) {
         ElMessage.warning('当前文档信息不完整，无法操作收藏')
-        return
-    }
-    const documentId = Number(rawDocumentId)
-    if (Number.isNaN(documentId)) {
-        ElMessage.warning('文档编号无效，无法操作收藏')
         return
     }
 
     favoriteProcessing.value = true
     const wasFavorited = favoriteJudgement.value
-    const payload = { userId: currentUserId, documentId }
+    const payload: FavoriteActionPayload = { userId: currentUserId, sourceId, type: 'document' }
 
     try {
         await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
@@ -358,15 +402,16 @@ const handleStatusUpdate = async (targetStatus: 'open' | 'closed') => {
 
 const refreshFavoriteJudgement = async () => {
     const currentUserId = userInfo.value?.userId
-    const currentDocumentId = brief.value?.documentId
-    if (!currentUserId || currentDocumentId === undefined || currentDocumentId === null) {
+    const sourceId = documentNumericId.value
+    if (!currentUserId || sourceId === null) {
         favoriteJudgement.value = false
         return
     }
     try {
         const response = (await getUserFavoriteJudgement({
             userId: currentUserId,
-            documentId: Number(currentDocumentId),
+            sourceId,
+            type: 'document',
         })) as unknown as ApiResponse<{ judgement: boolean }>
         favoriteJudgement.value = Boolean(response?.data?.judgement)
     } catch (error: any) {
@@ -385,6 +430,7 @@ watch(
             return
         }
         documentId.value = id
+        activeDiscussionTab.value = 'comment'
         await loadDocumentDetail(id)
     },
     { immediate: true },
@@ -393,7 +439,7 @@ watch(
 watch(
     [
         () => userInfo.value?.userId,
-        () => brief.value?.documentId,
+        () => documentNumericId.value,
     ],
     async () => {
         await refreshFavoriteJudgement()
@@ -623,6 +669,61 @@ watch(
 
 .introduction-card {
     margin-top: 32px;
+}
+
+.discussion-section {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.discussion-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.discussion-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.discussion-tab {
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    color: #9ca3af;
+    font-weight: 400;
+    cursor: pointer;
+    padding: 4px 6px;
+    transition: color 0.2s ease, font-weight 0.2s ease;
+}
+
+.discussion-tab.active {
+    color: #111827;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.tab-divider {
+    color: #d1d5db;
+    font-size: 14px;
+}
+
+.discussion-panel {
+    border-top: 1px solid #eef2ff;
+    padding-top: 16px;
+}
+
+.post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .section-title {
