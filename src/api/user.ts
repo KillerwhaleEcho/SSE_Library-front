@@ -94,8 +94,5 @@ export const resetPasswordAPI = (data: {
 }
 
 export const getUserAll = (userId: number | string): Promise<ApiResponse<UserAll>> => {
-  return request({
-    url: `/user/${userId}`,
-    method: 'get',
-  })
+  return service.get(`/user/${userId}`)
 }
