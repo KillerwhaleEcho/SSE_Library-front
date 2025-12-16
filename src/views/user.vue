@@ -56,7 +56,31 @@
             </section>
 
             <section class="section tab-content" role="tabpanel">
-                <div class="tab-panel">
+                <div class="tab-panel" v-if="activeTab === 'docs'">
+                    <div class="doc-tabs">
+                        <button type="button" class="doc-tab" :class="{ active: activeDocTab === 'collection' }"
+                            @click="activeDocTab = 'collection'">
+                            收藏
+                        </button>
+                        <span class="tab-divider">|</span>
+                        <button type="button" class="doc-tab" :class="{ active: activeDocTab === 'history' }"
+                            @click="activeDocTab = 'history'">
+                            历史
+                        </button>
+                    </div>
+
+                    <div v-if="activeDocTab === 'collection'">
+                        <BookListItem v-for="doc in collectionDocs" :key="doc.infoBrief.documentId" :document="doc" />
+                        <p v-if="!collectionDocs.length" class="placeholder">暂无收藏记录</p>
+                    </div>
+
+                    <div v-else>
+                        <BookListItem v-for="doc in historyDocs" :key="doc.infoBrief.documentId" :document="doc" />
+                        <p v-if="!historyDocs.length" class="placeholder">暂无浏览历史</p>
+                    </div>
+                </div>
+
+                <div class="tab-panel" v-else>
                     <p class="placeholder">{{ activePlaceholder }}</p>
                 </div>
             </section>
@@ -71,6 +95,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Topbar from '@/layout/topbar.vue'
 import { getUserAll, type UserAll } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
+import BookListItem from '@/components/bookListItem.vue'
+import type { Document, InfoBrief } from '@/api/all.ts'
 
 const authStore = useAuthStore()
 const userAll = ref<UserAll | null>(null)
@@ -97,6 +123,7 @@ const tabContainer = ref<HTMLElement | null>(null)
 const underlineStyle = ref({ left: '0px', right: '0px' })
 const underlineDirection = ref<'right' | 'left'>('right')
 const previousLeft = ref(0)
+const activeDocTab = ref<'collection' | 'history'>('collection')
 
 const setTabRef = (el: HTMLElement | null, index: number) => {
     tabRefs.value[index] = el
@@ -107,6 +134,19 @@ const resolvedUserId = computed(() => {
 })
 
 const userBrief = computed(() => userAll.value?.userBrief)
+const collectionList = computed(() => userAll.value?.collectionList ?? [])
+const historyList = computed(() => userAll.value?.historyList ?? [])
+
+const mapBriefToDoc = (item: InfoBrief): Document => ({
+    infoBrief: item,
+    cover: '',
+    author: '',
+    introduction: '',
+    createYear: '',
+})
+
+const collectionDocs = computed(() => collectionList.value?.map(mapBriefToDoc) ?? [])
+const historyDocs = computed(() => historyList.value?.map(mapBriefToDoc) ?? [])
 const statusLabel = computed(() => {
     const status = userBrief.value?.status
     if (status === 'active') return '正常'
@@ -378,6 +418,33 @@ watch(activeTab, () => updateUnderline())
     border-radius: 12px;
     padding: 20px;
     background: #fcfbff;
+}
+
+.doc-tabs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.tab-divider {
+    color: #d0cfe4;
+    font-size: 14px;
+}
+
+.doc-tab {
+    background: transparent;
+    border: none;
+    padding: 4px 8px;
+    font-size: 14px;
+    color: #7a7691;
+    cursor: pointer;
+}
+
+.doc-tab.active {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f1f2e;
 }
 
 .placeholder {
