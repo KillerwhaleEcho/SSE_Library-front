@@ -1,24 +1,24 @@
 <!--
-CommentSection 组件会依据 documentId 或 viewer.role 自动选择评论数据源，可展示指定文档、指定用户或全部评论；
-在文档模式下，支持登录后发表评论与回复。
-可配置显示的部分：评论编辑框(showEditor)、评论用户信息(showCommentUser)、回复按钮(showReplyButton)、评论关联文档标签(showDocumentName)。
+CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选择评论数据源，可展示指定文档/帖子、指定用户或全部评论；
+在来源模式下支持登录后发表评论与回复，并会通过 sourceData 区分 document/post。
+可配置显示的部分：评论编辑框(showEditor)、评论用户信息(showCommentUser)、回复按钮(showReplyButton)、评论关联来源标签(showSourceName)。
 
 调用示例：
 <CommentSection
-    :document-id="docId"
-    :document-brief="docBrief"
+    source-type="document"
+    :source-id="docId"
+    :source-data="{ sourceId: docId, sourceType: 'document', name: docName }"
     :viewer="currentViewer"
     :show-editor="true"
     :show-comment-user="true"
     :show-reply-button="true"
-    :show-document-name="true"
+    :show-source-name="true"
 />
 -->
 
 <template>
     <section class="comments-section">
         <div v-if="shouldShowEditor" class="comment-editor">
-            <h2 class="section-title">评论</h2>
             <el-input v-model="commentContent" type="textarea" :rows="4" maxlength="500" show-word-limit
                 placeholder="轻轻敲醒沉睡的心灵，让我看看你的点评..." />
             <div class="editor-actions">
@@ -46,7 +46,7 @@ CommentSection 组件会依据 documentId 或 viewer.role 自动选择评论数�
                     <div v-if="hasComments" class="comment-list">
                         <el-card v-for="item in displayComments" :key="item.comment.commentId" class="comment-card"
                             shadow="never">
-                            <div v-if="shouldShowCommentUser || shouldShowDocumentName" class="comment-top">
+                            <div v-if="shouldShowCommentUser || shouldShowSourceName" class="comment-top">
                                 <div v-if="shouldShowCommentUser" class="comment-header">
                                     <el-avatar :src="item.comment.commenter.userAvatar" :size="40" />
                                     <div class="comment-meta">
@@ -54,11 +54,15 @@ CommentSection 组件会依据 documentId 或 viewer.role 自动选择评论数�
                                         <span class="comment-time">{{ formattedDate(item.comment.createdAt) }}</span>
                                     </div>
                                 </div>
-                                <router-link v-if="shouldShowDocumentName && item.comment.document"
-                                    class="comment-document-chip"
-                                    :to="{ name: 'BookInfo', query: { id: String(item.comment.document.documentId) } }">
-                                    {{ item.comment.document.name || '查看文档' }}
-                                </router-link>
+                                <button v-if="shouldShowSourceName && item.comment.sourceData"
+                                    class="comment-document-chip" type="button"
+                                    @click="handleSourceNavigate(item.comment.sourceData)">
+                                    {{ item.comment.sourceData.name || sourceFallbackLabel(item.comment.sourceData) }}
+                                </button>
+                            </div>
+
+                            <div v-if="!shouldShowCommentUser" class="comment-time standalone-time">
+                                {{ formattedDate(item.comment.createdAt) }}
                             </div>
 
                             <div v-if="item.comment.parentId !== null" class="reply-reference" :class="{
@@ -137,27 +141,28 @@ import { ElMessage } from 'element-plus'
 import {
     type ApiResponse,
     type DocumentComment,
-    type InfoBrief,
+    type CommentSourceData,
     type CreateCommentPayload,
     type UserBrief,
-    getDocumentComments,
+    getCommentsBySource,
     getUserComments,
     getAllComments,
     getSingleComment,
-    createDocumentComment,
+    createComment,
     deleteUserComment,
     deleteAdminComment,
 } from '@/api/all.ts'
 import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
-    documentId: string | number | null
-    documentBrief?: InfoBrief | null
+    sourceId?: string | number | null
+    sourceType?: string | null
+    sourceData?: CommentSourceData | null
     viewer?: UserBrief | null
     showEditor?: boolean
     showCommentUser?: boolean
     showReplyButton?: boolean
-    showDocumentName?: boolean
+    showSourceName?: boolean
 }>()
 
 const router = useRouter()
@@ -174,11 +179,29 @@ const replyingModalVisible = ref(false)
 const deletingCommentMap = ref<Record<number, boolean>>({})
 
 const shouldShowCommentUser = computed(() => props.showCommentUser !== false)
-const shouldShowDocumentName = computed(() => props.showDocumentName === true)
+const shouldShowSourceName = computed(() => props.showSourceName === true)
 
-const resolvedDocumentId = computed(() => {
-    if (props.documentId === null || props.documentId === undefined) return ''
-    return String(props.documentId).trim()
+const normalizedSourceType = computed(() => {
+    const direct = typeof props.sourceType === 'string' ? props.sourceType.trim().toLowerCase() : ''
+    if (direct) return direct
+    const fromData = props.sourceData?.sourceType
+    if (fromData && typeof fromData === 'string') return fromData.trim().toLowerCase()
+    return ''
+})
+
+const resolvedSourceId = computed(() => {
+    const raw = props.sourceId ?? props.sourceData?.sourceId
+    if (raw === null || raw === undefined) return ''
+    if (typeof raw === 'string') return raw.trim()
+    if (typeof raw === 'number' && Number.isFinite(raw)) return String(raw)
+    return ''
+})
+
+const resolvedSourceNumericId = computed(() => {
+    const id = resolvedSourceId.value
+    if (!id) return null
+    const parsed = Number(id)
+    return Number.isNaN(parsed) ? null : parsed
 })
 
 const effectiveViewer = computed<UserBrief | null>(() => {
@@ -188,7 +211,7 @@ const effectiveViewer = computed<UserBrief | null>(() => {
             userId: userInfo.value.userId,
             username: userInfo.value.username,
             userAvatar: userInfo.value.userAvatar,
-            status: userInfo.value.status,
+            status: (userInfo.value.status as UserBrief['status']) ?? 'active',
             createTime: userInfo.value.createTime,
             email: userInfo.value.email,
             role: userInfo.value.role,
@@ -197,38 +220,50 @@ const effectiveViewer = computed<UserBrief | null>(() => {
     return null
 })
 
+const resolvedSourcePayload = computed<CommentSourceData | null>(() => {
+    const id = resolvedSourceNumericId.value
+    const type = normalizedSourceType.value
+    if (id === null || !type) return null
+    const providedName = typeof props.sourceData?.name === 'string' ? props.sourceData.name.trim() : ''
+    const fallbackName = type === 'post' ? `帖子 #${id}` : `文档 #${id}`
+    return {
+        sourceId: id,
+        sourceType: type,
+        name: providedName || fallbackName,
+    }
+})
+
 type CommentFetchMode =
-    | { kind: 'document'; documentId: string }
+    | { kind: 'source'; sourceType: string; sourceId: string }
     | { kind: 'user'; userId: number }
     | { kind: 'admin' }
     | { kind: 'none' }
 
 const commentFetchMode = computed<CommentFetchMode>(() => {
-    if (resolvedDocumentId.value) {
-        return { kind: 'document', documentId: resolvedDocumentId.value }
+    // 优先依据显式的来源（document/post）。只要提供了 sourceType 和 sourceId，就走来源模式。
+    if (normalizedSourceType.value && resolvedSourceId.value) {
+        return { kind: 'source', sourceType: normalizedSourceType.value, sourceId: resolvedSourceId.value }
     }
 
+    // 未提供来源时，若有 viewer，则走“指定用户”模式；若 viewer 是 admin，则用 admin 模式。
     const viewer = effectiveViewer.value
-    if (!viewer) {
-        return { kind: 'none' }
-    }
+    if (!viewer) return { kind: 'none' }
 
     const viewerRole = (viewer.role || '').toLowerCase()
-
     if (viewerRole.includes('admin')) {
         return { kind: 'admin' }
     }
 
-    if (viewerRole === 'user' && viewer.userId !== undefined && viewer.userId !== null) {
+    if (viewer.userId !== undefined && viewer.userId !== null) {
         return { kind: 'user', userId: viewer.userId }
     }
 
     return { kind: 'none' }
 })
 
-const isDocumentMode = computed(() => commentFetchMode.value.kind === 'document')
-const shouldShowEditor = computed(() => props.showEditor !== false && isDocumentMode.value)
-const shouldShowReplyButton = computed(() => props.showReplyButton !== false && isDocumentMode.value)
+const isSourceMode = computed(() => commentFetchMode.value.kind === 'source')
+const shouldShowEditor = computed(() => props.showEditor !== false && isSourceMode.value)
+const shouldShowReplyButton = computed(() => props.showReplyButton !== false && isSourceMode.value)
 const hasCommentsSource = computed(() => commentFetchMode.value.kind !== 'none')
 const hasComments = computed(() => comments.value.length > 0)
 const normalizedViewerRole = computed(() => (effectiveViewer.value?.role || '').toLowerCase())
@@ -356,6 +391,7 @@ const fetchParentComment = async (parentId: number) => {
             ...data,
             parentId: data.parentId ?? null,
             content: data.content ?? null,
+            sourceData: deriveSourceData(data),
         }
     } catch (error) {
         parentErrorState.value[parentId] = true
@@ -377,6 +413,39 @@ const ensureParentComments = async (list: DocumentComment[]) => {
     await Promise.all(tasks)
 }
 
+const sourceFallbackLabel = (source: CommentSourceData) => {
+    return source.sourceType === 'post' ? `帖子 #${source.sourceId}` : `文档 #${source.sourceId}`
+}
+
+const handleSourceNavigate = (source?: CommentSourceData | null) => {
+    if (!source) return
+    const idValue = source.sourceId
+    const targetUrl = source.sourceType === 'post'
+        ? `/postInfo?postId=${idValue}`
+        : `/bookInfo?id=${idValue}`
+    window.open(targetUrl, '_blank', 'noopener')
+}
+
+const deriveSourceData = (comment: DocumentComment): CommentSourceData | null => {
+    if (comment.sourceData && typeof comment.sourceData.sourceId === 'number' && comment.sourceData.sourceType) {
+        const normalizedType = String(comment.sourceData.sourceType).trim().toLowerCase()
+        const name = comment.sourceData.name?.trim() || ''
+        return {
+            sourceId: comment.sourceData.sourceId,
+            sourceType: normalizedType,
+            name: name || (normalizedType === 'post' ? `帖子 #${comment.sourceData.sourceId}` : `文档 #${comment.sourceData.sourceId}`),
+        }
+    }
+    if (comment.document && typeof comment.document.documentId === 'number') {
+        return {
+            sourceId: comment.document.documentId,
+            sourceType: 'document',
+            name: comment.document.name || `文档 #${comment.document.documentId}`,
+        }
+    }
+    return null
+}
+
 const loadCommentsForMode = async (mode: CommentFetchMode) => {
     if (mode.kind === 'none') {
         comments.value = []
@@ -387,8 +456,8 @@ const loadCommentsForMode = async (mode: CommentFetchMode) => {
     try {
         let response: ApiResponse<DocumentComment[]>
 
-        if (mode.kind === 'document') {
-            response = (await getDocumentComments(mode.documentId)) as unknown as ApiResponse<DocumentComment[]>
+        if (mode.kind === 'source') {
+            response = (await getCommentsBySource(mode.sourceType, mode.sourceId)) as unknown as ApiResponse<DocumentComment[]>
         } else if (mode.kind === 'user') {
             response = (await getUserComments(mode.userId)) as unknown as ApiResponse<DocumentComment[]>
         } else {
@@ -400,6 +469,7 @@ const loadCommentsForMode = async (mode: CommentFetchMode) => {
             ...item,
             parentId: item.parentId ?? null,
             content: item.content ?? null,
+            sourceData: deriveSourceData(item),
         }))
         await ensureParentComments(comments.value)
     } catch (error: any) {
@@ -427,25 +497,10 @@ const buildCommenterPayload = (): UserBrief | null => {
         userId: userInfo.value.userId,
         username: userInfo.value.username,
         userAvatar: userInfo.value.userAvatar,
-        status: userInfo.value.status,
+        status: (userInfo.value.status as UserBrief['status']) ?? 'active',
         createTime: userInfo.value.createTime,
         email: userInfo.value.email,
         role: userInfo.value.role,
-    }
-}
-
-const buildDocumentPayload = (): InfoBrief | null => {
-    if (!props.documentBrief) return null
-    return {
-        name: props.documentBrief.name,
-        documentId: props.documentBrief.documentId,
-        type: props.documentBrief.type,
-        uploadTime: props.documentBrief.uploadTime,
-        status: props.documentBrief.status,
-        category: props.documentBrief.category,
-        collections: props.documentBrief.collections,
-        readCounts: props.documentBrief.readCounts,
-        URL: props.documentBrief.URL,
     }
 }
 
@@ -468,9 +523,9 @@ const ensureCommentPayload = (source: 'main' | 'reply') => {
         return null
     }
 
-    const documentPayload = buildDocumentPayload()
-    if (!documentPayload) {
-        ElMessage.error('文档信息缺失，无法发表评论')
+    const sourcePayload = resolvedSourcePayload.value
+    if (!sourcePayload) {
+        ElMessage.error('当前内容不支持发表评论')
         return null
     }
 
@@ -485,7 +540,7 @@ const ensureCommentPayload = (source: 'main' | 'reply') => {
     return {
         payload: {
             commenter,
-            document: documentPayload,
+            sourceData: sourcePayload,
             content,
             createTime: formatNow(),
             parentId,
@@ -496,11 +551,11 @@ const ensureCommentPayload = (source: 'main' | 'reply') => {
 
 const postComment = async (source: 'main' | 'reply') => {
     const result = ensureCommentPayload(source)
-    if (!result || !resolvedDocumentId.value) return
+    if (!result) return
 
     postingComment.value = true
     try {
-        const response = (await createDocumentComment(resolvedDocumentId.value, result.payload)) as unknown as ApiResponse<DocumentComment[]>
+        const response = (await createComment(result.payload)) as unknown as ApiResponse<DocumentComment[]>
         comments.value = Array.isArray(response.data) ? response.data : []
         await ensureParentComments(comments.value)
         if (source === 'main') {
@@ -548,11 +603,12 @@ const closeReplyBox = () => {
 watch(
     commentFetchMode,
     async (mode, prevMode) => {
-        const switchedToNonDocument = mode.kind !== 'document'
-        const switchedDocumentId =
-            prevMode && prevMode.kind === 'document' && mode.kind === 'document' && prevMode.documentId !== mode.documentId
+        const switchedToNonSource = mode.kind !== 'source'
+        const switchedSource =
+            prevMode && prevMode.kind === 'source' && mode.kind === 'source' &&
+            (prevMode.sourceId !== mode.sourceId || prevMode.sourceType !== mode.sourceType)
 
-        if (switchedToNonDocument || switchedDocumentId) {
+        if (switchedToNonSource || switchedSource) {
             commentContent.value = ''
             replyingContent.value = ''
             replyingTo.value = null
@@ -564,9 +620,9 @@ watch(
 )
 
 watch(
-    () => props.documentBrief,
+    () => [props.sourceId, props.sourceType, props.sourceData],
     () => {
-        if (!isDocumentMode.value) return
+        if (!isSourceMode.value) return
         // 清理草稿内容以避免不同文档间的串联
         commentContent.value = ''
         replyingContent.value = ''
@@ -580,8 +636,7 @@ watch(
 .comments-section {
     background: #fff;
     border-radius: 16px;
-    padding: 32px;
-    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
+    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 24px;
@@ -650,6 +705,10 @@ watch(
 .comment-time {
     font-size: 13px;
     color: #9ca3af;
+}
+
+.standalone-time {
+    margin: 6px 0;
 }
 
 .comment-document-chip {

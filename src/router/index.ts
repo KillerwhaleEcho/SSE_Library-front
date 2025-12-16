@@ -4,6 +4,7 @@ import Login from '@/views/login.vue';
 import Home from '@/views/home.vue';
 import Admin from '@/views/admin.vue';
 import BookInfo from '@/views/bookInfo.vue';
+import PostInfo from '@/views/postInfo.vue';
 import User from '@/views/user.vue';
 import Posts from '@/views/posts.vue';
 import Chat from '@/components/chatView.vue';
@@ -37,10 +38,42 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/postInfo',
+    name: 'PostInfo',
+    component: PostInfo,
+    meta: { requiresAuth: true },
+    props: (route) => ({ postId: route.query.postId }),
+  },
+  {
     path: '/user',
     name: 'User',
     component: User,
     meta: { requiresAuth: true },
+    // 当缺少 userId 时，使用本地存储的真实 ID 进行重定向
+    beforeEnter: (to, _from, next) => {
+      const normalizeUserId = (value: unknown): number | null => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+      };
+
+      const fromQuery = normalizeUserId(to.query.userId);
+      if (fromQuery !== null) {
+        next();
+        return;
+      }
+
+      const storedId = normalizeUserId(localStorage.getItem('userId'));
+      if (storedId !== null) {
+        next({ path: '/user', query: { userId: storedId.toString() }, replace: true });
+        return;
+      }
+
+      next('/login');
+    },
+    props: (route) => {
+      const parsed = Number(route.query.userId);
+      return { userId: Number.isFinite(parsed) ? parsed : undefined };
+    },
   },
   {
     path: '/posts',
@@ -67,7 +100,7 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
   const isAdmin = /* 这里根据实际情况判断是否为管理员 */ false;
 

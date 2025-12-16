@@ -1,5 +1,5 @@
 <template>
-  <div class="post-item">
+  <div class="post-item" role="button" tabindex="0" @click="openPostDetail">
     <div class="post-author">
       <img :src="post.senderAvatar" alt="用户头像" class="avatar">
       <div class="author-info">
@@ -7,7 +7,7 @@
         <div class="post-time">{{ post.sendTime }}</div>
       </div>
     </div>
-    
+
     <div class="post-body">
       <div class="post-content">
         <h3 class="post-title">{{ post.title }}</h3>
@@ -17,8 +17,8 @@
       </div>
       <img :src="defaultCover" alt="封面" class="post-cover"></img>
     </div>
-    
-    
+
+
     <div class="post-stats">
       <span class="stat-item"><i class="icon-comment"></i> {{ post.commentCount }} 评论</span>
       <span class="stat-item"><i class="icon-like"></i> {{ post.collectCount }} 收藏</span>
@@ -38,6 +38,13 @@ import defaultCover from '@/assets/coverexp.png'; // 引入默认封面图
 const props = defineProps<{
   post: allApi.Post;
 }>();
+
+const openPostDetail = () => {
+  const postId = props.post?.postId
+  if (typeof postId !== 'number') return
+  const targetUrl = `/postInfo?postId=${postId}`
+  window.open(targetUrl, '_blank', 'noopener')
+}
 </script>
 
 <style scoped>
@@ -47,6 +54,7 @@ const props = defineProps<{
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(185, 148, 254, 0.3);
   transition: box-shadow 0.3s;
+  cursor: pointer;
 }
 
 .post-item:hover {
@@ -79,11 +87,16 @@ const props = defineProps<{
 }
 
 .post-body {
-  display: flex; /* 子元素水平排列 */
-  gap: 20px; /* 子元素之间保留20px间距（可选，可删除） */
-  justify-content: space-between; /* 关键！子元素分别靠左右两端放置 */
-  align-items: center; /* 可选：子元素垂直居中对齐（按需添加） */
-  width: 100%; /* 确保容器占满父级宽度，否则两端对齐效果不明显 */
+  display: flex;
+  /* 子元素水平排列 */
+  gap: 20px;
+  /* 子元素之间保留20px间距（可选，可删除） */
+  justify-content: space-between;
+  /* 关键！子元素分别靠左右两端放置 */
+  align-items: center;
+  /* 可选：子元素垂直居中对齐（按需添加） */
+  width: 100%;
+  /* 确保容器占满父级宽度，否则两端对齐效果不明显 */
 }
 
 .post-cover {
@@ -104,7 +117,8 @@ const props = defineProps<{
   line-height: 1.6;
   margin-bottom: 15px;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* 限制显示2行 */
+  -webkit-line-clamp: 2;
+  /* 限制显示2行 */
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -127,7 +141,15 @@ const props = defineProps<{
 }
 
 /* 图标样式模拟 */
-.icon-comment::before { content: "💬"; }
-.icon-like::before { content: "❤️"; }
-.icon-view::before { content: "👁️"; }
+.icon-comment::before {
+  content: "💬";
+}
+
+.icon-like::before {
+  content: "❤️";
+}
+
+.icon-view::before {
+  content: "👁️";
+}
 </style>
