@@ -96,3 +96,10 @@ export const resetPasswordAPI = (data: {
 export const getUserAll = (userId: number | string): Promise<ApiResponse<UserAll>> => {
   return service.get(`/user/${userId}`)
 }
+
+// 获取用户上传的文档列表
+export const getUserUploadDoc = (userId: number | string): Promise<ApiResponse<InfoBrief[]>> => {
+  return service.get('/user/document', {
+    params: { userId }
+  })
+}

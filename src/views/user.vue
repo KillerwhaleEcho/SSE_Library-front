@@ -85,6 +85,11 @@
                         :show-source-name="true" />
                 </template>
 
+                <template v-else-if="activeTab === 'uploads'">
+                    <BookListItem v-for="doc in uploadsDocs" :key="doc.infoBrief.documentId" :document="doc" />
+                    <p v-if="!uploadsDocs.length" class="placeholder">暂无上传记录</p>
+                </template>
+
                 <template v-else>
                     <p class="placeholder">{{ activePlaceholder }}</p>
                 </template>
@@ -99,7 +104,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Topbar from '@/layout/topbar.vue'
-import { getUserAll, type UserAll } from '@/api/user'
+import { getUserAll, getUserUploadDoc, type UserAll } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 import BookListItem from '@/components/bookListItem.vue'
 import CommentSection from '@/components/comments/CommentSection.vue'
@@ -108,6 +113,7 @@ import type { Document, InfoBrief, UserBrief } from '@/api/all.ts'
 const authStore = useAuthStore()
 const route = useRoute()
 const userAll = ref<UserAll | null>(null)
+const uploadsDocs = ref<Document[]>([])
 const errorMessage = ref('')
 const defaultAvatar = 'https://placehold.co/120x120?text=Avatar'
 
@@ -202,6 +208,27 @@ const fetchUserAll = async () => {
     }
 }
 
+const fetchUserUploads = async () => {
+    errorMessage.value = ''
+    if (!resolvedUserId.value) {
+        errorMessage.value = '未能获取用户信息，请先登录。'
+        uploadsDocs.value = []
+        return
+    }
+
+    try {
+        const res = await getUserUploadDoc(resolvedUserId.value)
+        if (res.code === 200) {
+            uploadsDocs.value = res.data?.map(mapBriefToDoc) ?? []
+        } else {
+            errorMessage.value = res.message || '获取上传记录失败'
+        }
+    } catch (error) {
+        console.error('获取上传记录失败', error)
+        errorMessage.value = '网络异常，请稍后重试'
+    }
+}
+
 const handleEditProfile = () => {
     console.info('编辑个人资料功能待实现')
 }
@@ -241,6 +268,9 @@ watch(
     () => route.query.userId,
     () => {
         fetchUserAll()
+        if (activeTab.value === 'uploads') {
+            fetchUserUploads()
+        }
     },
 )
 
@@ -248,7 +278,12 @@ onBeforeUnmount(() => {
     window.removeEventListener('resize', updateUnderline)
 })
 
-watch(activeTab, () => updateUnderline())
+watch(activeTab, (tab) => {
+    updateUnderline()
+    if (tab === 'uploads') {
+        fetchUserUploads()
+    }
+})
 </script>
 
 <style scoped>
