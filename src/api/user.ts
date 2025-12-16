@@ -14,10 +14,10 @@ interface LoginParams {
 }
 
 interface RegisterParams {
-  username: string
   email: string
-  password: string
+  username: string
   userAvatar: string
+  password: string
   Code: string
 }
 
@@ -48,12 +48,12 @@ export const loginAPI = (data: LoginParams): Promise<ApiResponse<{
 }
 
 export const registerAPI = (data: RegisterParams): Promise<ApiResponse<{
-  email: string
   userId: number
   username: string
   userAvatar: string
   status: string
   createTime: string
+  email: string
   role: string
 }>> => {
   return request({
@@ -68,7 +68,7 @@ export const sendEmailCode = (email: string, usage: string): Promise<{
   code: number;
   message: string;
   data: {
-    CodeId: number;
+    success: boolean;
   };
 }> => {
   return request({
@@ -76,7 +76,7 @@ export const sendEmailCode = (email: string, usage: string): Promise<{
     method: 'post',
     data: {
       email,
-      //type: 0 // 0: 验证码邮件
+      usage
     }
   })
 }

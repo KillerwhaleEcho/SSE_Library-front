@@ -482,6 +482,7 @@ const beforeAvatarUpload = (file: File) => {
 // 获取验证码
 const getVerificationCode = async () => {
   const email = isRegister.value ? registerForm.email : forgotForm.email;
+  const usage = isRegister.value ? 'register' : 'reset-password';
   
   if (!email) {
     ElMessage.warning('请先输入邮箱地址');
@@ -491,7 +492,7 @@ const getVerificationCode = async () => {
   // 验证码发送
   try {
     // 调用API发送验证码
-    const response = await sendEmailCode(email)
+    const response = await sendEmailCode(email, usage);
     if (response.code === 200) {
       isCodeSending.value = true;
       ElMessage.success('验证码已发送，请查收')
@@ -553,9 +554,9 @@ const handleRegister = async () => {
       const registerData = {
         email: registerForm.email,
         username: registerForm.username,
-        password: registerForm.password,
         userAvatar: registerForm.userAvatar,
-        code: registerForm.Code
+        password: registerForm.password,
+        Code: registerForm.Code
       };
 
       const registerRes = await userStore.register(registerData);
