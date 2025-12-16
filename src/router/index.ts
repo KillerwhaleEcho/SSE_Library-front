@@ -104,6 +104,25 @@ router.beforeEach((to, _from, next) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
   const isAdmin = /* 这里根据实际情况判断是否为管理员 */ false;
 
+  // 类型断言
+  const win = window as any;
+  if (win.activeRequests) {
+    win.activeRequests.forEach((controller: AbortController) => controller.abort());
+    win.activeRequests = [];
+  }
+  
+  if (win.activeTimers) {
+    win.activeTimers.forEach((timer: number) => {
+      clearTimeout(timer);
+      clearInterval(timer);
+    });
+    win.activeTimers = [];
+  }
+  
+  // 3. 给Vue一点时间完成组件卸载
+  setTimeout(() => {
+    next()
+  }, 0)
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login');

@@ -15,7 +15,7 @@
           通知
           <span class="badge tab-badge" v-if="unreadCount > 0">{{ unreadCount }}</span>
         </h3>
-        <button class="clear-btn" @click="handleClearAll" :disabled="reminders.length === 0">
+        <button class="clear-btn" @click="handleClearAll" :disabled="!reminders?.length">
           清空全部
         </button>
       </div>
@@ -32,7 +32,7 @@
             <div class="notification-desc">{{ item.content }}</div>
             <div class="notification-time">{{ formatTime(item.sendTime) }}</div>
           </div>
-          <div class="empty-tip" v-if="reminders.length === 0">暂无通知</div>
+          <div class="empty-tip" v-if="!reminders?.length">暂无通知</div>
         </div>
       </div>
     </template>
@@ -67,12 +67,12 @@ const router = useRouter();
 const isPanelVisible = ref(false); // 控制popover显示状态
 
 const unreadCount = computed(() => {
-  return props.reminders.filter(item => !item.isRead).length;
+  return props.reminders?.filter(item => !item.isRead).length || 0;
 });
 
 const filteredReminders = computed(() => {
   // 只返回未读的提醒（isRead 为 false）
-  return props.reminders.filter(item => !item.isRead);
+  return props.reminders?.filter(item => !item.isRead) || [];
 });
 
 // 点击通知项处理
