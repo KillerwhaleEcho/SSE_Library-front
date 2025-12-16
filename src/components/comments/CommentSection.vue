@@ -61,6 +61,10 @@ CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选�
                                 </button>
                             </div>
 
+                            <div v-if="!shouldShowCommentUser" class="comment-time standalone-time">
+                                {{ formattedDate(item.comment.createdAt) }}
+                            </div>
+
                             <div v-if="item.comment.parentId !== null" class="reply-reference" :class="{
                                 'reply-loading': item.parentLoading,
                                 'reply-error': item.parentError,
@@ -78,7 +82,7 @@ CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选�
                                         <div class="reply-parent-header">
                                             <span class="reply-parent-name">{{ item.parent.commenter.username }}</span>
                                             <span class="reply-parent-time">{{ formattedDate(item.parent.createdAt)
-                                            }}</span>
+                                                }}</span>
                                         </div>
                                         <p class="reply-parent-content">{{ item.parent.content || '（原评论暂无内容）' }}</p>
                                     </div>
@@ -236,22 +240,21 @@ type CommentFetchMode =
     | { kind: 'none' }
 
 const commentFetchMode = computed<CommentFetchMode>(() => {
+    // 优先依据显式的来源（document/post）。只要提供了 sourceType 和 sourceId，就走来源模式。
     if (normalizedSourceType.value && resolvedSourceId.value) {
         return { kind: 'source', sourceType: normalizedSourceType.value, sourceId: resolvedSourceId.value }
     }
 
+    // 未提供来源时，若有 viewer，则走“指定用户”模式；若 viewer 是 admin，则用 admin 模式。
     const viewer = effectiveViewer.value
-    if (!viewer) {
-        return { kind: 'none' }
-    }
+    if (!viewer) return { kind: 'none' }
 
     const viewerRole = (viewer.role || '').toLowerCase()
-
     if (viewerRole.includes('admin')) {
         return { kind: 'admin' }
     }
 
-    if (viewerRole === 'user' && viewer.userId !== undefined && viewer.userId !== null) {
+    if (viewer.userId !== undefined && viewer.userId !== null) {
         return { kind: 'user', userId: viewer.userId }
     }
 
@@ -702,6 +705,10 @@ watch(
 .comment-time {
     font-size: 13px;
     color: #9ca3af;
+}
+
+.standalone-time {
+    margin: 6px 0;
 }
 
 .comment-document-chip {

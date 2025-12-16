@@ -56,7 +56,7 @@
             </section>
 
             <section class="section tab-content" role="tabpanel">
-                <div class="tab-panel" v-if="activeTab === 'docs'">
+                <template v-if="activeTab === 'docs'">
                     <div class="doc-tabs">
                         <button type="button" class="doc-tab" :class="{ active: activeDocTab === 'collection' }"
                             @click="activeDocTab = 'collection'">
@@ -78,11 +78,16 @@
                         <BookListItem v-for="doc in historyDocs" :key="doc.infoBrief.documentId" :document="doc" />
                         <p v-if="!historyDocs.length" class="placeholder">暂无浏览历史</p>
                     </div>
-                </div>
+                </template>
 
-                <div class="tab-panel" v-else>
+                <template v-else-if="activeTab === 'comments'">
+                    <CommentSection :viewer="commentViewer" :show-editor="false" :show-reply-button="false"
+                        :show-source-name="true" />
+                </template>
+
+                <template v-else>
                     <p class="placeholder">{{ activePlaceholder }}</p>
-                </div>
+                </template>
             </section>
 
             <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
@@ -92,13 +97,16 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import Topbar from '@/layout/topbar.vue'
 import { getUserAll, type UserAll } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 import BookListItem from '@/components/bookListItem.vue'
-import type { Document, InfoBrief } from '@/api/all.ts'
+import CommentSection from '@/components/comments/CommentSection.vue'
+import type { Document, InfoBrief, UserBrief } from '@/api/all.ts'
 
 const authStore = useAuthStore()
+const route = useRoute()
 const userAll = ref<UserAll | null>(null)
 const errorMessage = ref('')
 const defaultAvatar = 'https://placehold.co/120x120?text=Avatar'
@@ -124,12 +132,32 @@ const underlineStyle = ref({ left: '0px', right: '0px' })
 const underlineDirection = ref<'right' | 'left'>('right')
 const previousLeft = ref(0)
 const activeDocTab = ref<'collection' | 'history'>('collection')
+const commentViewer = computed<UserBrief | null>(() => {
+    const brief = userBrief.value
+    if (!brief) return null
+    return {
+        userId: brief.userId,
+        username: brief.username,
+        userAvatar: brief.userAvatar,
+        status: brief.status,
+        createTime: brief.createTime,
+        email: brief.email,
+        role: brief.role,
+    }
+})
 
 const setTabRef = (el: HTMLElement | null, index: number) => {
     tabRefs.value[index] = el
 }
 
+const routeUserId = computed(() => {
+    const raw = route.query.userId
+    const parsed = typeof raw === 'string' ? Number(raw) : Array.isArray(raw) ? Number(raw[0]) : NaN
+    return Number.isFinite(parsed) ? parsed : null
+})
+
 const resolvedUserId = computed(() => {
+    if (routeUserId.value !== null) return routeUserId.value
     return authStore.userInfo?.userId ?? Number(localStorage.getItem('userId') || 0)
 })
 
@@ -208,6 +236,13 @@ onMounted(() => {
     updateUnderline()
     window.addEventListener('resize', updateUnderline)
 })
+
+watch(
+    () => route.query.userId,
+    () => {
+        fetchUserAll()
+    },
+)
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', updateUnderline)
@@ -410,14 +445,6 @@ watch(activeTab, () => updateUnderline())
 
 .tab-content {
     margin-top: 0;
-}
-
-.tab-panel {
-    min-height: 120px;
-    border: 1px dashed #e1dcff;
-    border-radius: 12px;
-    padding: 20px;
-    background: #fcfbff;
 }
 
 .doc-tabs {
