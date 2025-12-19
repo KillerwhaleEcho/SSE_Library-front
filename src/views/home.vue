@@ -128,6 +128,7 @@
       :selected-category-id="selectedCategoryId"
       @category-selected="onCategorySelected"
       @reset-category="resetCategory"
+      @category-added="handleCategoryAdded"
     />
 
     <UploadModal 
@@ -149,7 +150,8 @@ import CategoryItem from '@/components/categoryItem.vue'
 import BookItem from '@/components/bookItem.vue'
 import CategoryDialog from '@/components/CategoryDialog.vue'
 import UploadModal from '@/components/UploadModal.vue'
-import type { ElMention } from 'element-plus'
+import { ElMention } from 'element-plus'
+import { ElMessage } from 'element-plus'
 
 // 状态管理
 const router = useRouter()
@@ -275,7 +277,7 @@ const getHotCategories = async () => {
   try {
     // 调用接口，传入is_suggest参数（根据实际需求决定是否需要）
     const response = await allApi.getHotCategories(10)
-    
+    console.log('热门分类响应:', response)
     // 假设接口返回的数据结构中，data包含categories数组
     if (response.data) {
       hotCategories.value = response.data
@@ -405,12 +407,28 @@ const resetCategory = () => {
    selectedUploadCategoryName.value = ''
 }
 
-// 处理上传成功
 const handleUploadSuccess = () => {
   console.log('上传成功，可以刷新数据')
-  // 可以在这里刷新推荐数据或执行其他操作
   loadRecommendData()
 }
+
+const handleCategoryAdded = async () => {
+  console.log('分类添加成功，重新加载分类数据');
+  
+  try {
+    await getAllCategories();
+    
+    // 如果是当前在文件列表标签页，也重新获取资料列表
+    if (activeTab.value === 'fileList' && selectedCategoryId.value) {
+      await confirmCategory();
+    }
+    
+    ElMessage.success('分类数据已更新');
+  } catch (error) {
+    console.error('刷新分类数据失败:', error);
+    ElMessage.error('刷新数据失败');
+  }
+};
 </script>
 
 <style scoped>

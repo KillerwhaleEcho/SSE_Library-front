@@ -118,6 +118,13 @@ export interface Category {
   children?: Category[];
 }
 
+export interface Categoryform {
+  isCourse: boolean;
+  name: string;
+  parentCatId?: number;
+  description?: string;
+}
+
 export interface message {
   sessionId: number;
   senderId: number;
@@ -322,6 +329,11 @@ export const searchCategoriesAndCourses = (keyword: string, params?: { page?: nu
     params: { keyword, ...params },
   });
 };
+
+// 10.1 添加分类
+export const addCategoryOrCourse = (data: Categoryform) => {
+  return service.post<ApiResponse<{ success: boolean }>>('/category', data);
+}
 
 // 11.1 获取帖子列表
 export const getPosts = (key: string, order: "time" | "hot") => {
