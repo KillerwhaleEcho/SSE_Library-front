@@ -6,17 +6,11 @@
           <figure class="profile-avatar">
             <img :src="avatarUrl" alt="管理员头像" />
           </figure>
-              <!-- div标签只是用来布局和分割页面，但是figue标签一般用来表示包含图像的独立内容块，比如用户头像、文章插图等。使用figure标签可以提高语义化，有助于搜索引擎优化（SEO）和辅助技术的理解。 -->
-          <el-upload
-            class="avatar-upload"
-            action="#"
-            :auto-upload="false"
-            :show-file-list="false"
-            accept="image/*"
-            @change="handleAvatarChange"
-          >
-          <!-- 默认情况下：组件会把选择的文件传给内置的 HTTP 上传逻辑 + handle 函数 ；所以需要禁用自动上传-->
-           <!-- 这个组件内部会维护一个文件列表（因为可能一次选择多个文件），如果是change事件，对于你这里的场景，每次选择文件后，内部文件列表会新增一个文件，然后触发函数；select事件是在用户选择文件后立即触发，但此时文件还没有被添加到组件的内部文件列表中，选择多个文件就会多次触发。 -->
+          <!-- div标签只是用来布局和分割页面，但是figue标签一般用来表示包含图像的独立内容块，比如用户头像、文章插图等。使用figure标签可以提高语义化，有助于搜索引擎优化（SEO）和辅助技术的理解。 -->
+          <el-upload class="avatar-upload" action="#" :auto-upload="false" :show-file-list="false" accept="image/*"
+            @change="handleAvatarChange">
+            <!-- 默认情况下：组件会把选择的文件传给内置的 HTTP 上传逻辑 + handle 函数 ；所以需要禁用自动上传-->
+            <!-- 这个组件内部会维护一个文件列表（因为可能一次选择多个文件），如果是change事件，对于你这里的场景，每次选择文件后，内部文件列表会新增一个文件，然后触发函数；select事件是在用户选择文件后立即触发，但此时文件还没有被添加到组件的内部文件列表中，选择多个文件就会多次触发。 -->
             <el-button size="small" type="primary">上传头像</el-button>
           </el-upload>
           <ul class="profile-summary">
@@ -41,7 +35,7 @@
             <div class="profile-fields">
               <label class="profile-field">
                 <span class="profile-field__label">Email</span>
-                <el-input v-model="profileForm.email" placeholder="请输入邮箱"  ></el-input>
+                <el-input v-model="profileForm.email" placeholder="请输入邮箱"></el-input>
               </label>
               <label class="profile-field">
                 <span class="profile-field__label">昵称</span>
@@ -49,7 +43,7 @@
               </label>
             </div>
             <div class="profile-actions">
-              <el-button  type="primary" @click="handleProfileSave">保存修改</el-button>
+              <el-button type="primary" @click="handleProfileSave">保存修改</el-button>
             </div>
           </div>
 
@@ -59,37 +53,21 @@
             <div class="profile-fields ">
               <label class="profile-field">
                 <span class="profile-field__label">新密码</span>
-                <el-input
-                  v-model="passwordForm.newPassword"
-                  type="password"
-                  show-password
-                  placeholder="请输入新密码"
-                />
+                <el-input v-model="passwordForm.newPassword" type="password" show-password placeholder="请输入新密码" />
                 <!-- show-password属性可以让用户选择是否显示密码文本 -->
               </label>
               <label class="profile-field">
                 <span class="profile-field__label">请重新输入密码</span>
-                <el-input
-                  v-model="passwordForm.confirmPassword"
-                  type="password"
-                  show-password
-                  placeholder="请再次输入新密码"
-                />
-              </label> 
-               <label class="profile-ver">
+                <el-input v-model="passwordForm.confirmPassword" type="password" show-password placeholder="请再次输入新密码" />
+              </label>
+              <label class="profile-ver">
                 <span class="profile-ver__label">验证码</span>
                 <div class="profile-ver-form">
-                <el-input v-model="verificationCode"
-                placeholder="请输入验证码"></el-input>
-                 <el-button 
-                type="primary" 
-                round 
-                class="profile-ver__button"
-                @click="getVerificationCode"
-                :disabled="isCodeSending || countdown > 0"
-              >
-                {{ countdown > 0 ? `${countdown}s后重新获取` : '获取验证码' }}
-              </el-button>
+                  <el-input v-model="verificationCode" placeholder="请输入验证码"></el-input>
+                  <el-button type="primary" round class="profile-ver__button" @click="getVerificationCode"
+                    :disabled="isCodeSending || countdown > 0">
+                    {{ countdown > 0 ? `${countdown}s后重新获取` : '获取验证码' }}
+                  </el-button>
                 </div>
               </label>
             </div>
@@ -101,7 +79,6 @@
       </div>
       <div v-else class="admin-card__placeholder">
         <span v-if="loading">加载中...</span>
-        <span v-else-if="error">{{ error }}</span>
         <span v-else>没有管理员信息</span>
       </div>
     </el-card>
@@ -110,26 +87,27 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import  {type UploadFile ,ElMessage} from 'element-plus'
-import { useAdminStore } from '../../stores/admin'
-import { sendEmailCode } from '../../api/user'
-import emitter from '@/utils/emitter'
+import { type UploadFile, ElMessage } from 'element-plus'
+import { sendEmailCode,resetPasswordAPI } from '../../api/user'
+import {  type UserBrief } from '@/api/all'
+import { fallbackAdminInfo } from '@/components/admin/mockData'
+import {
+  getAdminDetail,
+  updateAdminProfile,
+} from '@/api/admin'
 
 const verificationCode = ref('')
 const isCodeSending = ref(false)
 const countdown = ref(0)
-const timer=ref<number|null>(null)
-
+const timer = ref<number | null>(null)
+const userId = ref(0)
 const profileSaving = ref(false)
 const passwordSaving = ref(false)
 const avatarUploading = ref(false)
-// 这三个变量是在做“防止重复提交”的保护
-// 如果用户点击了提交按钮，函数还在执行中就又点击了一次按钮那就直接让处理函数return掉防止重复提交
+const loading = ref(false)
+const adminInfo = ref<UserBrief | null>()
 
 
-const adminStore = useAdminStore()
-const { adminInfo, loading, error } = storeToRefs(adminStore)
 
 const DEFAULT_AVATAR = 'https://placehold.co/120x120?text=Avatar'
 const avatarUrl = ref(DEFAULT_AVATAR)
@@ -142,7 +120,8 @@ watch(
   { immediate: true },
 )
 
-const profileForm = reactive({//要呈现的管理员信息，不包括头像
+//要呈现的管理员信息，不包括头像
+const profileForm = reactive({
   email: '',
   username: '',
   role: '',
@@ -180,10 +159,13 @@ const handleProfileSave = async () => {
   }
   profileSaving.value = true
   try {
-    await adminStore.updateAdminInfo({
-      email: profileForm.email.trim(),
-      userName: profileForm.username.trim() || adminInfo.value?.username || '',
-    })
+    await updateAdminProfile(
+      String(userId.value),
+      {
+        email: profileForm.email.trim(),
+        userName: profileForm.username.trim() || adminInfo.value?.username || '',
+      }
+    )
     // 邮箱为空会提示警告并return掉，但是昵称可以为空，会用原来的昵称作为回退值
     ElMessage.success('资料已更新')
   } catch (err: any) {
@@ -210,14 +192,12 @@ const handlePasswordSave = async () => {
   }
   passwordSaving.value = true
   try {
-    await adminStore.updatePassword({
-      email,
-      newPassword: passwordForm.newPassword,
-      code:verificationCode.value,
-    })
-    ElMessage.success('密码已更新')
+    const reponse = await resetPasswordAPI({ email, newPassword: passwordForm.newPassword, Code: verificationCode.value })
+    if (reponse.data) {
+        ElMessage.success('密码已更新')
     passwordForm.newPassword = ''
     passwordForm.confirmPassword = ''
+   }
   } catch (err: any) {
     ElMessage.error(err?.message || '密码更新失败')
   } finally {
@@ -232,7 +212,7 @@ const readFileAsDataURL = (file: File) =>
     reader.onerror = () => reject(new Error('读取文件失败'))
     reader.readAsDataURL(file)
   })
-  //resolve和reject是Promise自动提供的的两个回调函数，分别用于处理成功和失败时改变promise的状态，这比较复杂，因为这是两个异步函数，可以在创建完成之后再调用
+//resolve和reject是Promise自动提供的的两个回调函数，分别用于处理成功和失败时改变promise的状态，这比较复杂，因为这是两个异步函数，可以在创建完成之后再调用
 
 const handleAvatarChange = async (uploadFile: UploadFile) => {
   if (avatarUploading.value) return
@@ -252,7 +232,7 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
   try {
     const base64 = await readFileAsDataURL(file)
     avatarUrl.value = base64
-    await adminStore.updateAdminInfo({ userAvatar: base64 })
+    await updateAdminProfile(String(userId.value),{userAvatar: base64 })
     ElMessage.success('头像已更新')
   } catch (err: any) {
     avatarUrl.value = adminInfo.value?.userAvatar || previousAvatar || DEFAULT_AVATAR
@@ -262,15 +242,15 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
   }
 }
 
-const getVerificationCode= async() => {
+const getVerificationCode = async () => {
   if (!passwordForm.newPassword.trim() || !passwordForm.confirmPassword.trim()) {
     ElMessage.warning("请先输入新密码和确认密码之后再获取验证码")
-  return
+    return
   }
 
   try {
     const response = await sendEmailCode(
-       profileForm.email,
+      profileForm.email,
       'reset-password',
     )
     if (response.code === 200) {
@@ -278,7 +258,7 @@ const getVerificationCode= async() => {
       ElMessage.success('验证码已发送，请查收')
     } else {
       ElMessage.error('验证码发送失败')
-      return 
+      return
     }
 
     countdown.value = 10;
@@ -288,27 +268,53 @@ const getVerificationCode= async() => {
       if (countdown.value < 0 && timer.value) {
         clearInterval(timer.value)
         timer.value = null
-        isCodeSending.value = false; 
+        isCodeSending.value = false;
       }
     }, 1000)
     // setInterval 是 JavaScript 中用于定期重复执行某个函数的方法，它返回一个定时器ID，这个ID可以用于清除定时器（使用 clearInterval）。
-// setInterval是同步调用的， 但是，setInterval的回调函数是异步执行的，它会在每个间隔时间（这里是1000毫秒）后执行
+    // setInterval是同步调用的， 但是，setInterval的回调函数是异步执行的，它会在每个间隔时间（这里是1000毫秒）后执行
 
-  } catch(error) {
+  } catch (error) {
     ElMessage.error('验证码发送失败，请稍后重试')
     console.log('验证码发送失败，请稍后重试')
   }
 }
 
-const sendAdminInfo = () => {
-  emitter.emit('sendAdminInfo',adminInfo.value)
+
+const getUserId = () => {
+  if (typeof window === 'undefined') return null
+  const cachedUserId = window.localStorage.getItem('userId')
+  userId.value = Number(cachedUserId)
 }
 
+
+const fetchAdminInfo = async (force = false) => {
+  if (adminInfo.value && !force) return adminInfo.value
+
+  if (!userId.value) {
+    adminInfo.value = fallbackAdminInfo
+    ElMessage.error('获取信息错误，当前使用备用数据')
+    return adminInfo.value
+  }
+
+  loading.value = true
+  try {
+    const response = await getAdminDetail(String(userId.value))
+    // 兼容响应结构：若拦截器已返回 data，则直接取；否则取 data.userBrief
+    const detail = (response as any).userBrief ? response as any : (response as any).data || response
+    adminInfo.value = detail.userBrief 
+  } catch (err: any) {
+    ElMessage.error('获取管理员信息失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+
+
 onMounted(() => {
-  adminStore.fetchAdminInfo().catch((err:any) => {
-    console.error('加载管理员信息失败', err)
-    //永远不会触发，因为fetchAminInfo至少会返回fallback数据
-  })
+  getUserId()
+  fetchAdminInfo()
 })
 </script>
 
@@ -480,6 +486,7 @@ onMounted(() => {
   border: none;
   transition: all 0.3s ease;
 }
+
 /* transition 是CSS3的一个属性，用于设置元素的过渡效果。
 all 表示该过渡效果应用于元素的所有可过渡属性。也就是说，只要任何CSS属性值发生变化，并且这个属性是可以有过渡效果的，那么就会以过渡的方式变化。
 0.3s 表示过渡的持续时间是0.3秒。
@@ -487,18 +494,18 @@ ease 是过渡的时间函数，表示过渡效果的速度曲线。ease 是默�
 
 .profile-actions :deep(.el-button:hover) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(91,36,127, 0.3);
+  box-shadow: 0 5px 15px rgba(91, 36, 127, 0.3);
   background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
 }
 
 
-.profile-ver{
+.profile-ver {
   display: flex;
   flex-direction: column;
 }
 
-.profile-ver__label{
-    font-size: 14px;
+.profile-ver__label {
+  font-size: 14px;
   color: #5d4d74;
 }
 
@@ -524,7 +531,7 @@ ease 是过渡的时间函数，表示过渡效果的速度曲线。ease 是默�
   transform: translateY(-1px);
 }
 
-.profile-ver__button{
+.profile-ver__button {
   margin-left: 10px;
   background: linear-gradient(135deg, #b994fe 0%, #8e47bdff 100%);
   border: none;
@@ -556,7 +563,7 @@ ease 是过渡的时间函数，表示过渡效果的速度曲线。ease 是默�
   cursor: not-allowed;
 }
 
-.profile-ver-form{
+.profile-ver-form {
   display: flex;
 }
 
@@ -595,6 +602,4 @@ ease 是过渡的时间函数，表示过渡效果的速度曲线。ease 是默�
     padding-top: 10px;
   }
 }
-
-
 </style>

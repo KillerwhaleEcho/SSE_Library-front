@@ -76,7 +76,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { deleteAdminComment, getAdminComments, type CommentItem } from '@/api/admin'
-import { createMockComments, fallbackAdminInfo } from './mockData'
+import { createMockComments } from './mockData'
 import { type UserBrief, getUserDetail } from '@/api/all'
 
 const TEXT = {
@@ -225,16 +225,10 @@ const getUserId = () => {
 const fetchUserInfo = async () => {
   const userId = getUserId()
 
-  if (!userId) {
-    userInfo.value = fallbackAdminInfo
-    return
-  }
-
   try {
     const { data } = await getUserDetail(userId as string)
     userInfo.value = data.userBrief
   } catch {
-    userInfo.value = fallbackAdminInfo
     ElMessage.error('获取用户数据失败')
   }
 

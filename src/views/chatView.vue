@@ -125,7 +125,7 @@ import {
 } from "@/api/all";
 import { type message, type chatBox, type Reminder } from "@/api/all";
 import { ElMessage } from "element-plus";
-import { chatBoxFallback, fallbackAdminInfo, messageFallback, fallbackReminders } from "./admin/mockData";
+import { chatBoxFallback, fallbackAdminInfo, messageFallback, fallbackReminders } from "../components/admin/mockData";
 import reminderIcon from '@/assets/147_通知.png'
 import unreadIcon from '@/assets/红点消息.png'
 import type { UserBrief } from "@/api/all";
@@ -293,7 +293,7 @@ const getReminders = async () => {
     ElMessage.error('获取通知数据失败')
   }
 }
-
+  
 
 const handleSearchMess = async (key: string) => {
   visible.value = false

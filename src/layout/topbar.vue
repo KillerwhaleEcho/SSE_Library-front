@@ -47,7 +47,7 @@
         </template>
       </el-popover>
 
-      <router-link to="/user" class="icon-container" data-tooltip="个人主页">
+      <router-link :to="role ? `/${role}` : '/login'" class="icon-container" data-tooltip="个人主页">
         <img src="@/assets/147_联系人.png" alt="个人主页">
       </router-link>
     </div>
@@ -63,11 +63,14 @@ import * as allApi from '@/api/all.ts'
 import router from '@/router';
 
 const userId = Number(localStorage.getItem('userId') || '0'); 
+const role = localStorage.getItem('role') ||'user'
 const reminders = ref<allApi.Reminder[]>([]);
 const showCategoryDialog = ref(false)
 const allCategories = ref<any[]>([])
 const selectedCategoryName = ref<string | null>(null)
 const selectedCategoryId = ref<number | null>(null)
+
+
 
 // 定义事件发射器，用于向父组件发送事件
 const emit = defineEmits(['open-upload-modal']);

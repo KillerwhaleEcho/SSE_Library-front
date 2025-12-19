@@ -35,7 +35,6 @@ export const getAdminDetail = (
     url: `/user/${userId}`,
     method: 'get',
   })
-  // 返回的是request实例，这个实例在截拦器里返回的是整个后端响应对象，（通常包含 code、message、data），若要拿到用户详情，还需要 response.data。
 }
 
 
@@ -62,26 +61,6 @@ export const updateAdminProfile = (
   })
 }
 
-//更新密码相关
-export interface AdminPasswordPayload {
-  email: string
-  newPassword: string
-  code:string
-}
-
-export interface AdminPasswordResponse {
-  success: boolean
-}
-
-export const updateAdminPassword = (
-  data: AdminPasswordPayload,
-): Promise<ApiResponse<AdminPasswordResponse>> => {
-  return request({
-    url: '/Password',
-    method: 'put',
-    data,
-  })
-}
 
 //更改用户状态相关
 export interface UpdateUserStatusPayload {
