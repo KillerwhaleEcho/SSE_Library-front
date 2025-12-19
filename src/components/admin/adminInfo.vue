@@ -112,7 +112,7 @@
 import { onMounted, reactive, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import  {type UploadFile ,ElMessage} from 'element-plus'
-import { useAdminStore } from '../../stores/admin'
+import { useAdminStore } from '../../stores/adminStore'
 import { sendEmailCode } from '../../api/user'
 import emitter from '@/utils/emitter'
 
