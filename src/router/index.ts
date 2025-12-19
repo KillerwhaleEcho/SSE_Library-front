@@ -7,7 +7,7 @@ import BookInfo from '@/views/bookInfo.vue';
 import PostInfo from '@/views/postInfo.vue';
 import User from '@/views/user.vue';
 import Posts from '@/views/posts.vue';
-import Chat from '@/components/chatView.vue';
+import Chat from '@/views/chatView.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {

@@ -125,9 +125,6 @@ const normalizeStatus = (status: string) => {
   return status;
 };
 
-const mapToPayloadStatus = (status: string): "active" | "disabled" =>
-  status === "active" ? "active" : "disabled";
-
 
 
 //将获取的用户数据提取关键数据展示
@@ -160,11 +157,6 @@ const filteredUsers = computed(() => {
   const keyword = appliedKeyword.value;
   if (!keyword) return users.value;
 
-  // if (searchKey.value === "id") {
-  //   const targetId = Number(keyword);
-  //   if (!Number.isInteger(targetId)) return [];
-  //   return users.value.filter((user) => user.id === targetId);
-  // }
 
   const normalizedKeyword = keyword.trim().toLowerCase();
   if (!normalizedKeyword) return users.value;
@@ -191,7 +183,7 @@ const toggleStatus = async (user: UserRow) => {
   try {
     const { data } = await updateUserStatus({
       userId: user.id,
-      status: mapToPayloadStatus(targetStatus),
+      status: targetStatus,
     });
     if (data?.status) {
       user.status = normalizeStatus(data.status);
