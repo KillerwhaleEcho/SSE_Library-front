@@ -567,7 +567,7 @@ onMounted(fetchDocuments);
   background: rgba(185, 148, 254, 0.18);
 }
 
-.document-card__refresh-btn {
+/* .document-card__refresh-btn {
   border: none;
   background: linear-gradient(135deg, #b994fe 0%, #8e47bd 100%);
   color: #fff;
@@ -577,7 +577,7 @@ onMounted(fetchDocuments);
 .document-card__refresh-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 18px rgba(185, 148, 254, 0.35);
-}
+} */
 
 .document-card__table {
   flex: 1;
