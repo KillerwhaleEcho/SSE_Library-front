@@ -1,28 +1,23 @@
 <template>
   <div class="book-item">
     <!-- 图书封面 -->
-    <img 
-      :src="document.cover || defaultCover" 
-      alt="book cover" 
-      class="book-cover"
-      @error="handleImgError"
-    >
-    
+    <img :src="document.infoBrief.cover || defaultCover" alt="book cover" class="book-cover" @error="handleImgError">
+
     <!-- 图书信息 -->
     <div class="book-info">
       <!-- 书名和简介 -->
       <h4 class="book-title">
-        {{ document.infoBrief.name }} 
+        {{ document.infoBrief.name }}
       </h4>
       <p class="book-desc" v-if="document.introduction">
         {{ document.introduction }}
       </p>
-      
+
       <!-- 作者 -->
       <div class="book-authors" v-if="document.author">
         <span>{{ document.author }}</span>
       </div>
-      
+
       <!-- 统计信息（收藏、阅读量） -->
       <div class="book-stats">
         <div class="book-stat-item">
@@ -34,7 +29,7 @@
           <span>{{ document.infoBrief.readCounts || 0 }} 阅读</span>
         </div>
       </div>
-      
+
       <!-- 底部信息（年份、语言、文件信息、评分） -->
       <div class="book-meta">
         <span class="meta-item" v-if="document.createYear">
@@ -72,7 +67,8 @@ const handleImgError = (e: Event) => {
   width: 100%;
   height: 240px;
   display: flex;
-  gap: 16px; /* 封面与文字的间距 */
+  gap: 16px;
+  /* 封面与文字的间距 */
   padding: 12px;
   border-radius: 6px;
   transition: background-color 0.2s;
@@ -81,22 +77,26 @@ const handleImgError = (e: Event) => {
 }
 
 .book-item:hover {
-  background-color: #f5f5f7; /*  hover 效果 */
+  background-color: #f5f5f7;
+  /*  hover 效果 */
 }
 
 /* 封面样式 */
 .book-cover {
   width: 170px;
-  object-fit: cover; /* 保持图片比例，裁剪多余部分 */
+  object-fit: cover;
+  /* 保持图片比例，裁剪多余部分 */
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* 轻微阴影增强质感 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* 轻微阴影增强质感 */
 }
 
 .book-info {
   position: relative;
   width: calc(100% - 170px - 16px);
   height: 100%;
-  min-width: 0; /* 防止内容溢出 */
+  min-width: 0;
+  /* 防止内容溢出 */
 }
 
 .book-title {
@@ -113,7 +113,8 @@ const handleImgError = (e: Event) => {
   color: #666;
   line-height: 1.5;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* 最多显示2行 */
+  -webkit-line-clamp: 2;
+  /* 最多显示2行 */
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -121,7 +122,8 @@ const handleImgError = (e: Event) => {
 .book-authors {
   margin: 0 0 12px 0;
   font-size: 20px;
-  color: #409eff; /* 作者名蓝色 */
+  color: #409eff;
+  /* 作者名蓝色 */
 }
 
 .book-stats {
@@ -138,7 +140,7 @@ const handleImgError = (e: Event) => {
   gap: 4px;
   font-size: 12px;
   color: #888;
-  
+
   .el-icon {
     font-size: 14px;
   }
@@ -170,7 +172,9 @@ const handleImgError = (e: Event) => {
 }
 
 .book-rating {
-  margin-left: auto; /* 评分靠右 */
+  margin-left: auto;
+
+  /* 评分靠右 */
   .el-rate {
     --el-rate-icon-size: 14px;
   }

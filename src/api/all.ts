@@ -77,14 +77,14 @@ export interface InfoBrief {
   category?: string;
   collections: number;
   readCounts: number;
-  URL: string;
+  cover?: string;
 }
 export interface Document {
   infoBrief: InfoBrief;
   bookISBN?: string;
   author?: string;
   uploader?: UserBrief;
-  cover?: string;
+  URL?: string;
   tags?: string[];
   introduction?: string;
   createYear?: string;

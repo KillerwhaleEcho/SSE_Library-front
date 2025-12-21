@@ -1,27 +1,14 @@
 <template>
-  <el-dialog 
-    :model-value="visible" 
-    @update:model-value="$emit('update:visible', $event)"
-    title="选择关联文件" 
-    width="900px"
-    class="file-library-modal"
-    :modal="false"
-    append-to-body
-    :z-index="1000"
-  >
+  <el-dialog :model-value="visible" @update:model-value="$emit('update:visible', $event)" title="选择关联文件" width="900px"
+    class="file-library-modal" :modal="false" append-to-body :z-index="1000">
     <!-- 搜索和筛选区域 -->
     <div class="modal-controls">
       <div class="search-box">
-        <input 
-          v-model="searchKeyword" 
-          type="text" 
-          placeholder="搜索文件名称、作者、关键词..."
-          class="search-input"
-          @keyup.enter="handleSearch"
-        >
+        <input v-model="searchKeyword" type="text" placeholder="搜索文件名称、作者、关键词..." class="search-input"
+          @keyup.enter="handleSearch">
         <button class="search-btn" @click="handleSearch">搜索</button>
       </div>
-      
+
       <div class="filter-controls">
         <el-select v-model="filterType" placeholder="文件类型" class="filter-select" size="large">
           <el-option label="全部" value=""></el-option>
@@ -29,15 +16,10 @@
           <el-option label="文件" value="file"></el-option>
           <el-option label="视频" value="video"></el-option>
         </el-select>
-        
+
         <el-select v-model="filterCategoryId" placeholder="分类" class="filter-select" size="large">
           <el-option label="全部" value=""></el-option>
-          <el-option 
-            v-for="category in categories" 
-            :key="category.id"
-            :label="category.name"
-            :value="category.id"
-          />
+          <el-option v-for="category in categories" :key="category.id" :label="category.name" :value="category.id" />
         </el-select>
       </div>
     </div>
@@ -45,31 +27,22 @@
     <!-- 文件列表 -->
     <div class="file-list-container">
       <div class="file-list">
-        <div 
-          v-for="file in fileList" 
-          :key="getFileKey(file)"
-          class="file-item"
-          :class="{ 'selected': isFileSelected(file) }"
-          @click="toggleFileSelection(file)"
-        >
+        <div v-for="file in fileList" :key="getFileKey(file)" class="file-item"
+          :class="{ 'selected': isFileSelected(file) }" @click="toggleFileSelection(file)">
           <div class="file-checkbox">
             <div class="checkbox" :class="{ 'checked': isFileSelected(file) }">
               ✓
             </div>
           </div>
-          
+
           <div class="file-cover">
-            <img 
-              v-if="file?.cover" 
-              :src="file.cover" 
-              :alt="getFileTitle(file)"
-              class="cover-image"
-            >
+            <img v-if="file?.infoBrief?.cover" :src="file.infoBrief.cover" :alt="getFileTitle(file)"
+              class="cover-image">
             <div v-else class="cover-placeholder">
               {{ getFileInitials(file) }}
             </div>
           </div>
-          
+
           <div class="file-details">
             <div class="file-title">{{ getFileTitle(file) }}</div>
             <div class="file-author">{{ getFileAuthor(file) }}</div>
@@ -80,11 +53,7 @@
               </span>
             </div>
             <div class="file-tags" v-if="file?.tags">
-              <span 
-                v-for="tag in getFileTags(file)" 
-                :key="tag"
-                class="tag"
-              >
+              <span v-for="tag in getFileTags(file)" :key="tag" class="tag">
                 {{ tag }}
               </span>
             </div>
@@ -106,17 +75,8 @@
         已选择 {{ tempSelectedFiles.length }} 个文件
       </div>
       <div class="selected-preview">
-        <div 
-          v-for="file in tempSelectedFiles.slice(0, 3)" 
-          :key="getFileKey(file)"
-          class="preview-item"
-        >
-          <img 
-            v-if="file.cover" 
-            :src="file.cover" 
-            :alt="getFileTitle(file)"
-            class="preview-cover"
-          >
+        <div v-for="file in tempSelectedFiles.slice(0, 3)" :key="getFileKey(file)" class="preview-item">
+          <img v-if="file.infoBrief?.cover" :src="file.infoBrief.cover" :alt="getFileTitle(file)" class="preview-cover">
           <div v-else class="preview-placeholder">
             {{ getFileInitials(file) }}
           </div>
@@ -223,7 +183,7 @@ const isFileSelected = (file: Document) => {
 
 const toggleFileSelection = (file: Document) => {
   if (!file?.infoBrief?.documentId) return
-  
+
   const isSelected = isFileSelected(file)
   if (isSelected) {
     tempSelectedFiles.value = tempSelectedFiles.value.filter(
@@ -246,7 +206,7 @@ const handleSearch = async () => {
     )
     console.log('搜索关联资料响应:', response)
     if (response.data) {
-      fileList.value = response.data 
+      fileList.value = response.data
     } else {
       fileList.value = []
       console.warn('获取关联搜索资料数据格式不正确')
@@ -311,17 +271,17 @@ onMounted(() => {
     padding: 20px 24px;
     margin: 0;
   }
-  
+
   :deep(.el-dialog__title) {
     font-size: 18px;
     font-weight: 600;
     color: #333;
   }
-  
+
   :deep(.el-dialog__body) {
     padding: 20px 24px;
   }
-  
+
   :deep(.el-dialog__footer) {
     border-top: 1px solid #e5e7eb;
     padding: 16px 24px;

@@ -14,26 +14,15 @@
         <!-- 标题输入 -->
         <div class="form-group">
           <label class="form-label">帖子标题</label>
-          <input 
-            v-model="postTitle" 
-            type="text" 
-            class="title-input" 
-            placeholder="请输入帖子标题..."
-            maxlength="100"
-          >
+          <input v-model="postTitle" type="text" class="title-input" placeholder="请输入帖子标题..." maxlength="100">
           <div class="char-count">{{ postTitle.length }}/100</div>
         </div>
 
         <!-- 正文内容 -->
         <div class="form-group">
           <label class="form-label">正文内容</label>
-          <textarea 
-            v-model="postContent" 
-            class="content-textarea" 
-            placeholder="请输入帖子内容..."
-            rows="12"
-            maxlength="5000"
-          ></textarea>
+          <textarea v-model="postContent" class="content-textarea" placeholder="请输入帖子内容..." rows="12"
+            maxlength="5000"></textarea>
           <div class="char-count">{{ postContent.length }}/5000</div>
         </div>
 
@@ -45,23 +34,15 @@
               从文件库选择
             </button>
           </div>
-          
+
           <!-- 已选文件展示 -->
           <div class="selected-files" v-if="selectedFiles.length > 0">
             <h4>已选文件 ({{ selectedFiles.length }})</h4>
             <div class="file-grid">
-              <div 
-                v-for="file in selectedFiles" 
-                :key="file.infoBrief.documentId"
-                class="file-card"
-              >
+              <div v-for="file in selectedFiles" :key="file.infoBrief.documentId" class="file-card">
                 <div class="file-cover">
-                  <img 
-                    v-if="file.cover" 
-                    :src="file.cover" 
-                    :alt="file.infoBrief.name"
-                    class="cover-image"
-                  >
+                  <img v-if="file.infoBrief.cover" :src="file.infoBrief.cover" :alt="file.infoBrief.name"
+                    class="cover-image">
                   <div v-else class="cover-placeholder">
                     {{ file.infoBrief.name.substring(0, 2) }}
                   </div>
@@ -79,7 +60,7 @@
               </div>
             </div>
           </div>
-          
+
           <div v-else class="no-files">
             <p>暂未选择文件</p>
           </div>
@@ -96,12 +77,8 @@
     </div>
 
     <!-- 文件库选择弹窗 -->
-    <FileLibraryModal 
-      :visible="showFileLibrary"
-      @update:visible="showFileLibrary = $event"
-      :selected-files="selectedFiles"
-      @files-selected="handleFilesSelected"
-    />
+    <FileLibraryModal :visible="showFileLibrary" @update:visible="showFileLibrary = $event"
+      :selected-files="selectedFiles" @files-selected="handleFilesSelected" />
   </div>
 </template>
 
@@ -124,8 +101,8 @@ const showFileLibrary = ref(false)
 
 // 计算属性：是否可以提交
 const canSubmit = computed(() => {
-  return postTitle.value.trim().length > 0 && 
-         postContent.value.trim().length > 0
+  return postTitle.value.trim().length > 0 &&
+    postContent.value.trim().length > 0
 })
 
 // 处理文件选择
@@ -171,18 +148,18 @@ const handleSubmit = async () => {
     if (selectedFiles.value.length > 0) {
       postData.documents = selectedFiles.value.map(file => ({
         documentId: file.infoBrief.documentId,
-        cover: file.cover || '' // 使用文件的封面，如果没有则为空字符串
+        cover: file.infoBrief.cover || '' // 使用文件的封面，如果没有则为空字符串
       }))
     }
 
     console.log('提交帖子数据:', postData)
-    
+
     // 调用发帖API
     const response = await allApi.uploadPost(postData)
-    
+
     console.log('帖子发布成功:', response)
     ElMessage.success('帖子发布成功！')
-    
+
     // 跳转到帖子列表页或帖子详情页
     // 如果接口返回了帖子ID，可以跳转到帖子详情页
     if (response.data?.postId) {
@@ -190,7 +167,7 @@ const handleSubmit = async () => {
     } else {
       router.push('/posts')
     }
-    
+
   } catch (error: any) {
     console.error('发布帖子失败:', error)
     ElMessage.error(error.message || '发布失败，请重试')
@@ -225,7 +202,7 @@ const handleCancel = () => {
 }
 
 .create-post-page::-webkit-scrollbar {
-  display: none; 
+  display: none;
 }
 
 .topbar {
