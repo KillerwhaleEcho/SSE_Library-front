@@ -367,6 +367,11 @@ const handleFavorite = async () => {
     try {
         await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
         await refreshFavoriteJudgement()
+        try {
+            await authStore.refreshUserBrief()
+        } catch (error) {
+            console.warn('刷新用户信息失败', error)
+        }
         ElMessage.success(wasFavorited ? '取消收藏成功' : '收藏成功')
     } catch (error: any) {
         ElMessage.error(error?.message || (wasFavorited ? '取消收藏失败' : '收藏失败'))
