@@ -24,16 +24,8 @@
                             <p class="value">{{ userBrief?.email || '暂无' }}</p>
                         </div>
                         <div class="info-item">
-                            <p class="label">角色</p>
-                            <p class="value">{{ userBrief?.role || '未分配' }}</p>
-                        </div>
-                        <div class="info-item">
                             <p class="label">注册时间</p>
                             <p class="value">{{ userBrief?.createTime || '—' }}</p>
-                        </div>
-                        <div class="info-item">
-                            <p class="label">账号状态</p>
-                            <p class="value">{{ statusLabel }}</p>
                         </div>
                     </div>
 
@@ -192,6 +184,11 @@ const statusLabel = computed(() => {
     return status || '未知'
 })
 
+const updatePageTitle = () => {
+    const name = userBrief.value?.username || '用户'
+    document.title = `${name} - 个人主页`
+}
+
 const fetchUserAll = async () => {
     errorMessage.value = ''
     if (!resolvedUserId.value) {
@@ -274,6 +271,8 @@ onMounted(() => {
     window.addEventListener('resize', updateUnderline)
 })
 
+watch(userBrief, () => updatePageTitle(), { immediate: true })
+
 watch(
     () => route.query.userId,
     () => {
@@ -333,10 +332,11 @@ watch(activeTab, (tab) => {
 .avatar-wrapper {
     width: 120px;
     height: 120px;
-    border-radius: 20px;
+    border-radius: 50%;
     overflow: hidden;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
     background: #f4f2ff;
+    border: 2px solid #f0edff;
 }
 
 .avatar-wrapper img {

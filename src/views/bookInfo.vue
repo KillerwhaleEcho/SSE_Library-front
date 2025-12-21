@@ -259,11 +259,17 @@ const ensureDocumentId = (raw: unknown): string | null => {
     return null
 }
 
+const updatePageTitle = () => {
+    const title = brief.value?.name || '文档'
+    document.title = `${title} - 文档详情`
+}
+
 const loadDocumentDetail = async (id: string) => {
     detailLoading.value = true
     try {
         const response = (await getDocumentDetail(id)) as unknown as ApiResponse<Document>
         documentDetail.value = response.data ?? null
+        updatePageTitle()
     } catch (error: any) {
         documentDetail.value = null
         ElMessage.error(error?.message || '获取文档详情失败')
@@ -450,6 +456,12 @@ watch(
     async () => {
         await refreshFavoriteJudgement()
     },
+    { immediate: true },
+)
+
+watch(
+    () => brief.value?.name,
+    () => updatePageTitle(),
     { immediate: true },
 )
 
