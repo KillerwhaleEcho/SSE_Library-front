@@ -1,12 +1,11 @@
 <template>
   <div class="admin-info">
     <el-card class="admin-card" shadow="never">
-      <div v-if="adminInfo" class="profile-layout">
+      <div  class="profile-layout">
         <aside class="profile-sidebar">
           <figure class="profile-avatar">
             <img :src="avatarUrl" alt="管理员头像" />
           </figure>
-          <!-- div标签只是用来布局和分割页面，但是figue标签一般用来表示包含图像的独立内容块，比如用户头像、文章插图等。使用figure标签可以提高语义化，有助于搜索引擎优化（SEO）和辅助技术的理解。 -->
           <el-upload class="avatar-upload" action="#" :auto-upload="false" :show-file-list="false" accept="image/*"
             @change="handleAvatarChange">
             <!-- 默认情况下：组件会把选择的文件传给内置的 HTTP 上传逻辑 + handle 函数 ；所以需要禁用自动上传-->
@@ -77,20 +76,16 @@
           </div>
         </section>
       </div>
-      <div v-else class="admin-card__placeholder">
-        <span v-if="loading">加载中...</span>
-        <span v-else>没有管理员信息</span>
-      </div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue'
+import router from '@/router'
 import { type UploadFile, ElMessage } from 'element-plus'
 import { sendEmailCode,resetPasswordAPI } from '../../api/user'
 import {  type UserBrief } from '@/api/all'
-import { fallbackAdminInfo } from '@/components/admin/mockData'
 import {
   getAdminDetail,
   updateAdminProfile,
@@ -106,7 +101,6 @@ const passwordSaving = ref(false)
 const avatarUploading = ref(false)
 const loading = ref(false)
 const adminInfo = ref<UserBrief | null>()
-
 
 
 const DEFAULT_AVATAR = 'https://placehold.co/120x120?text=Avatar'
@@ -147,8 +141,7 @@ watch(
   },
   { immediate: true },
 )
-//这是一个watch监听器，用于监听adminInfo.value，当值发生变化时就把新值作为参数传入回调函数，并更新profileForm中的各个字段;immediate的作用是在监听器创建的时候马上调用一次
-
+// immediate的作用是在监听器创建的时候马上调用一次
 
 
 const handleProfileSave = async () => {
@@ -197,6 +190,7 @@ const handlePasswordSave = async () => {
         ElMessage.success('密码已更新')
     passwordForm.newPassword = ''
     passwordForm.confirmPassword = ''
+    verificationCode.value=''
    }
   } catch (err: any) {
     ElMessage.error(err?.message || '密码更新失败')
@@ -205,18 +199,10 @@ const handlePasswordSave = async () => {
   }
 }
 
-const readFileAsDataURL = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(new Error('读取文件失败'))
-    reader.readAsDataURL(file)
-  })
-//resolve和reject是Promise自动提供的的两个回调函数，分别用于处理成功和失败时改变promise的状态，这比较复杂，因为这是两个异步函数，可以在创建完成之后再调用
 
 const handleAvatarChange = async (uploadFile: UploadFile) => {
   if (avatarUploading.value) return
-  const file = uploadFile.raw//这样之后才拿到真正的File对象
+  const file = uploadFile.raw
   if (!file) return
   if (!file.type.startsWith('image/')) {
     ElMessage.error('请选择图片文件')
@@ -230,12 +216,16 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
   avatarUploading.value = true
   const previousAvatar = avatarUrl.value
   try {
-    const base64 = await readFileAsDataURL(file)
-    avatarUrl.value = base64
-    await updateAdminProfile(String(userId.value),{userAvatar: base64 })
+    const formData = new FormData()
+    formData.append('userAvatar',file)
+    const response = await updateAdminProfile(String(userId.value), formData)
+    const updated = response.data
+    avatarUrl.value = updated.userAvatar || previousAvatar || DEFAULT_AVATAR
+
+    
     ElMessage.success('头像已更新')
   } catch (err: any) {
-    avatarUrl.value = adminInfo.value?.userAvatar || previousAvatar || DEFAULT_AVATAR
+    avatarUrl.value = adminInfo.value?.userAvatar || previousAvatar
     ElMessage.error(err?.message || '头像更新失败，请重试')
   } finally {
     avatarUploading.value = false
@@ -291,11 +281,10 @@ const getUserId = () => {
 const fetchAdminInfo = async (force = false) => {
   if (adminInfo.value && !force) return adminInfo.value
 
-  if (!userId.value) {
-    adminInfo.value = fallbackAdminInfo
-    ElMessage.error('获取信息错误，当前使用备用数据')
-    return adminInfo.value
-  }
+if (!userId.value) {
+  ElMessage.error('无法获取用户信息，请先登录')
+  router.push('/login')
+}
 
   loading.value = true
   try {

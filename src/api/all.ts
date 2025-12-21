@@ -1,3 +1,4 @@
+import { my } from 'element-plus/es/locales.mjs'
 import service from '../utils/service'
 import type { DocumentEditForm } from '@/types/api'
 
@@ -12,7 +13,7 @@ export interface UserBrief {
   userId: number;
   username: string;
   userAvatar: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'disabled';
   createTime: string;
   email: string;
   role: string;
@@ -453,6 +454,11 @@ export const sendMessageInterface = (sessionId: number, receiverId: number, cont
   return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/message', { sessionId, receiverId, content })
 }
 
+//创建聊天
+export const createChat = (myId:number,oppositeId:number) => {return service.post<ApiResponse<chatBox>>("/createChat",{myId,oppositeId});
+}
+
+
 //获取聊天回话列表
 export const getSessionList = (userId: number) => {
   return service.get<ApiResponse<chatBox[]>>('/chat/sessions', { params: { userId } })
@@ -467,6 +473,11 @@ export const getMessageList = (sessionId: number, userId: number) => {
 //搜索聊天记录
 export const searchMessage = (userId: number, searchKey: string) => {
   return service.get<ApiResponse<message[]>>('/chat/search', { params: { userId, searchKey } })
+}
+
+//搜索用户
+export const searchUser = (userId?: number, username?: string) => {
+  return service.get<ApiResponse<UserBrief[]>>("/admin/user",{params:{userId,username}});
 }
 
 //获取提醒（通知）

@@ -2,15 +2,6 @@
   <div class="user-list">
     <el-card class="user-card">
       <div class="user-card__toolbar">
-        <!-- <el-select
-          v-model="searchKey"
-          size="medium"
-          class="user-card__search-select"
-          :placeholder="TEXT.searchSelect"
-        >
-          <el-option :label="TEXT.searchByName" value="name" />
-          <el-option :label="TEXT.searchById" value="id" />
-        </el-select> -->
         <el-input
           v-model="searchInput"
           size="large"
@@ -114,7 +105,6 @@ const TEXT = {
 
 const users = ref<UserRow[]>([...DEMO_USERS]);
 const loading = ref(false);
-// const searchKey = ref<"name" | "id">("name");
 const searchInput = ref("");
 const appliedKeyword = ref("");
 
@@ -239,9 +229,6 @@ onMounted(fetchUsers);
     margin-bottom: 16px;
   }
 
-  /* .user-card__search-select {
-    width: 120px;
-  } */
 
   .user-card__search-input {
 width: 50%;
@@ -249,12 +236,6 @@ width: 50%;
 
   .user-card__refresh {
     margin-left: auto;
-  }
-  .user-card__title {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    color: #311a45;
   }
 
   .user-card__table {
