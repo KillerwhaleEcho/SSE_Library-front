@@ -572,7 +572,6 @@ const handleRegister = async () => {
     } catch (error) {
       ElMessage.closeAll();
       console.error('注册过程出错:', error);
-      ElMessage.error('网络异常，请检查网络连接后重试');
     }
   });
 };

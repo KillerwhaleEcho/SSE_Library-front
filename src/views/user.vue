@@ -40,6 +40,9 @@
                     <button class="edit-btn" type="button" @click="handleEditProfile">
                         编辑个人资料
                     </button>
+                    <button class="logout-btn" type="button" @click="handleLogout">
+                        退出登录
+                    </button>
                 </div>
             </section>
 
@@ -102,7 +105,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Topbar from '@/layout/topbar.vue'
 import { getUserAll, getUserUploadDoc, type UserAll } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
@@ -111,6 +114,7 @@ import CommentSection from '@/components/comments/CommentSection.vue'
 import type { Document, InfoBrief, UserBrief } from '@/api/all.ts'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const route = useRoute()
 const userAll = ref<UserAll | null>(null)
 const uploadsDocs = ref<Document[]>([])
@@ -231,6 +235,12 @@ const fetchUserUploads = async () => {
 
 const handleEditProfile = () => {
     console.info('编辑个人资料功能待实现')
+}
+
+const handleLogout = () => {
+    authStore.logout()
+    userAll.value = null
+    router.push('/login')
 }
 
 const handleTabClick = (key: TabKey) => {
@@ -420,6 +430,26 @@ watch(activeTab, (tab) => {
 .edit-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 20px rgba(143, 130, 255, 0.35);
+}
+
+.logout-btn {
+    justify-self: end;
+    width: 160px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff7f7;
+    color: #b91c1c;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    margin-top: 8px;
+}
+
+.logout-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(185, 28, 28, 0.15);
+    background: #ffecec;
 }
 
 .section-tabs {

@@ -82,7 +82,7 @@ CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选�
                                         <div class="reply-parent-header">
                                             <span class="reply-parent-name">{{ item.parent.commenter.username }}</span>
                                             <span class="reply-parent-time">{{ formattedDate(item.parent.createdAt)
-                                                }}</span>
+                                            }}</span>
                                         </div>
                                         <p class="reply-parent-content">{{ item.parent.content || '（原评论暂无内容）' }}</p>
                                     </div>
@@ -564,6 +564,11 @@ const postComment = async (source: 'main' | 'reply') => {
             replyingContent.value = ''
             replyingTo.value = null
             replyingModalVisible.value = false
+        }
+        try {
+            await authStore.refreshUserBrief()
+        } catch (error) {
+            console.warn('刷新用户信息失败', error)
         }
         ElMessage.success(response.message || '评论发表成功')
     } catch (error: any) {

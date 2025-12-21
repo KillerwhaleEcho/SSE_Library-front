@@ -39,12 +39,12 @@
             <!-- 1. 类型选择（分类/课程） -->
             <el-form-item 
               label="类型" 
-              prop="type"
+              prop="isCourse"
               :rules="[{ required: true, message: '请选择类型', trigger: 'change' }]"
             >
-              <el-radio-group v-model="categoryFormData.type" @change="handleTypeChange">
-                <el-radio label="category">添加分类</el-radio>
-                <el-radio label="course">添加课程</el-radio>
+              <el-radio-group v-model="categoryFormData.isCourse" @change="handleTypeChange">
+                <el-radio :label="false">添加分类</el-radio>
+                <el-radio :label="true">添加课程</el-radio>
               </el-radio-group>
             </el-form-item>
 
@@ -64,15 +64,17 @@
 
             <!-- 2.2 所属分类（选择"课程"时显示） -->
             <el-form-item 
-              v-if="categoryFormData.type === 'course'"
+              v-if="categoryFormData.isCourse === true"
               label="所属分类" 
-              prop="parentId"
+              prop="parentCatId"
               :rules="[{ required: true, message: '请选择所属分类', trigger: 'change' }]"
             >
               <el-select 
-                v-model="categoryFormData.parentId" 
+                v-model="categoryFormData.parentCatId" 
                 placeholder="请选择分类"
                 clearable
+                :teleported="false"
+                :popper-append-to-body="false" 
               >
                 <el-option 
                   v-for="category in allCategories" 
@@ -151,7 +153,8 @@
 import { Search } from '@element-plus/icons-vue'
 import { ref, reactive } from 'vue'
 import ParentCategoryItem from '@/components/parentCategoryItem.vue'
-import type { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import * as allApi from '@/api/all.ts'
 
 // Props - 修复类型定义
 interface Props {
@@ -167,6 +170,7 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   'category-selected': [category: any]
   'reset-category': []
+  'category-added': []
 }>()
 
 // 数据
@@ -176,10 +180,10 @@ const categoryFormRef = ref()
 
 // 表单数据
 const categoryFormData = reactive({
-  type: '',
+  isCourse: false,
   name: '',
-  parentId: null,
-  description: ''
+  parentCatId: undefined as number | undefined,
+  description: undefined as string | undefined
 })
 
 // 方法
@@ -189,8 +193,8 @@ const handleCatSearch = () => {
 
 const handleTypeChange = () => {
   categoryFormData.name = ''
-  if (categoryFormData.type === 'category') {
-    categoryFormData.parentId = null
+  if (!categoryFormData.isCourse) {
+    categoryFormData.parentCatId = 0
   }
 }
 
@@ -199,22 +203,56 @@ const resetCategoryForm = () => {
   popoverVisible.value = false
 }
 
-const submitCategoryForm = () => {
-  categoryFormRef.value.validate((valid: boolean) => {
-    if (valid) {
-      const submitData = {
-        type: categoryFormData.type,
-        name: categoryFormData.name,
-        description: categoryFormData.description,
-        ...(categoryFormData.type === 'course' && { parentId: categoryFormData.parentId })
-      }
-
-      console.log('提交数据：', submitData)
-      ElMessage.success(`${categoryFormData.type === 'category' ? '分类' : '课程'}添加成功`)
-      resetCategoryForm()
+const submitCategoryForm = async () => {
+  try {
+    const isValid = await categoryFormRef.value.validate();
+    
+    if (!isValid) {
+      console.warn('表单验证失败');
+      return;
     }
-  })
-}
+    
+    const submitData = {
+      isCourse: categoryFormData.isCourse,
+      name: categoryFormData.name,
+      description: categoryFormData.description,
+      ...(categoryFormData.isCourse && { 
+        parentCatId: categoryFormData.parentCatId 
+      })
+    };
+    
+    if (ElMessage?.closeAll) {
+      ElMessage.closeAll();
+    }
+
+    const res = await allApi.addCategoryOrCourse(submitData);
+    console.log("提交结果：", res);
+    
+    if (res) {
+      const successMessage = !categoryFormData.isCourse 
+        ? '分类添加成功' 
+        : '课程添加成功';
+      
+      ElMessage.success(`${successMessage}！`);
+      
+      resetCategoryForm();
+      // ✅ 新增：关闭popover
+      popoverVisible.value = false;
+      
+      // ✅ 新增：通知父组件刷新分类数据
+      emit('category-added');
+    } else {
+      ElMessage.error('提交失败，请稍后重试');
+    }
+    
+  } catch (error) {
+    console.error('提交过程出错:', error);
+    if (ElMessage?.closeAll) {
+      ElMessage.closeAll();
+    }
+    ElMessage.error('提交失败，请检查网络或稍后重试');
+  }
+};
 
 const onCategorySelected = (category: any) => {
   emit('category-selected', category)

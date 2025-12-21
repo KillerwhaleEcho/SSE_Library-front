@@ -15,4 +15,5 @@ app.use(router);
 app.use(ElementPlus, {
   locale: zhCn,   // 所有组件用中文
 })
+app.use(ElementPlus);
 app.mount('#app');

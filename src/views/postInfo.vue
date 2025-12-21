@@ -224,6 +224,11 @@ const handleLike = async () => {
 	try {
 		await (wasLiked ? deleteUserLikePost(payload) : postUserLikePost(payload))
 		await refreshLikeJudgement()
+		try {
+			await authStore.refreshUserBrief()
+		} catch (error) {
+			console.warn('刷新用户信息失败', error)
+		}
 		ElMessage.success(wasLiked ? '已取消点赞' : '点赞成功')
 	} catch (error: any) {
 		ElMessage.error(error?.message || (wasLiked ? '取消点赞失败' : '点赞失败'))
@@ -251,6 +256,11 @@ const handleFavorite = async () => {
 	try {
 		await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
 		await refreshFavoriteJudgement()
+		try {
+			await authStore.refreshUserBrief()
+		} catch (error) {
+			console.warn('刷新用户信息失败', error)
+		}
 		ElMessage.success(wasFavorited ? '已取消收藏' : '收藏成功')
 	} catch (error: any) {
 		ElMessage.error(error?.message || (wasFavorited ? '取消收藏失败' : '收藏失败'))
