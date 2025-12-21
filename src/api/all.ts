@@ -139,11 +139,11 @@ export interface message {
 export interface chatBox {
   sessionId: number,
   userId1: number,
-  userAvatar1: string,
-  userName1: string,
+  avatar1: string,
+  username1: string,
   userId2: number,
-  userAvatar2: string,
-  userName2: string,
+  avatar2: string,
+  username2: string,
   lastMessage: string,
   lastTime: string,
   unreadCount: number
@@ -361,9 +361,9 @@ export const getReminders = (userId: number) => {
 };
 
 // 13. 标记提醒为已读
-export const markReminderAsRead = (reminderId: number) => {
-  return service.post<ApiResponse<null>>('/markReminderRead', {
-    reminderId,
+export const markAsRead = (type:string,id: number) => {
+  return service.post<ApiResponse<any>>('/markRead', {
+    type,id
   });
 };
 
@@ -463,12 +463,16 @@ export const updateDocumentStatus = (payload: { documentId: number; status: 'ope
 
 // 发送消息,接口名加上interface避免重名
 export const sendMessageInterface = (sessionId: number, receiverId: number, content: string) => {
-  return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/message', { sessionId, receiverId, content })
+  return service.post<ApiResponse<{code:number,data:any }>>('/chat/message', { sessionId, receiverId, content })
 }
 
 //创建聊天
-export const createChat = (myId:number,oppositeId:number) => {return service.post<ApiResponse<chatBox>>("/createChat",{myId,oppositeId});
-}
+export const createChat = (myId: number, oppositeId: number) => {
+  return service.post<ApiResponse<chatBox>>("/createChat", {
+    myId,
+    oppositeId,
+  });
+};
 
 
 //获取聊天回话列表
@@ -479,7 +483,11 @@ export const getSessionList = (userId: number) => {
 
 //获取聊天记录
 export const getMessageList = (sessionId: number, userId: number) => {
-  return service.get<ApiResponse<message[]>>('/chat/messages', { params: { sessionId, userId } })
+  const config = {
+    params: { sessionId, userId },
+    noLoading: true, // 用 config.noLoading 标记，避免自定义 header 触发 CORS
+  }
+  return service.get<ApiResponse<message[]>>('/chat/messages', config)
 }
 
 //搜索聊天记录
@@ -497,11 +505,6 @@ export const getReminder = (userId: number) => {
   return service.get<ApiResponse<Reminder[]>>('/getReminder', { params: { userId } })
 }
 
-
-//标记消息已读
-export const markReminderRead = (reminderId: number) => {
-  return service.put<ApiResponse<string>>('/markReminderRead', { reminderId }, { headers: { noLoading: true } })
-}// 给“轻量请求”加一个开关，不显示全屏 Loading
 
 
 // 获取用户的详细信息

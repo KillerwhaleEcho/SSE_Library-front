@@ -128,7 +128,6 @@ const passwordForm = reactive({
   confirmPassword: '',
 })
 
-
 watch(
   () => adminInfo.value,
   (info) => {
@@ -217,7 +216,7 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
   const previousAvatar = avatarUrl.value
   try {
     const formData = new FormData()
-    formData.append('userAvatar',file)
+    formData.append('userAvatar', file)
     const response = await updateAdminProfile(String(userId.value), formData)
     const updated = response.data
     avatarUrl.value = updated.userAvatar || previousAvatar || DEFAULT_AVATAR

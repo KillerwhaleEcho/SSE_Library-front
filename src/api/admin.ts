@@ -1,4 +1,6 @@
+//写接口时如果用request拿到的是res.data响应体，如果用service那拿到的是完整的响应，得res.data才能拿到响应体
 import request from "../utils/request";
+import service from "@/utils/service.ts";
 import { type UserBrief } from "./all.ts";
 import { type InfoBrief, type User } from "./all.ts";
 
@@ -49,13 +51,13 @@ export const updateAdminProfile = (
   data: AdminUpdatePayload,
 ): Promise<ApiResponse<UserBrief>> => {
   const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
-  return request({
+  return service({
     url: `/user/${userId}`,
     method: "put",
     data,
     headers: isFormData
       ? { 'Content-Type': 'multipart/form-data' }
-      : undefined,
+      : { 'Content-Type': 'application/json' },
   });
 };
 
