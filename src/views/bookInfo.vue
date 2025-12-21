@@ -176,8 +176,8 @@ const documentSourceData = computed<CommentSourceData | null>(() => {
         name: brief.value.name || `文档 #${documentNumericId.value}`,
     }
 })
-const coverSrc = computed(() => documentDetail.value?.cover || defaultCover)
-const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.value?.URL))
+const coverSrc = computed(() => brief.value?.cover || defaultCover)
+const canPreview = computed(() => brief.value?.type === 'book' && Boolean(documentDetail.value?.URL))
 const tags = computed(() => documentDetail.value?.tags ?? [])
 const previewButtonText = computed(() => (previewLoading.value ? '加载中...' : '预览'))
 const isAdminViewer = computed(() => userInfo.value?.role === 'admin')
@@ -279,7 +279,7 @@ const loadDocumentDetail = async (id: string) => {
 }
 
 const buildDispositionUrl = (disposition: 'inline' | 'attachment') => {
-    const base = brief.value?.URL
+    const base = documentDetail.value?.URL
     if (!base) return null
     const hasQuery = base.includes('?')
     const separator = hasQuery ? '&' : '?'
@@ -315,7 +315,7 @@ const handlePreview = async () => {
         ElMessage.info('该资料暂不支持在线预览')
         return
     }
-    const sourceUrl = brief.value?.URL
+    const sourceUrl = documentDetail.value?.URL
     if (!sourceUrl) {
         ElMessage.warning('暂无可用的预览链接')
         return

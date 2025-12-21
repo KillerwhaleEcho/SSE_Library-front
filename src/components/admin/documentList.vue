@@ -29,7 +29,7 @@
           <el-table-column :label="TEXT.cover" width="150" align="center">
             <template #default="{ row }">
               <div class="cover">
-                <img v-if="row.cover" :src="row.cover" alt="封面" class="cover-img" />
+                <img v-if="row.infoBrief?.cover" :src="row.infoBrief.cover" alt="封面" class="cover-img" />
                 <div v-else class="cover-placeholder">
                   无封面
                 </div>
@@ -81,10 +81,10 @@
           <el-input v-model="editForm.category" clearable />
         </el-form-item>
         <el-form-item :label="TEXT.form.type">
-       <el-select v-model="editForm.type">
-        <el-option aria-label="书籍" value="book"></el-option>
-         <el-option  aria-label="文件" value="file"></el-option>
-       </el-select>
+          <el-select v-model="editForm.type">
+            <el-option aria-label="书籍" value="book"></el-option>
+            <el-option aria-label="文件" value="file"></el-option>
+          </el-select>
         </el-form-item>
         <el-form-item :label="TEXT.form.name">
           <el-input v-model="editForm.name" clearable />
@@ -208,7 +208,7 @@ const delay = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
-const STATUS_OPTIONS= [
+const STATUS_OPTIONS = [
   { label: "open", value: "开放" },
   { label: "pending", value: "审核中" },
   { label: "closed", value: "关闭" },
@@ -269,24 +269,27 @@ const editForm = reactive<DocumentEditForm>({
 
 
 const normalizeDocument = (doc: Document): Document => {
-  const fallbackStatus='pending'
-  const normalizedStatus: DocumentStatusEH =STATUS_OPTIONS.find((option)=>option.label===doc.infoBrief.status)?.label??fallbackStatus
+  const fallbackStatus = 'pending'
+  const normalizedStatus: DocumentStatusEH = STATUS_OPTIONS.find((option) => option.label === doc.infoBrief.status)?.label ?? fallbackStatus
+  const normalizedCover = doc.infoBrief?.cover ?? (doc as any).cover ?? ''
+  const normalizedURL = doc.URL ?? (doc as any).infoBrief?.URL ?? ''
 
   return {
     ...doc,
+    URL: normalizedURL,
     infoBrief: {
       ...doc.infoBrief,
       status: normalizedStatus as DocumentStatusEH,
-      uploadTime: doc.infoBrief.uploadTime || "",
-      name: doc.infoBrief.name || "",
-      category: doc.infoBrief.category || "",
+      uploadTime: doc.infoBrief.uploadTime || '',
+      name: doc.infoBrief.name || '',
+      category: doc.infoBrief.category || '',
+      cover: normalizedCover,
     },
-    cover: doc.cover || "",
-    introduction: doc.introduction || "",
-    bookISBN: doc.bookISBN || "",
+    introduction: doc.introduction || '',
+    bookISBN: doc.bookISBN || '',
     tags: Array.isArray(doc.tags) ? doc.tags : [],
-  };
-};
+  }
+}
 
 const fetchDocuments = async () => {
   loading.value = true;
@@ -350,7 +353,7 @@ const handleStatusChange = async (row: Document, nextStatus: string) => {
           nextStatus as typeof MOCK_DOCUMENTS[number]["infoBrief"]["status"];//这里的number代表索引的类型，后面都是在选取属性
       }
     } else {
-      await updateFileStatus(row.infoBrief.documentId,nextStatus)
+      await updateFileStatus(row.infoBrief.documentId, nextStatus)
     }
     ElMessage.success(TEXT.statusUpdated);
   } catch (error) {
@@ -376,11 +379,11 @@ const openEditDialog = (row: Document) => {
   editForm.tags = Array.isArray(row.tags) ? row.tags.join(", ") : "";
   editForm.author = row.author || "";
   editForm.createYear = row.createYear || "";
-  editForm.coverUrl = row.cover || "";
+  editForm.coverUrl = row.infoBrief.cover || "";
   editForm.coverFile = null;
   editForm.introduction = row.introduction || "";
   editForm.file = null;
-  editForm.vedioURL = row.infoBrief.URL || "";
+  editForm.vedioURL = row.URL || "";
 
   if (coverInput.value) {
     coverInput.value.value = "";
@@ -436,57 +439,57 @@ const handleDocumentFile = (event: Event) => {
 
 
 const handleSaveEdit = async () => {
-  if (saving.value) return 
+  if (saving.value) return
 
   const current = documents.value.find(
-      (item) => item.infoBrief.documentId === editForm.documentId
+    (item) => item.infoBrief.documentId === editForm.documentId
   );
-    
+
   saving.value = true;
 
   if (USE_MOCK && current) {
-         await delay(400);
-      const tags = editForm.tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean);
+    await delay(400);
+    const tags = editForm.tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
 
-      current.infoBrief.type =
-        editForm.type.trim() as typeof current.infoBrief.type;
-      current.infoBrief.category = editForm.category.trim();
-      current.infoBrief.name = editForm.name.trim();
-      current.bookISBN = editForm.isbn.trim();
-      current.author = editForm.author.trim();
-      current.createYear = editForm.createYear.trim();
-      current.cover = editForm.coverUrl.trim();
-      current.introduction = editForm.introduction.trim();
-      current.infoBrief.URL = editForm.vedioURL.trim();
+    current.infoBrief.type =
+      editForm.type.trim() as typeof current.infoBrief.type;
+    current.infoBrief.category = editForm.category.trim();
+    current.infoBrief.name = editForm.name.trim();
+    current.bookISBN = editForm.isbn.trim();
+    current.author = editForm.author.trim();
+    current.createYear = editForm.createYear.trim();
+    current.infoBrief.cover = editForm.coverUrl.trim();
+    current.introduction = editForm.introduction.trim();
+    current.URL = editForm.vedioURL.trim();
     current.tags = tags;
 
-        const mockTarget = MOCK_DOCUMENTS.find(
-        (item) => item.infoBrief.documentId === current.infoBrief.documentId
-      );
-      if (mockTarget) {
-        mockTarget.infoBrief.type = current.infoBrief.type;
-        mockTarget.infoBrief.category = current.infoBrief.category;
-        mockTarget.infoBrief.name = current.infoBrief.name;
-        mockTarget.bookISBN = current.bookISBN;
-        mockTarget.author = current.author;
-        mockTarget.createYear = current.createYear;
-        mockTarget.cover = current.cover;
-        mockTarget.introduction = current.introduction;
-        mockTarget.infoBrief.URL = current.infoBrief.URL;
-        mockTarget.tags = [...current.tags];
+    const mockTarget = MOCK_DOCUMENTS.find(
+      (item) => item.infoBrief.documentId === current.infoBrief.documentId
+    );
+    if (mockTarget) {
+      mockTarget.infoBrief.type = current.infoBrief.type;
+      mockTarget.infoBrief.category = current.infoBrief.category;
+      mockTarget.infoBrief.name = current.infoBrief.name;
+      mockTarget.bookISBN = current.bookISBN;
+      mockTarget.author = current.author;
+      mockTarget.createYear = current.createYear;
+      mockTarget.infoBrief.cover = current.infoBrief.cover;
+      mockTarget.introduction = current.introduction;
+      mockTarget.URL = current.URL;
+      mockTarget.tags = [...current.tags];
     }
-        ElMessage.success(TEXT.editSuccess);
+    ElMessage.success(TEXT.editSuccess);
     editVisible.value = false;
-      return 
+    return
   }
 
   try {
     console.log(2222222)
-      await updateFileInfo(editForm)
-      await fetchDocuments();
+    await updateFileInfo(editForm)
+    await fetchDocuments();
 
     ElMessage.success(TEXT.editSuccess);
     editVisible.value = false;
@@ -610,12 +613,14 @@ onMounted(fetchDocuments);
 
 /* 外层容器：把这一格变成一个居中的小方块 */
 .cover {
-  display: flex;             /* 用 flex 居中内部内容 */
+  display: flex;
+  /* 用 flex 居中内部内容 */
   align-items: center;
   justify-content: center;
   border-radius: 8px;
   overflow: hidden;
-  background: #f3f4f6;       /* 没图时有个淡背景 */
+  background: #f3f4f6;
+  /* 没图时有个淡背景 */
 }
 
 
@@ -623,8 +628,9 @@ onMounted(fetchDocuments);
   width: 80%;
   height: 100%;
   display: block;
-  object-fit: cover;         /* 按比例裁剪 */
-  object-position: center;  
+  object-fit: cover;
+  /* 按比例裁剪 */
+  object-position: center;
 }
 
 /* 没有图片时的占位 */

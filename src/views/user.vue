@@ -169,7 +169,6 @@ const historyList = computed(() => userAll.value?.historyList ?? [])
 
 const mapBriefToDoc = (item: InfoBrief): Document => ({
     infoBrief: item,
-    cover: '',
     author: '',
     introduction: '',
     createYear: '',

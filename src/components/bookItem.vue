@@ -1,23 +1,19 @@
 <template>
   <div class="book-item">
     <!-- 图书封面 -->
-    <img 
-      :src="document?.cover || defaultCover" 
-      alt="book cover" 
-      class="book-cover"
-      @error="handleImgError"
-    >
+    <img :src="document?.infoBrief?.cover || defaultCover" alt="book cover" class="book-cover" @error="handleImgError">
     <!-- 图书信息 -->
     <div class="book-info">
       <h4 class="book-title">{{ document.infoBrief.name }}</h4>
       <div class="book-stats">
         <div class="book-count">
-            <img src="@/assets/147_喜欢.png" alt="File Icon" style="width:30px; height:30px; margin-right:4px;" />
-            {{ document.infoBrief.collections }} 收藏
+          <img src="@/assets/147_喜欢.png" alt="File Icon" style="width:30px; height:30px; margin-right:4px;" />
+          {{ document.infoBrief.collections }} 收藏
         </div>
         <div class="book-count">
-            <img src="@/assets/Fire (火热).png" alt="Office Building Icon" style="width:20px; height:20px; margin-right:4px;vertical-align: bottom;" />
-            {{ document.infoBrief.readCounts }} 阅读
+          <img src="@/assets/Fire (火热).png" alt="Office Building Icon"
+            style="width:20px; height:20px; margin-right:4px;vertical-align: bottom;" />
+          {{ document.infoBrief.readCounts }} 阅读
         </div>
       </div>
     </div>
@@ -46,28 +42,33 @@ const handleImgError = (e: Event) => {
   display: flex;
   align-items: center;
   flex-direction: column;
-  gap: 16px; /* 封面与文字的间距 */
+  gap: 16px;
+  /* 封面与文字的间距 */
   padding: 12px;
   border-radius: 6px;
   transition: background-color 0.2s;
 }
 
 .book-item:hover {
-  background-color: #f5f5f7; /*  hover 效果 */
+  background-color: #f5f5f7;
+  /*  hover 效果 */
 }
 
 /* 封面样式 */
 .book-cover {
   width: 220px;
-  object-fit: cover; /* 保持图片比例，裁剪多余部分 */
+  object-fit: cover;
+  /* 保持图片比例，裁剪多余部分 */
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* 轻微阴影增强质感 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* 轻微阴影增强质感 */
 }
 
 /* 图书信息区 */
 .book-info {
   width: 100%;
-  min-width: 0; /* 解决文字过长溢出问题 */
+  min-width: 0;
+  /* 解决文字过长溢出问题 */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -79,7 +80,8 @@ const handleImgError = (e: Event) => {
   font-weight: 600;
   color: #333;
   overflow: hidden;
-  text-overflow: ellipsis; /* 超出部分显示省略号 */
+  text-overflow: ellipsis;
+  /* 超出部分显示省略号 */
 }
 
 /* 统计信息 */
