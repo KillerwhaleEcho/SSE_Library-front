@@ -104,9 +104,10 @@
                     </div>
                 </div>
                 <div v-if="activeDiscussionTab === 'comment'" class="discussion-panel">
-                    <CommentSection source-type="document" :source-id="documentNumericId"
-                        :source-data="documentSourceData" :viewer="commentViewer" :show-editor="true"
-                        :show-comment-user="true" :show-reply-button="true" :show-source-name="false" />
+                    <CommentSection v-if="documentDetail && documentNumericId !== null" source-type="document"
+                        :source-id="documentNumericId" :source-data="documentSourceData" :viewer="commentViewer"
+                        :show-editor="true" :show-comment-user="true" :show-reply-button="true"
+                        :show-source-name="false" />
                 </div>
                 <div v-else class="discussion-panel">
                     <div v-if="documentPosts.length" class="post-list">

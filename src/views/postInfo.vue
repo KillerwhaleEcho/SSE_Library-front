@@ -69,8 +69,9 @@
 
 			<section class="comments-section">
 				<h2 class="section-title">评论区</h2>
-				<CommentSection source-type="post" :source-id="postNumericId" :source-data="postSourceData"
-					:show-editor="true" :show-comment-user="true" :show-reply-button="true" :show-source-name="false" />
+				<CommentSection v-if="postDetail && postNumericId !== null" source-type="post"
+					:source-id="postNumericId" :source-data="postSourceData" :show-editor="true"
+					:show-comment-user="true" :show-reply-button="true" :show-source-name="false" />
 			</section>
 		</div>
 	</div>
