@@ -1,5 +1,5 @@
 <template>
-  <div class="book-item">
+  <div class="book-item" @click="goToBookInfo">
     <!-- 图书封面 -->
     <img :src="document.infoBrief.cover || defaultCover" alt="book cover" class="book-cover" @error="handleImgError">
 
@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import defaultCover from '@/assets/coverexp.png'; // 引入默认封面图
 import * as allApi from '@/api/all.ts'
 
@@ -55,6 +55,14 @@ import * as allApi from '@/api/all.ts'
 const props = defineProps<{
   document: allApi.Document;
 }>();
+
+const router = useRouter();
+
+const goToBookInfo = () => {
+  const documentId = props.document?.infoBrief?.documentId;
+  if (typeof documentId !== 'number') return;
+  router.push({ path: '/bookInfo', query: { id: documentId } });
+};
 
 // 封面图加载失败时使用默认图
 const handleImgError = (e: Event) => {
@@ -74,6 +82,7 @@ const handleImgError = (e: Event) => {
   transition: background-color 0.2s;
   border-bottom: 1px solid #f0f0f0;
   align-items: flex-start;
+  cursor: pointer;
 }
 
 .book-item:hover {
