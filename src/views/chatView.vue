@@ -673,7 +673,7 @@ const handleSendClick = async () => {
   } catch {
     ElMessage.error('消息发送失败')
   }
-  // 消息会通过 WebSocket 推送到当前会话，无需再次拉取列表
+
   scrollToLatest()
 };
 

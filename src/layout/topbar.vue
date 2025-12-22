@@ -128,44 +128,44 @@ const getUnreadCountOfMessages = async() => {
   }
 }
 
-const initWebSocket = () => {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+// const initWebSocket = () => {
+//   const token = localStorage.getItem("token");
+//   if (!token) return;
 
-  if (socket.value) {
-    socket.value.close();
-  }
+//   if (socket.value) {
+//     socket.value.close();
+//   }
 
-  const ws = new WebSocket(`ws://localhost:8080/api/ws?token=${token}`);
-  socket.value = ws;
+//   const ws = new WebSocket(`ws://localhost:8080/api/ws?token=${token}`);
+//   socket.value = ws;
 
-  ws.onmessage = (event: MessageEvent) => {
-    try {
-      const payload = JSON.parse(event.data);
-      if (payload.type === 'chat-message') {
-        unreadMessage.value++
-      }
-    } catch (error) {
-      console.error("解析 WebSocket 消息失败", error);
-    }
-  };
+//   ws.onmessage = (event: MessageEvent) => {
+//     try {
+//       const payload = JSON.parse(event.data);
+//       if (payload.type === 'chat-message') {
+//         unreadMessage.value++
+//       }
+//     } catch (error) {
+//       console.error("解析 WebSocket 消息失败", error);
+//     }
+//   };
 
-  ws.onopen = () => {
-    console.log("WebSocket 连接成功");
-  };
-  ws.onerror = (event) => {
-    console.error("WebSocket 发生错误", event);
-  };
-  ws.onclose = () => {
-    socket.value = null;
-  };
-};
+//   ws.onopen = () => {
+//     console.log("WebSocket 连接成功");
+//   };
+//   ws.onerror = (event) => {
+//     console.error("WebSocket 发生错误", event);
+//   };
+//   ws.onclose = () => {
+//     socket.value = null;
+//   };
+// };
 
 
 onMounted(() => {
   fetchReminders();
   getUnreadCountOfMessages()
-  initWebSocket()
+  // initWebSocket()
 })
 
 onUnmounted(() => {
