@@ -373,7 +373,6 @@ export interface CreateCommentPayload {
   commenter: UserBrief;
   sourceData: CommentSourceData;
   content: string;
-  createTime: string;
   parentId: number | null;
 }
 

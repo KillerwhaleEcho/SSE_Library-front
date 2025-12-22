@@ -504,17 +504,6 @@ const buildCommenterPayload = (): UserBrief | null => {
     }
 }
 
-const formatNow = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = formatTwoDigit(now.getMonth() + 1)
-    const day = formatTwoDigit(now.getDate())
-    const hours = formatTwoDigit(now.getHours())
-    const minutes = formatTwoDigit(now.getMinutes())
-    const seconds = formatTwoDigit(now.getSeconds())
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-}
-
 const ensureCommentPayload = (source: 'main' | 'reply') => {
     const commenter = buildCommenterPayload()
     if (!commenter) {
@@ -542,7 +531,6 @@ const ensureCommentPayload = (source: 'main' | 'reply') => {
             commenter,
             sourceData: sourcePayload,
             content,
-            createTime: formatNow(),
             parentId,
         } as CreateCommentPayload,
         content,
