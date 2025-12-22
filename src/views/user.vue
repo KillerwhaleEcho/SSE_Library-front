@@ -6,10 +6,17 @@
             <section class="section section-brief">
                 <div class="brief-left">
                     <div class="avatar-wrapper">
-                        <img :src="userBrief?.userAvatar || defaultAvatar" alt="user avatar" />
+                        <img :src="displayAvatar" alt="user avatar" />
+                        <button v-if="isEditing" class="avatar-btn" type="button" @click="triggerAvatarSelect">
+                            更换头像
+                        </button>
+                        <input ref="avatarInputRef" class="sr-only" type="file" accept="image/*"
+                            @change="handleAvatarChange" />
                     </div>
                     <div class="name-block">
-                        <h2>{{ userBrief?.username || '未命名用户' }}</h2>
+                        <input v-if="isEditing" v-model="formUsername" class="brief-input" type="text"
+                            placeholder="输入用户名" :disabled="savingProfile" />
+                        <h2 v-else>{{ userBrief?.username || '未命名用户' }}</h2>
                         <p class="user-id">UID {{ userBrief?.userId ?? '—' }}</p>
                         <span class="status" :data-status="userBrief?.status || 'inactive'">
                             {{ statusLabel }}
@@ -21,20 +28,32 @@
                     <div class="info-grid">
                         <div class="info-item">
                             <p class="label">邮箱</p>
-                            <p class="value">{{ userBrief?.email || '暂无' }}</p>
+                            <input v-if="isEditing" v-model="formEmail" class="brief-input" type="email"
+                                placeholder="输入邮箱" :disabled="savingProfile" />
+                            <p v-else class="value">{{ userBrief?.email || '暂无' }}</p>
                         </div>
                         <div class="info-item">
                             <p class="label">注册时间</p>
                             <p class="value">{{ userBrief?.createTime || '—' }}</p>
                         </div>
                     </div>
-
-                    <button class="edit-btn" type="button" @click="handleEditProfile">
-                        编辑个人资料
-                    </button>
-                    <button class="logout-btn" type="button" @click="handleLogout">
-                        退出登录
-                    </button>
+                    <div class="brief-actions">
+                        <template v-if="isEditing">
+                            <button class="save-btn" type="button" :disabled="savingProfile" @click="handleSaveProfile">
+                                保存
+                            </button>
+                            <button class="cancel-btn" type="button" :disabled="savingProfile"
+                                @click="handleCancelEdit">
+                                取消
+                            </button>
+                        </template>
+                        <button v-else class="edit-btn" type="button" @click="handleEditProfile">
+                            编辑个人资料
+                        </button>
+                        <button class="logout-btn" type="button" @click="handleLogout">
+                            退出登录
+                        </button>
+                    </div>
                 </div>
             </section>
 
@@ -99,7 +118,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Topbar from '@/layout/topbar.vue'
-import { getUserAll, getUserUploadDoc, type UserAll } from '@/api/user'
+import { getUserAll, getUserUploadDoc, updateUserProfile, type UserAll } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 import BookListItem from '@/components/bookListItem.vue'
 import CommentSection from '@/components/comments/CommentSection.vue'
@@ -112,6 +131,14 @@ const userAll = ref<UserAll | null>(null)
 const uploadsDocs = ref<Document[]>([])
 const errorMessage = ref('')
 const defaultAvatar = 'https://placehold.co/120x120?text=Avatar'
+const isEditing = ref(false)
+const savingProfile = ref(false)
+const formUsername = ref('')
+const formEmail = ref('')
+const avatarFile = ref<File | null>(null)
+const avatarPreview = ref<string | null>(null)
+const avatarInputRef = ref<HTMLInputElement | null>(null)
+let avatarPreviewUrl: string | null = null
 
 type TabKey = 'docs' | 'comments' | 'uploads' | 'posts'
 interface TabItem {
@@ -166,6 +193,7 @@ const resolvedUserId = computed(() => {
 const userBrief = computed(() => userAll.value?.userBrief)
 const collectionList = computed(() => userAll.value?.collectionList ?? [])
 const historyList = computed(() => userAll.value?.historyList ?? [])
+const displayAvatar = computed(() => avatarPreview.value || userBrief.value?.userAvatar || defaultAvatar)
 
 const mapBriefToDoc = (item: InfoBrief): Document => ({
     infoBrief: item,
@@ -230,7 +258,72 @@ const fetchUserUploads = async () => {
 }
 
 const handleEditProfile = () => {
-    console.info('编辑个人资料功能待实现')
+    isEditing.value = true
+    formUsername.value = userBrief.value?.username || ''
+    formEmail.value = userBrief.value?.email || ''
+    avatarFile.value = null
+    avatarPreview.value = null
+}
+
+const clearAvatarSelection = () => {
+    avatarFile.value = null
+    avatarPreview.value = null
+    if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl)
+        avatarPreviewUrl = null
+    }
+    if (avatarInputRef.value) {
+        avatarInputRef.value.value = ''
+    }
+}
+
+const triggerAvatarSelect = () => {
+    avatarInputRef.value?.click()
+}
+
+const handleAvatarChange = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    const file = target.files?.[0] ?? null
+    clearAvatarSelection()
+    if (file) {
+        avatarFile.value = file
+        avatarPreviewUrl = URL.createObjectURL(file)
+        avatarPreview.value = avatarPreviewUrl
+    }
+}
+
+const handleCancelEdit = () => {
+    isEditing.value = false
+    clearAvatarSelection()
+    formUsername.value = userBrief.value?.username || ''
+    formEmail.value = userBrief.value?.email || ''
+}
+
+const handleSaveProfile = async () => {
+    errorMessage.value = ''
+    if (!resolvedUserId.value) {
+        errorMessage.value = '未能获取用户信息，请先登录。'
+        return
+    }
+
+    savingProfile.value = true
+    try {
+        await updateUserProfile(resolvedUserId.value, {
+            userName: formUsername.value,
+            email: formEmail.value,
+            userAvatar: avatarFile.value ?? null,
+        })
+
+        await fetchUserAll()
+        await authStore.refreshUserBrief()
+        isEditing.value = false
+        clearAvatarSelection()
+    } catch (error) {
+        console.error('更新个人资料失败', error)
+        errorMessage.value = '更新个人资料失败，请稍后重试'
+    } finally {
+        savingProfile.value = false
+    }
 }
 
 const handleLogout = () => {
@@ -272,6 +365,12 @@ onMounted(() => {
 
 watch(userBrief, () => updatePageTitle(), { immediate: true })
 
+watch(userBrief, (brief) => {
+    if (isEditing.value) return
+    formUsername.value = brief?.username || ''
+    formEmail.value = brief?.email || ''
+}, { immediate: true })
+
 watch(
     () => route.query.userId,
     () => {
@@ -284,6 +383,7 @@ watch(
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', updateUnderline)
+    clearAvatarSelection()
 })
 
 watch(activeTab, (tab) => {
@@ -336,6 +436,7 @@ watch(activeTab, (tab) => {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
     background: #f4f2ff;
     border: 2px solid #f0edff;
+    position: relative;
 }
 
 .avatar-wrapper img {
@@ -344,11 +445,48 @@ watch(activeTab, (tab) => {
     object-fit: cover;
 }
 
+.avatar-btn {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 12px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
 .name-block h2 {
     margin: 0;
     font-size: 24px;
     font-weight: 700;
     color: #1f1f2e;
+}
+
+.brief-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    font-size: 15px;
+    color: #1f1f2e;
+    background: #fff;
+    box-sizing: border-box;
 }
 
 .user-id {
@@ -413,6 +551,13 @@ watch(activeTab, (tab) => {
     font-weight: 600;
 }
 
+.brief-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    justify-items: end;
+}
+
 .edit-btn {
     justify-self: end;
     width: 160px;
@@ -429,6 +574,51 @@ watch(activeTab, (tab) => {
 .edit-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 20px rgba(143, 130, 255, 0.35);
+}
+
+.save-btn {
+    justify-self: stretch;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.save-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.save-btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(34, 197, 94, 0.35);
+}
+
+.cancel-btn {
+    justify-self: stretch;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #374151;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.cancel-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.cancel-btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(55, 65, 81, 0.15);
+    background: #f9fafb;
 }
 
 .logout-btn {
