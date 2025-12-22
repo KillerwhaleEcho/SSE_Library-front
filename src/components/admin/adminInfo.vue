@@ -26,6 +26,9 @@
               <span class="profile-summary__value">{{ profileForm.createTime }}</span>
             </li>
           </ul>
+          <el-button class="sidebar-logout" type="danger" plain @click="handleLogout">
+            退出登录
+          </el-button>
         </aside>
 
         <section class="profile-main">
@@ -101,6 +104,7 @@ const passwordSaving = ref(false)
 const avatarUploading = ref(false)
 const loading = ref(false)
 const adminInfo = ref<UserBrief | null>()
+const emit = defineEmits<{ (e: 'updated'): void }>()
 
 
 const DEFAULT_AVATAR = 'https://placehold.co/120x120?text=Avatar'
@@ -160,6 +164,7 @@ const handleProfileSave = async () => {
     )
     // 邮箱为空会提示警告并return掉，但是昵称可以为空，会用原来的昵称作为回退值
     ElMessage.success('资料已更新')
+    emit('updated')
   } catch (err: any) {
     ElMessage.error(err?.message || '资料更新失败')
   } finally {
@@ -223,12 +228,17 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
 
     
     ElMessage.success('头像已更新')
+    emit('updated')
   } catch (err: any) {
     avatarUrl.value = adminInfo.value?.userAvatar || previousAvatar
     ElMessage.error(err?.message || '头像更新失败，请重试')
   } finally {
     avatarUploading.value = false
   }
+}
+
+const handleLogout = () => {
+  router.push('/login')
 }
 
 const getVerificationCode = async () => {
@@ -349,6 +359,11 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.sidebar-logout {
+  width: 100%;
+  margin-top: auto;
 }
 
 .avatar-upload :deep(.el-button) {

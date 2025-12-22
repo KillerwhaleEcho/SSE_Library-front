@@ -73,6 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
     userInfo.value = brief
     localStorage.setItem('userBrief', JSON.stringify(brief))
     localStorage.setItem('userId', String(brief.userId ?? ''))
+    localStorage.setItem('role',String(brief.role??''))
   }
 
   const login = async (email: string, password: string) => {
@@ -183,9 +184,9 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = ''
     userInfo.value = null
     localStorage.removeItem('token')
-    localStorage.removeItem('admin_token')
     localStorage.removeItem('userBrief')
     localStorage.removeItem('userId')
+    localStorage.removeItem('role')
   }
 
   const refreshUserBrief = async () => {

@@ -102,7 +102,7 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
-  const isAdmin = /* 这里根据实际情况判断是否为管理员 */ false;
+  const isAdmin = localStorage.getItem('role')=== 'admin';//根据实际情况判断
 
   // 类型断言
   const win = window as any;

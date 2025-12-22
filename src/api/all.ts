@@ -1,6 +1,7 @@
 import { my } from 'element-plus/es/locales.mjs'
 import service from '../utils/service'
 import type { DocumentEditForm } from '@/types/api'
+import { useId } from 'vue'
 
 export interface ApiResponse<T = any> {
   code: number
@@ -361,9 +362,9 @@ export const getReminders = (userId: number) => {
 };
 
 // 13. 标记提醒为已读
-export const markAsRead = (type:string,id: number) => {
+export const markReminderAsRead = (reminderId: number) => {
   return service.post<ApiResponse<any>>('/markRead', {
-    type,id
+    reminderId
   });
 };
 
@@ -466,6 +467,11 @@ export const sendMessageInterface = (sessionId: number, receiverId: number, cont
   return service.post<ApiResponse<{code:number,data:any }>>('/chat/message', { sessionId, receiverId, content })
 }
 
+//获取总未读消息数量
+export const getUnreadMessage = (userId: number) => {
+  return service.get<ApiResponse<number>>('/unreadMessage',{params:{userId} })
+}
+
 //创建聊天
 export const createChat = (myId: number, oppositeId: number) => {
   return service.post<ApiResponse<chatBox>>("/createChat", {
@@ -477,7 +483,7 @@ export const createChat = (myId: number, oppositeId: number) => {
 
 //获取聊天回话列表
 export const getSessionList = (userId: number) => {
-  return service.get<ApiResponse<chatBox[]>>('/chat/sessions', { params: { userId } })
+  return service.get<ApiResponse<chatBox[]>>('/chat/sessions', { params: { userId }  })
 }
 
 

@@ -9,10 +9,11 @@
     <!-- 右侧用户区域 -->
     <div class="header-user">
       <router-link to="/posts" class="icon-container" data-tooltip="论坛">
-        <img src="@/assets/147_地址.png" alt="个人主页">
+        <img src="@/assets/147_地址.png" alt="论坛">
       </router-link>
       <router-link to="/chat" class="icon-container" data-tooltip="聊天">
-        <img src="@/assets/147_对话-08.png" alt="个人主页">
+           <img src="@/assets/147_对话-08.png" alt="聊天">
+           <div class="badge" v-if="unreadMessage>0">{{ unreadMessage }}</div>
       </router-link>
 
       <ReminderBox 
@@ -55,10 +56,9 @@
 </template>
 
 <script setup lang="ts">
-import { defineEmits } from 'vue';
 import ReminderBox from '@/components/reminderBox.vue';
 import 'element-plus/dist/index.css';
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import * as allApi from '@/api/all.ts'
 import router from '@/router';
 
@@ -69,8 +69,8 @@ const showCategoryDialog = ref(false)
 const allCategories = ref<any[]>([])
 const selectedCategoryName = ref<string | null>(null)
 const selectedCategoryId = ref<number | null>(null)
-
-
+const unreadMessage=ref(0)
+const socket=ref<WebSocket|null>(null)
 
 // 定义事件发射器，用于向父组件发送事件
 const emit = defineEmits(['open-upload-modal']);
@@ -118,8 +118,61 @@ const fetchReminders = async () => {
   }
 };
 
+
+const getUnreadCountOfMessages = async() => {
+  try {
+  const res= await allApi.getUnreadMessage(userId);
+    unreadMessage.value=res.data
+  } catch {
+    console.log('获取未读消息数量失败')
+  }
+}
+
+const initWebSocket = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  if (socket.value) {
+    socket.value.close();
+  }
+
+  const ws = new WebSocket(`ws://localhost:8080/api/ws?token=${token}`);
+  socket.value = ws;
+
+  ws.onmessage = (event: MessageEvent) => {
+    try {
+      const payload = JSON.parse(event.data);
+      if (payload.type === 'chat-message') {
+        unreadMessage.value++
+      }
+    } catch (error) {
+      console.error("解析 WebSocket 消息失败", error);
+    }
+  };
+
+  ws.onopen = () => {
+    console.log("WebSocket 连接成功");
+  };
+  ws.onerror = (event) => {
+    console.error("WebSocket 发生错误", event);
+  };
+  ws.onclose = () => {
+    socket.value = null;
+  };
+};
+
+
 onMounted(() => {
   fetchReminders();
+  getUnreadCountOfMessages()
+  initWebSocket()
+})
+
+onUnmounted(() => {
+  if (socket.value) {
+    socket.value.close()
+    socket.value=null
+  }
 })
 </script>
 
@@ -193,6 +246,23 @@ onMounted(() => {
 /* 悬停时放大效果 */
 .icon-container img:hover{
   transform: scale(1.1);
+}
+
+.badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background-color: #ff4d4f; /* 红点颜色：红色 */
+  color: white;
+  border-radius: 50%;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  padding: 0 4px;
+  z-index: 1; /* 确保红点在图标上方 */
 }
 
 /* 原有样式保留，补充通知图标红点样式 */

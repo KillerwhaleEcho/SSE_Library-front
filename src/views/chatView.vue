@@ -56,8 +56,8 @@
             <article v-for="item in sortedReminders" :key="item.reminderId" class="reminder-card"
               :class="{ 'is-unread': !item.isRead }">
               <div class="reminder-card__meta">
-                <span class="reminder-type" :class="`type-${getReminderLabel(item.type)}`">
-                  {{ item.type }}
+                <span class="reminder-type" :class="`type-${item.type}`">
+                 {{getReminderLabel( item.type)}}
                 </span>
                 <span class="reminder-time">{{
                   formatTime(item.sendTime)
@@ -139,7 +139,7 @@ import {
   getSessionList,
   getUserDetail,
   getReminder,
-  markAsRead,
+  markReminderAsRead,
   searchMessage,
   searchUser,
   createChat,
@@ -227,10 +227,10 @@ const unreadReminderCount = computed(
   () => reminders.value.filter((item) => !item.isRead).length
 );
 const reminderTypeDict: Record<string, string> = {
-  评论: "comment",
-  点赞: "like",
-  收藏: "favorite",
-  系统消息: "admin",
+  comment: '评论',
+  like: '点赞',
+  favorite: ' 收藏',
+  system: '系统消息'
 };
 
 const sortedReminders = computed(() => {
@@ -259,8 +259,8 @@ const getReminderLabel = (type: string) => reminderTypeDict[type] ?? "未知";
 const markReminderRead = async (item: Reminder) => {
   item.isRead = true;
   try {
-    const reponse = await markAsRead('session', item.reminderId);
-    if (reponse.data.code === 200) {
+    const reponse = await markReminderAsRead( item.reminderId);
+    if (reponse.code === 200) {
       return;
     }
   } catch {
@@ -293,6 +293,8 @@ const fetchUserInfo = async () => {
   try {
     const { data } = await getUserDetail(userId as string);
     userInfo.value = data.userBrief;
+    // console.log(data),不是为啥这里data是响应体
+    // console.log(data.userBrief)
   } catch {
     ElMessage.error("获取用户数据失败");
   }
@@ -310,8 +312,6 @@ const getSessions = async () => {
     loadingSession.value = true;
     const res = await getSessionList(userInfo.value?.userId as number);
     chatBoxes.value = res.data; //类型没对齐的原因
-    // console.log('------------------')
-    //   console.log(res)
   } catch {
     ElMessage.error("获取聊天列表失败");
   } finally {
@@ -327,9 +327,10 @@ const getReminders = async () => {
 
   try {
     const response = await getReminder(userInfo.value?.userId as number);
-    if (response.data.code === 200) {
-      reminders.value = response.data.data;
-    }
+    console.log('---------------')
+    console.log(response)
+    console.log(response.data)
+      reminders.value = response.data;
   } catch {
     ElMessage.error("获取通知数据失败");
   }
@@ -407,16 +408,6 @@ const handleReminderSelect = () => {
 };
 
 
-const markSessionRead = async (sessionId: number) => {
-  const target = chatBoxes.value.find((item) => item.sessionId === Number(sessionId));
-  if (target) target.unreadCount = 0;
-  try {
-    await markAsRead('session', sessionId)
-  } catch {
-    ElMessage.error('消息已读失败')
-  }
-
-}
 
 //这个是聊天框的点击处理
 const handleSelect = async (sessionId: number) => {
@@ -426,7 +417,6 @@ const handleSelect = async (sessionId: number) => {
   const sid = Number(sessionId);
 
   currentSessionId.value = sid;
-  markSessionRead(sessionId)
 
   if (laodingMessages.value) {
     enableMsgAnim.value = true;
@@ -519,7 +509,7 @@ const handleSearch = async () => {
         .map((item) => ({
           userId: item.userId2,
           username: item.username2,
-          userAvatar: item.userAvatar2,
+          userAvatar: item.avatar2,
           email: "",
         }))
         .filter((user) => user.username?.includes(appliedInput));
@@ -674,13 +664,17 @@ const initWebSocket = () => {
 const handleSendClick = async () => {
   if (!canSendMessage.value) return;
   const receiverId = getReceiverIdBySession(currentSessionId.value);
-  await sendMessage(
+  try {
+      await sendMessage(
     currentSessionId.value,
     receiverId as number,
     chatInput.value
-  );
-  // 发送成功后立即刷新当前会话消息
-  await fetchMessages(currentSessionId.value);
+    );
+  } catch {
+    ElMessage.error('消息发送失败')
+  }
+  // 消息会通过 WebSocket 推送到当前会话，无需再次拉取列表
+  scrollToLatest()
 };
 
 watch(
@@ -705,7 +699,7 @@ watch(currentSessionId, () => {
 });
 
 onMounted(async () => {
-  await fetchUserInfo();
+  await fetchUserInfo();//要用await，因为得按顺序执行
   await getSessions();
   await getReminders();
   initWebSocket();
