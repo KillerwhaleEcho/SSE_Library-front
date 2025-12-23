@@ -69,7 +69,8 @@ const showCategoryDialog = ref(false)
 const allCategories = ref<any[]>([])
 const selectedCategoryName = ref<string | null>(null)
 const selectedCategoryId = ref<number | null>(null)
-const unreadMessage=ref(0)
+const unreadMessage = ref(0)
+const unreadReminder=ref(0)
 const socket=ref<WebSocket|null>(null)
 
 // 定义事件发射器，用于向父组件发送事件
@@ -121,51 +122,63 @@ const fetchReminders = async () => {
 
 const getUnreadCountOfMessages = async() => {
   try {
-  const res= await allApi.getUnreadMessage(userId);
+  const res= await allApi.getUnreadMessage('message',userId);
     unreadMessage.value=res.data
   } catch {
     console.log('获取未读消息数量失败')
   }
 }
 
-// const initWebSocket = () => {
-//   const token = localStorage.getItem("token");
-//   if (!token) return;
+const getUnreadCountOfReminder = async () => {
+    try {
+  const res= await allApi.getUnreadMessage('reminder',userId);
+    unreadMessage.value=res.data
+  } catch {
+    console.log('获取未读消息数量失败')
+  }
+}
 
-//   if (socket.value) {
-//     socket.value.close();
-//   }
+const initWebSocket = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
 
-//   const ws = new WebSocket(`ws://localhost:8080/api/ws?token=${token}`);
-//   socket.value = ws;
+  if (socket.value) {
+    socket.value.close();
+  }
 
-//   ws.onmessage = (event: MessageEvent) => {
-//     try {
-//       const payload = JSON.parse(event.data);
-//       if (payload.type === 'chat-message') {
-//         unreadMessage.value++
-//       }
-//     } catch (error) {
-//       console.error("解析 WebSocket 消息失败", error);
-//     }
-//   };
+  const ws = new WebSocket(`ws://localhost:8080/api/ws?token=${token}`);
+  socket.value = ws;
 
-//   ws.onopen = () => {
-//     console.log("WebSocket 连接成功");
-//   };
-//   ws.onerror = (event) => {
-//     console.error("WebSocket 发生错误", event);
-//   };
-//   ws.onclose = () => {
-//     socket.value = null;
-//   };
-// };
+  ws.onmessage = (event: MessageEvent) => {
+    try {
+      const payload = JSON.parse(event.data);
+      if (payload.type === 'chat-message') {
+        unreadMessage.value++
+      } else {
+        unreadReminder.value++
+      }
+    } catch (error) {
+      console.error("解析 WebSocket 消息失败", error);
+    }
+  };
+
+  ws.onopen = () => {
+    console.log("WebSocket 连接成功");
+  };
+  ws.onerror = (event) => {
+    console.error("WebSocket 发生错误", event);
+  };
+  ws.onclose = () => {
+    socket.value = null;
+  };
+};
 
 
 onMounted(() => {
   fetchReminders();
   getUnreadCountOfMessages()
-  // initWebSocket()
+  getUnreadCountOfReminder()
+  initWebSocket()
 })
 
 onUnmounted(() => {

@@ -67,10 +67,7 @@ export const registerAPI = (
   return request({
     url: '/register',
     method: 'post',
-    data,
-    headers: {
-      'Content-Type': 'multipart/form-data' // 明确指定
-    }
+    data
   })
 }
 

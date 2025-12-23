@@ -299,6 +299,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElForm, ElUpload } from 'element-plus';
+import { User, Lock, Message, Promotion as Code } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { sendEmailCode,  resetPasswordAPI } from '@/api/user'
@@ -505,35 +506,21 @@ const handleLogin = async () => {
   }
 };
 
-const avatarBase64 = ref<string>('')
 
-const readFileAsDataURL = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(new Error('读取文件失败'))
-    reader.readAsDataURL(file)
-  })
+const avatarRawFile=ref()
 
 const handleAvatarChange = async (uploadFile: UploadFile) => {
-  const file = uploadFile.raw//这样之后才拿到真正的File对象
-  if (!file) return
-  if (!file.type.startsWith('image/')) {
+   avatarRawFile.value = uploadFile.raw//这样之后才拿到真正的File对象
+  if (!avatarRawFile) return
+  if (!avatarRawFile.value.type.startsWith('image/')) {
     ElMessage.error('请选择图片文件')
     return
   }
-  if (file.size > 2 * 1024 * 1024) {
+  if (avatarRawFile.value.size > 2 * 1024 * 1024) {
     ElMessage.error('图片大小不能超过 2MB')
     return
   }
 
-  try {
-    avatarBase64.value = await readFileAsDataURL(file)
-    console.log("avatarBase64=",avatarBase64)
-    avatarPreview.value = avatarBase64.value
-  } catch (err: any) {
-    ElMessage.error(err?.message || '头像上传失败，请重试')
-  }
 }
 
 // 注册处理函数中调用方式调整
@@ -543,7 +530,7 @@ const handleRegister = async () => {
       ElMessage.warning('请检查并完善表单信息');
       return;
     }
-    console.log("注册表单：",registerForm);
+    // console.log("注册表单：",registerForm);
     try {
       const registerData = new FormData()
 
@@ -551,10 +538,14 @@ const handleRegister = async () => {
       registerData.append('password', registerForm.password)
       registerData.append('email', registerForm.email)
       registerData.append('Code', registerForm.Code)
-      if (avatarBase64.value) {
-        registerData.append('userAvatar', avatarBase64.value)
+      if (avatarRawFile.value) {
+        registerData.append('userAvatar', avatarRawFile.value)
       }
-      console.log("注册表单为:",registerData)
+      console.log('---------------')
+      for (const [k, v] of registerData.entries()) {
+        console.log(k, v)
+      }
+
       const registerRes = await userStore.register(registerData);
       ElMessage.closeAll();
       console.log(" registerRes =", registerRes)
