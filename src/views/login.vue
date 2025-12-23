@@ -131,17 +131,18 @@
           />
         </el-form-item>
         <!-- 新增头像上传行 -->
+        <!-- 新增头像上传行 -->
         <el-form-item class="avatar-upload-row">
           <el-row :gutter="12" class="avatar-row">
             <!-- 头像显示框（方形） -->
             <el-col :span="6">
               <div class="avatar-preview">
-                <img 
-                  v-if="registerForm.userAvatar" 
-                  :src="registerForm.userAvatar" 
+                <img
+                  v-if="avatarPreview"
+                  :src="avatarPreview"
                   alt="用户头像"
                   class="avatar-img"
-                >
+                />
                 <div v-else class="avatar-placeholder">
                   <el-icon class="avatar-icon"><User /></el-icon>
                 </div>
@@ -149,22 +150,11 @@
             </el-col>
             <!-- 上传按钮 -->
             <el-col :span="18">
-              <el-upload
-                class="avatar-uploader"
-                action="javascript: void(0);"
-                :show-file-list="false"
-                :on-change="handleAvatarChange"
-                :before-upload="beforeAvatarUpload"
-                :http-request="customUpload"
-              >
-                <el-button 
-                  type="primary" 
-                  round 
-                  class="upload-button"
-                >
-                  <el-icon><Upload /></el-icon>
-                  选择头像
-                </el-button>
+              <el-upload class="avatar-uploader" action="#" :auto-upload="false" :show-file-list="false" accept="image/*"
+                @change="handleAvatarChange">
+                <!-- 默认情况下：组件会把选择的文件传给内置的 HTTP 上传逻辑 + handle 函数 ；所以需要禁用自动上传-->
+                <!-- 这个组件内部会维护一个文件列表（因为可能一次选择多个文件），如果是change事件，对于你这里的场景，每次选择文件后，内部文件列表会新增一个文件，然后触发函数；select事件是在用户选择文件后立即触发，但此时文件还没有被添加到组件的内部文件列表中，选择多个文件就会多次触发。 -->
+                <el-button size="small" type="primary" class="upload-button">选择头像</el-button>
                 <p class="upload-hint">支持JPG、PNG格式，不超过2MB</p>
               </el-upload>
             </el-col>
@@ -311,7 +301,8 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElForm, ElUpload } from 'element-plus';
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { sendEmailCode,  resetPassword } from '@/api/user'
+import { sendEmailCode,  resetPasswordAPI } from '@/api/user'
+import type { UploadFile, UploadRequestOptions } from 'element-plus';
 
 // 状态控制变量
 const hasInteracted = ref(false); // 是否已点击屏幕
@@ -332,9 +323,14 @@ const registerForm = reactive({
   username: '',
   password: '',
   confirmPassword: '',
-  userAvatar: '',
   Code: ''
 });
+
+/** 头像文件（真正上传的文件） */
+const avatarFile = ref<File | null>(null)
+
+/** 头像预览 */
+const avatarPreview = ref<string>('')
 
 const forgotForm = reactive({
   email: '',
@@ -446,39 +442,6 @@ const switchToForgot = () => {
   isForgot.value = true;
 };
 
-// 处理头像上传
-const handleAvatarChange = (uploadFile: any) => {
-  // 这里使用临时URL预览，实际项目中需要上传到服务器
-  registerForm.userAvatar = URL.createObjectURL(uploadFile.raw);
-};
-
-const customUpload = (params: UploadProps.HttpRequestOptions) => {
-  const file = params.file; // 文件对象（带类型）
-  if (!file) return;
-
-  // 将文件转为 Base64 并绑定到表单
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    // 类型断言（确保 e.target.result 是字符串）
-    registerForm.userAvatar = e.target?.result as string;
-  };
-  reader.readAsDataURL(file);
-};
-
-// 上传前验证
-const beforeAvatarUpload = (file: File) => {
-  const isJPGOrPNG = file.type === 'image/jpeg' || file.type === 'image/png';
-  const isLt2M = file.size / 1024 / 1024 < 2;
-
-  if (!isJPGOrPNG) {
-    ElMessage.error('仅支持JPG/PNG格式的图片');
-  }
-  if (!isLt2M) {
-    ElMessage.error('图片大小不能超过2MB');
-  }
-  return isJPGOrPNG && isLt2M;
-};
-
 // 获取验证码
 const getVerificationCode = async () => {
   const email = isRegister.value ? registerForm.email : forgotForm.email;
@@ -542,6 +505,37 @@ const handleLogin = async () => {
   }
 };
 
+const avatarBase64 = ref<string>('')
+
+const readFileAsDataURL = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('读取文件失败'))
+    reader.readAsDataURL(file)
+  })
+
+const handleAvatarChange = async (uploadFile: UploadFile) => {
+  const file = uploadFile.raw//这样之后才拿到真正的File对象
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    ElMessage.error('请选择图片文件')
+    return
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 2MB')
+    return
+  }
+
+  try {
+    avatarBase64.value = await readFileAsDataURL(file)
+    console.log("avatarBase64=",avatarBase64)
+    avatarPreview.value = avatarBase64.value
+  } catch (err: any) {
+    ElMessage.error(err?.message || '头像上传失败，请重试')
+  }
+}
+
 // 注册处理函数中调用方式调整
 const handleRegister = async () => {
   registerFormRef.value?.validate(async (valid) => {
@@ -551,14 +545,16 @@ const handleRegister = async () => {
     }
     console.log("注册表单：",registerForm);
     try {
-      const registerData = {
-        email: registerForm.email,
-        username: registerForm.username,
-        userAvatar: registerForm.userAvatar,
-        password: registerForm.password,
-        Code: registerForm.Code
-      };
+      const registerData = new FormData()
 
+      registerData.append('username', registerForm.username)
+      registerData.append('password', registerForm.password)
+      registerData.append('email', registerForm.email)
+      registerData.append('Code', registerForm.Code)
+      if (avatarBase64.value) {
+        registerData.append('userAvatar', avatarBase64.value)
+      }
+      console.log("注册表单为:",registerData)
       const registerRes = await userStore.register(registerData);
       ElMessage.closeAll();
       console.log(" registerRes =", registerRes)

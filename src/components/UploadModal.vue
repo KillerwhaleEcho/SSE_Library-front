@@ -18,7 +18,7 @@
       :rules="formRules"
     >
       <!-- 文件上传 -->
-      <el-form-item label="要上传的文件" prop="file" required>
+      <el-form-item label="要上传的文件" prop="file">
         <el-upload
           action="#"
           :on-change="handleFileChange"
@@ -34,7 +34,7 @@
       </el-form-item>
 
       <!-- 封面图片上传（带预览功能） -->
-      <el-form-item label="封面图片" prop="cover" required>
+      <el-form-item label="封面图片" prop="cover">
         <el-upload
           action="#" 
           :on-change="handleCoverChange"

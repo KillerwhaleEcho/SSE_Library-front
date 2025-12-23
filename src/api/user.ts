@@ -16,7 +16,7 @@ interface LoginParams {
 interface RegisterParams {
   email: string
   username: string
-  userAvatar: string
+  userAvatar: File
   password: string
   Code: string
 }
@@ -47,7 +47,9 @@ export const loginAPI = (data: LoginParams): Promise<ApiResponse<{
   })
 }
 
-export const registerAPI = (data: RegisterParams): Promise<ApiResponse<{
+export const registerAPI = (
+  data: FormData
+): Promise<ApiResponse<{
   userId: number
   username: string
   userAvatar: string
@@ -59,10 +61,12 @@ export const registerAPI = (data: RegisterParams): Promise<ApiResponse<{
   return request({
     url: '/register',
     method: 'post',
-    data
+    data,
+    headers: {
+      'Content-Type': 'multipart/form-data' // 明确指定
+    }
   })
 }
-
 
 export const sendEmailCode = (email: string, usage: string): Promise<{
   code: number;

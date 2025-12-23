@@ -77,22 +77,9 @@ const token = ref(localStorage.getItem('token') || '')
     }
   }
 
-  const register = async (data: {
-    username: string
-    email: string
-    password: string
-    userAvatar: string
-  }) => {
+  const register = async (data: FormData) => {
     try {
-      // 处理角色映射（前端mentor对应后端tutor）
-      const requestData = {
-        username: data.username,
-        email: data.email,
-        password: data.password,
-        userAvatar: data.userAvatar,
-      }
-
-      const response = await registerAPI(requestData)
+      const response = await registerAPI(data)
 
       if (response.code === 200) {
         return {
@@ -114,43 +101,6 @@ const token = ref(localStorage.getItem('token') || '')
     }
   }
 
-  const sendEmailCodeAction = async (email: string) => {
-    try {
-      const response = await sendEmailCode(email)
-      return response.code === 200;
-    } catch (error) {
-      console.error('发送验证码失败:', error)
-      throw error
-    }
-  }
-
-  // 在useAuthStore中添加
-  const resetPasswordAction = async (data: {
-    email: string;
-    newPassword: string;
-  }) => {
-    try {
-      const response = await resetPasswordAPI(data)
-      if (response.code === 200) {
-        return {
-          success: true,
-          message: '密码重置成功'
-        }
-      } else {
-        return {
-          success: false,
-          message: response.message || '密码重置失败'
-        }
-      }
-    } catch (error) {
-      console.error('密码重置失败:', error)
-      return {
-        success: false,
-        message: '请稍后重试'
-      }
-    }
-  }
-
   const logout = () => {
     token.value = ''
     userInfo.value = null
@@ -168,8 +118,6 @@ const token = ref(localStorage.getItem('token') || '')
     userInfo,
     login,
     register,
-    sendEmailCode: sendEmailCodeAction,
-    resetPassword: resetPasswordAction,
     logout,
     clearToken
   }

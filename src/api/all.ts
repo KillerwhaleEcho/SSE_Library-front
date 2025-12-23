@@ -91,8 +91,8 @@ export interface Document {
 }
 
 export interface UploadFile {
-  file: File,
-  cover: File,
+  file?: File,
+  cover?: File,
   categoryId: number,
   type: 'book' | 'file' | 'video',
   name: string,
@@ -101,7 +101,6 @@ export interface UploadFile {
   author: string | '默认佚名',
   createYear: string | '未知',
   uploaderId: number,
-  uploadTime: Date,
   introduction: string | '无',
   videoURL: string | '无'
 }
@@ -152,8 +151,6 @@ export interface chatBox {
 export interface Post {
   postId: number;
   senderId: number;
-  senderName: string;
-  senderAvatar: string;
   title: string;
   content: string;
   collectCount: number;
