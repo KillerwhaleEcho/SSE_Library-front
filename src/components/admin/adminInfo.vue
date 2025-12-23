@@ -212,8 +212,8 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
     ElMessage.error('请选择图片文件')
     return
   }
-  if (file.size > 2 * 1024 * 1024) {
-    ElMessage.error('图片大小不能超过 2MB')
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 10MB')
     return
   }
 

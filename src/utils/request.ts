@@ -16,14 +16,15 @@ const request: AxiosInstance = axios.create({
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // 可以在这里添加token等认证信息
+    config.headers = config.headers || {};
     const token = localStorage.getItem('token');
     if (token) {
-      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // 如果是 FormData，不设置 Content-Type，让浏览器自动设置
+    // 如果是FormData，让浏览器自动补全 boundary；否则默认 JSON
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type']
+      delete (config.headers as any)['content-type']
     } else {
       config.headers['Content-Type'] = 'application/json'
     }

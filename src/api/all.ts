@@ -266,7 +266,7 @@ export const getBookList = (is_suggest: boolean, categoryId?: number) => {
 };
 
 // 修改资料状态
-export const updateFileStatus = (docId: number, newStatus: string) => { return service.put<ApiResponse<null>>('/admin/document/status', { docId, newStatus }) }
+export const updateFileStatus = (docId: number, status: string) => { return service.put<ApiResponse<null>>('/admin/document/status', { docId, status }) }
 
 
 // 6. 修改资料信息
@@ -430,8 +430,8 @@ export const sendMessageInterface = (sessionId: number, receiverId: number, cont
 }
 
 //获取总未读消息数量
-export const getUnreadMessage = (userId: number) => {
-  return service.get<ApiResponse<number>>('/unreadMessage',{params:{userId} })
+export const getUnreadMessage = (type:string,id: number) => {
+  return service.get<ApiResponse<number>>('/unreadMessage',{params:{type,id} })
 }
 
 //创建聊天
