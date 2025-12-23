@@ -82,7 +82,7 @@ CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选�
                                         <div class="reply-parent-header">
                                             <span class="reply-parent-name">{{ item.parent.commenter.username }}</span>
                                             <span class="reply-parent-time">{{ formattedDate(item.parent.createdAt)
-                                                }}</span>
+                                            }}</span>
                                         </div>
                                         <p class="reply-parent-content">{{ item.parent.content || '（原评论暂无内容）' }}</p>
                                     </div>
@@ -504,17 +504,6 @@ const buildCommenterPayload = (): UserBrief | null => {
     }
 }
 
-const formatNow = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = formatTwoDigit(now.getMonth() + 1)
-    const day = formatTwoDigit(now.getDate())
-    const hours = formatTwoDigit(now.getHours())
-    const minutes = formatTwoDigit(now.getMinutes())
-    const seconds = formatTwoDigit(now.getSeconds())
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
-}
-
 const ensureCommentPayload = (source: 'main' | 'reply') => {
     const commenter = buildCommenterPayload()
     if (!commenter) {
@@ -542,7 +531,6 @@ const ensureCommentPayload = (source: 'main' | 'reply') => {
             commenter,
             sourceData: sourcePayload,
             content,
-            createTime: formatNow(),
             parentId,
         } as CreateCommentPayload,
         content,
@@ -564,6 +552,11 @@ const postComment = async (source: 'main' | 'reply') => {
             replyingContent.value = ''
             replyingTo.value = null
             replyingModalVisible.value = false
+        }
+        try {
+            await authStore.refreshUserBrief()
+        } catch (error) {
+            console.warn('刷新用户信息失败', error)
         }
         ElMessage.success(response.message || '评论发表成功')
     } catch (error: any) {

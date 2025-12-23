@@ -28,6 +28,12 @@ export interface UserAll {
   historyList: InfoBrief[] | null
 }
 
+export interface UpdateUserProfilePayload {
+  userName?: string | null
+  email?: string | null
+  userAvatar?: File | null
+}
+
 export const loginAPI = (data: LoginParams): Promise<ApiResponse<{
   token: string
   user: {
@@ -105,5 +111,27 @@ export const getUserAll = (userId: number | string): Promise<ApiResponse<UserAll
 export const getUserUploadDoc = (userId: number | string): Promise<ApiResponse<InfoBrief[]>> => {
   return service.get('/user/document', {
     params: { userId }
+  })
+}
+
+export const updateUserProfile = (
+  userId: number | string,
+  payload: UpdateUserProfilePayload
+): Promise<ApiResponse<{ userBrief: UserBrief }>> => {
+  if (payload.userAvatar instanceof File) {
+    const formData = new FormData()
+    if (payload.userName !== undefined) formData.append('userName', payload.userName ?? '')
+    if (payload.email !== undefined) formData.append('email', payload.email ?? '')
+    formData.append('userAvatar', payload.userAvatar)
+
+    return service.put(`/user/${userId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  }
+
+  return service.put(`/user/${userId}`, {
+    userName: payload.userName ?? null,
+    email: payload.email ?? null,
+    userAvatar: null,
   })
 }

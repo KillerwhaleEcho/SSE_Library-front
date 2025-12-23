@@ -104,9 +104,10 @@
                     </div>
                 </div>
                 <div v-if="activeDiscussionTab === 'comment'" class="discussion-panel">
-                    <CommentSection source-type="document" :source-id="documentNumericId"
-                        :source-data="documentSourceData" :viewer="commentViewer" :show-editor="true"
-                        :show-comment-user="true" :show-reply-button="true" :show-source-name="false" />
+                    <CommentSection v-if="documentDetail && documentNumericId !== null" source-type="document"
+                        :source-id="documentNumericId" :source-data="documentSourceData" :viewer="commentViewer"
+                        :show-editor="true" :show-comment-user="true" :show-reply-button="true"
+                        :show-source-name="false" />
                 </div>
                 <div v-else class="discussion-panel">
                     <div v-if="documentPosts.length" class="post-list">
@@ -175,8 +176,8 @@ const documentSourceData = computed<CommentSourceData | null>(() => {
         name: brief.value.name || `文档 #${documentNumericId.value}`,
     }
 })
-const coverSrc = computed(() => documentDetail.value?.cover || defaultCover)
-const canPreview = computed(() => brief.value?.type === 'book' && Boolean(brief.value?.URL))
+const coverSrc = computed(() => brief.value?.cover || defaultCover)
+const canPreview = computed(() => brief.value?.type === 'book' && Boolean(documentDetail.value?.URL))
 const tags = computed(() => documentDetail.value?.tags ?? [])
 const previewButtonText = computed(() => (previewLoading.value ? '加载中...' : '预览'))
 const isAdminViewer = computed(() => userInfo.value?.role === 'admin')
@@ -258,11 +259,17 @@ const ensureDocumentId = (raw: unknown): string | null => {
     return null
 }
 
+const updatePageTitle = () => {
+    const title = brief.value?.name || '文档'
+    document.title = `${title} - 文档详情`
+}
+
 const loadDocumentDetail = async (id: string) => {
     detailLoading.value = true
     try {
         const response = (await getDocumentDetail(id)) as unknown as ApiResponse<Document>
         documentDetail.value = response.data ?? null
+        updatePageTitle()
     } catch (error: any) {
         documentDetail.value = null
         ElMessage.error(error?.message || '获取文档详情失败')
@@ -272,7 +279,7 @@ const loadDocumentDetail = async (id: string) => {
 }
 
 const buildDispositionUrl = (disposition: 'inline' | 'attachment') => {
-    const base = brief.value?.URL
+    const base = documentDetail.value?.URL
     if (!base) return null
     const hasQuery = base.includes('?')
     const separator = hasQuery ? '&' : '?'
@@ -308,7 +315,7 @@ const handlePreview = async () => {
         ElMessage.info('该资料暂不支持在线预览')
         return
     }
-    const sourceUrl = brief.value?.URL
+    const sourceUrl = documentDetail.value?.URL
     if (!sourceUrl) {
         ElMessage.warning('暂无可用的预览链接')
         return
@@ -367,6 +374,11 @@ const handleFavorite = async () => {
     try {
         await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
         await refreshFavoriteJudgement()
+        try {
+            await authStore.refreshUserBrief()
+        } catch (error) {
+            console.warn('刷新用户信息失败', error)
+        }
         ElMessage.success(wasFavorited ? '取消收藏成功' : '收藏成功')
     } catch (error: any) {
         ElMessage.error(error?.message || (wasFavorited ? '取消收藏失败' : '收藏失败'))
@@ -444,6 +456,12 @@ watch(
     async () => {
         await refreshFavoriteJudgement()
     },
+    { immediate: true },
+)
+
+watch(
+    () => brief.value?.name,
+    () => updatePageTitle(),
     { immediate: true },
 )
 

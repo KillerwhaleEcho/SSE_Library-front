@@ -1,16 +1,7 @@
-import { type Document, type message, type chatBox, type Reminder, type UserBrief } from '@/api/all.ts'
+import { type Document, type message, type chatBox, type Reminder} from '@/api/all.ts'
 import { type CommentItem, type UserRow } from '@/api/admin';
 import avatarIcon from '@/assets/icon_user.png'
 
-export const fallbackAdminInfo: UserBrief = {
-  userId: 1,
-  username: 'Sample Admin',
-  userAvatar: '',
-  status: 'active',
-  createTime: '2024-01-01',
-  email: 'admin@example.com',
-  role: 'admin',
-}
 
 
 export const MOCK_DOCUMENTS: Document[] = [

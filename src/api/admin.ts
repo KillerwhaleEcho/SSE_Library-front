@@ -1,13 +1,14 @@
-import request from '../utils/request'
-import {type UserBrief } from './all.ts'
-import { type InfoBrief, type User } from './all.ts'
+//写接口时如果用request拿到的是res.data响应体，如果用service那拿到的是完整的响应，得res.data才能拿到响应体
+import request from "../utils/request";
+import service from "@/utils/service.ts";
+import { type UserBrief } from "./all.ts";
+import { type InfoBrief, type User } from "./all.ts";
 
 interface ApiResponse<T = any> {
-  code: number
-  message?: string
-  data: T
+  code: number;
+  message?: string;
+  data: T;
 }
-
 
 // 呈现管理员信息时的数据接口
 export type UserRow = {
@@ -26,87 +27,80 @@ export interface CommentItem {
   create_at: string;
 }
 
-
-//获取管理员信息相关
-export const getAdminDetail = (
-  userId: string
-): Promise<User> => {
+//获取管理员信息
+export const getAdminDetail = (userId: string): Promise<User> => {
   return request({
     url: `/user/${userId}`,
-    method: 'get',
-  })
-}
-
-
+    method: "get",
+  });
+};
 
 //更新管理员信息相关
-export interface AdminUpdatePayload {
-  userName?: string | null
-  userAvatar?: string | Blob | null
-  email?: string | null
-}
+//经过测试后端返回的data里没有再嵌套一层userBrief，和前端一致
+export type AdminUpdatePayload =
+  | {
+      userName?: string | null;
+      userAvatar?: string | null;
+      email?: string | null;
+    }
+  | FormData;
 
-export interface AdminUpdateResponse {
-  userBrief: UserBrief
-}
 
 export const updateAdminProfile = (
   userId: string,
-  data: AdminUpdatePayload
-): Promise<ApiResponse<AdminUpdateResponse>> => {
-  return request({
+  data: AdminUpdatePayload,
+): Promise<ApiResponse<UserBrief>> => {
+  const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+  return service({
     url: `/user/${userId}`,
-    method: 'put',
+    method: "put",
     data,
-  })
-}
-
+    headers: isFormData
+      ? { 'Content-Type': 'multipart/form-data' }
+      : { 'Content-Type': 'application/json' },
+  });
+};
 
 //更改用户状态相关
 export interface UpdateUserStatusPayload {
-  userId: number
-  status: 'active' | 'disabled'
+  userId: number;
+  status: "active" | "disabled";
 }
-
 
 export const updateUserStatus = (
-  payload: UpdateUserStatusPayload
+  payload: UpdateUserStatusPayload,
 ): Promise<ApiResponse<UserBrief>> => {
   return request({
-    url: '/admin/user',
-    method: 'put',
-    data: payload,
-  })
-}
-
+    url: "/admin/user",
+    method: "put",
+    params: payload,
+  });
+};
 
 //管理员获取用户列表
 export const getUserList = (): Promise<ApiResponse<UserBrief[]>> => {
   return request({
-    url: '/admin/usersList',
-    method: 'get',
-  })
-}
+    url: "/admin/usersList",
+    method: "get",
+  });
+};
 
 //管理员获取评论列表
-export type CommentListResponse = ApiResponse<CommentItem[]>
 
-export const getAdminComments = (): Promise<CommentListResponse> => {
+export const getAdminComments = (): Promise<ApiResponse<CommentItem[]>> => {
   return request({
-    url: '/admin/comments',
-    method: 'get',
-  })
-}
-
-
+    url: "/admin/comments",
+    method: "get",
+  });
+};
 
 //管理员删除评论
 export const deleteAdminComment = (documentId: number): Promise<ApiResponse<unknown>> => {
   return request({
-    url: '/admin/comment',
-    method: 'delete',
+    url: "/admin/comment",
+    method: "delete",
     params: {
       document_id: documentId,
     },
-  })
-}
+  });
+};

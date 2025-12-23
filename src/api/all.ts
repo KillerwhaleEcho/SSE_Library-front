@@ -1,5 +1,7 @@
+import { my } from 'element-plus/es/locales.mjs'
 import service from '../utils/service'
 import type { DocumentEditForm } from '@/types/api'
+import { useId } from 'vue'
 
 export interface ApiResponse<T = any> {
   code: number
@@ -12,7 +14,7 @@ export interface UserBrief {
   userId: number;
   username: string;
   userAvatar: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'disabled';
   createTime: string;
   email: string;
   role: string;
@@ -76,14 +78,14 @@ export interface InfoBrief {
   category?: string;
   collections: number;
   readCounts: number;
-  URL: string;
+  cover?: string;
 }
 export interface Document {
   infoBrief: InfoBrief;
   bookISBN?: string;
   author?: string;
   uploader?: UserBrief;
-  cover?: string;
+  URL?: string;
   tags?: string[];
   introduction?: string;
   createYear?: string;
@@ -137,11 +139,11 @@ export interface message {
 export interface chatBox {
   sessionId: number,
   userId1: number,
-  userAvatar1: string,
-  userName1: string,
+  avatar1: string,
+  username1: string,
   userId2: number,
-  userAvatar2: string,
-  userName2: string,
+  avatar2: string,
+  username2: string,
   lastMessage: string,
   lastTime: string,
   unreadCount: number
@@ -358,8 +360,8 @@ export const getReminders = (userId: number) => {
 
 // 13. 标记提醒为已读
 export const markReminderAsRead = (reminderId: number) => {
-  return service.post<ApiResponse<null>>('/markReminderRead', {
-    reminderId,
+  return service.post<ApiResponse<any>>('/markRead', {
+    reminderId
   });
 };
 
@@ -368,7 +370,6 @@ export interface CreateCommentPayload {
   commenter: UserBrief;
   sourceData: CommentSourceData;
   content: string;
-  createTime: string;
   parentId: number | null;
 }
 
@@ -459,18 +460,36 @@ export const updateDocumentStatus = (payload: { documentId: number; status: 'ope
 
 // 发送消息,接口名加上interface避免重名
 export const sendMessageInterface = (sessionId: number, receiverId: number, content: string) => {
-  return service.post<ApiResponse<{ senssionId: number, receiverId: number, content: string }>>('/char/message', { sessionId, receiverId, content })
+  return service.post<ApiResponse<{code:number,data:any }>>('/chat/message', { sessionId, receiverId, content })
 }
+
+//获取总未读消息数量
+export const getUnreadMessage = (userId: number) => {
+  return service.get<ApiResponse<number>>('/unreadMessage',{params:{userId} })
+}
+
+//创建聊天
+export const createChat = (myId: number, oppositeId: number) => {
+  return service.post<ApiResponse<chatBox>>("/createChat", {
+    myId,
+    oppositeId,
+  });
+};
+
 
 //获取聊天回话列表
 export const getSessionList = (userId: number) => {
-  return service.get<ApiResponse<chatBox[]>>('/chat/sessions', { params: { userId } })
+  return service.get<ApiResponse<chatBox[]>>('/chat/sessions', { params: { userId }  })
 }
 
 
 //获取聊天记录
 export const getMessageList = (sessionId: number, userId: number) => {
-  return service.get<ApiResponse<message[]>>('/chat/messages', { params: { sessionId, userId } })
+  const config = {
+    params: { sessionId, userId },
+    noLoading: true, // 用 config.noLoading 标记，避免自定义 header 触发 CORS
+  }
+  return service.get<ApiResponse<message[]>>('/chat/messages', config)
 }
 
 //搜索聊天记录
@@ -478,16 +497,16 @@ export const searchMessage = (userId: number, searchKey: string) => {
   return service.get<ApiResponse<message[]>>('/chat/search', { params: { userId, searchKey } })
 }
 
+//搜索用户
+export const searchUser = (userId?: number, username?: string) => {
+  return service.get<ApiResponse<UserBrief[]>>("/admin/user",{params:{userId,username}});
+}
+
 //获取提醒（通知）
 export const getReminder = (userId: number) => {
   return service.get<ApiResponse<Reminder[]>>('/getReminder', { params: { userId } })
 }
 
-
-//标记消息已读
-export const markReminderRead = (reminderId: number) => {
-  return service.put<ApiResponse<string>>('/markReminderRead', { reminderId }, { headers: { noLoading: true } })
-}// 给“轻量请求”加一个开关，不显示全屏 Loading
 
 
 // 获取用户的详细信息

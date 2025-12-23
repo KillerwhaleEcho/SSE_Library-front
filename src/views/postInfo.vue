@@ -69,8 +69,9 @@
 
 			<section class="comments-section">
 				<h2 class="section-title">评论区</h2>
-				<CommentSection source-type="post" :source-id="postNumericId" :source-data="postSourceData"
-					:show-editor="true" :show-comment-user="true" :show-reply-button="true" :show-source-name="false" />
+				<CommentSection v-if="postDetail && postNumericId !== null" source-type="post"
+					:source-id="postNumericId" :source-data="postSourceData" :show-editor="true"
+					:show-comment-user="true" :show-reply-button="true" :show-source-name="false" />
 			</section>
 		</div>
 	</div>
@@ -157,6 +158,11 @@ const postContentBlocks = computed(() => {
 		.filter((item) => item.length > 0)
 })
 
+const updatePageTitle = () => {
+	const title = postDetail.value?.title || '帖子'
+	document.title = `${title} - 帖子详情`
+}
+
 const postNumericId = computed<number | null>(() => {
 	const rawId = postDetail.value?.postId ?? normalizedPostId.value
 	return typeof rawId === 'number' && Number.isFinite(rawId) ? rawId : null
@@ -197,6 +203,7 @@ const loadPostDetail = async (id: number) => {
 	try {
 		const response = (await getPostDetail(id)) as unknown as ApiResponse<PostDetail>
 		postDetail.value = response.data ?? null
+		updatePageTitle()
 	} catch (error: any) {
 		postDetail.value = null
 		ElMessage.error(error?.message || '获取帖子详情失败')
@@ -224,6 +231,11 @@ const handleLike = async () => {
 	try {
 		await (wasLiked ? deleteUserLikePost(payload) : postUserLikePost(payload))
 		await refreshLikeJudgement()
+		try {
+			await authStore.refreshUserBrief()
+		} catch (error) {
+			console.warn('刷新用户信息失败', error)
+		}
 		ElMessage.success(wasLiked ? '已取消点赞' : '点赞成功')
 	} catch (error: any) {
 		ElMessage.error(error?.message || (wasLiked ? '取消点赞失败' : '点赞失败'))
@@ -251,6 +263,11 @@ const handleFavorite = async () => {
 	try {
 		await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
 		await refreshFavoriteJudgement()
+		try {
+			await authStore.refreshUserBrief()
+		} catch (error) {
+			console.warn('刷新用户信息失败', error)
+		}
 		ElMessage.success(wasFavorited ? '已取消收藏' : '收藏成功')
 	} catch (error: any) {
 		ElMessage.error(error?.message || (wasFavorited ? '取消收藏失败' : '收藏失败'))
@@ -321,6 +338,12 @@ watch(
 	async () => {
 		await Promise.all([refreshFavoriteJudgement(), refreshLikeJudgement()])
 	},
+	{ immediate: true },
+)
+
+watch(
+	() => postDetail.value?.title,
+	() => updatePageTitle(),
 	{ immediate: true },
 )
 </script>

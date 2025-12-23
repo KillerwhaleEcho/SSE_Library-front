@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { loginAPI, registerAPI, sendEmailCode,  resetPasswordAPI } from '../api/user'
+import { loginAPI, registerAPI, sendEmailCode, resetPasswordAPI, getUserAll, type UserAll } from '../api/user'
 
 
 
@@ -36,11 +36,45 @@ interface documentInfo {
   introduction?: string
   tags?: string[]
   createYear?: string
-} 
+}
+
+const normalizeUserBrief = (user: Partial<UserInfo> | Partial<UserAll['userBrief']> | null | undefined): UserInfo | null => {
+  if (!user) return null
+  return {
+    userId: Number(user.userId ?? 0),
+    username: String(user.username ?? ''),
+    userAvatar: String(user.userAvatar ?? ''),
+    status: String(user.status ?? 'active'),
+    email: String(user.email ?? ''),
+    role: String(user.role ?? ''),
+    createTime: String(user.createTime ?? ''),
+  }
+}
+
+const loadUserBriefFromStorage = (): UserInfo | null => {
+  const stored = localStorage.getItem('userBrief')
+  if (!stored) return null
+  try {
+    const parsed = JSON.parse(stored) as Partial<UserInfo>
+    return normalizeUserBrief(parsed)
+  } catch (error) {
+    console.warn('Failed to parse stored userBrief:', error)
+    return null
+  }
+}
+
 
 export const useAuthStore = defineStore('auth', () => {
-const token = ref(localStorage.getItem('token') || '')
-  const userInfo = ref<UserInfo | null>(null)
+  const token = ref(localStorage.getItem('token') || '')
+  const userInfo = ref<UserInfo | null>(loadUserBriefFromStorage())
+
+  const persistUserBrief = (brief: UserInfo | null) => {
+    if (!brief) return
+    userInfo.value = brief
+    localStorage.setItem('userBrief', JSON.stringify(brief))
+    localStorage.setItem('userId', String(brief.userId ?? ''))
+    localStorage.setItem('role',String(brief.role??''))
+  }
 
   const login = async (email: string, password: string) => {
     try {
@@ -51,14 +85,9 @@ const token = ref(localStorage.getItem('token') || '')
 
       if (response.code === 200) {
         token.value = response.data.token
-        userInfo.value = {
-          userId: response.data.user.userId ?? 0,
-          username: String(response.data.user.username ?? ''),
-          userAvatar: response.data.user.userAvatar,
-          status: response.data.user.status,
-          email: response.data.user.email,
-          role: response.data.user.role,
-          createTime: response.data.user.createTime,
+        const brief = normalizeUserBrief(response.data.user)
+        if (brief) {
+          persistUserBrief(brief)
         }
         localStorage.setItem('token', response.data.token)
         return { success: true, data: response.data }
@@ -105,7 +134,31 @@ const token = ref(localStorage.getItem('token') || '')
     token.value = ''
     userInfo.value = null
     localStorage.removeItem('token')
-    localStorage.removeItem('admin_token')
+    localStorage.removeItem('userBrief')
+    localStorage.removeItem('userId')
+    localStorage.removeItem('role')
+  }
+
+  const refreshUserBrief = async () => {
+    const targetUserId = userInfo.value?.userId || Number(localStorage.getItem('userId') || 0)
+    if (!targetUserId) {
+      return { success: false, message: '暂无可刷新用户信息' }
+    }
+
+    try {
+      const response = await getUserAll(targetUserId)
+      if (response.code === 200 && response.data?.userBrief) {
+        const brief = normalizeUserBrief(response.data.userBrief)
+        if (brief) {
+          persistUserBrief(brief)
+          return { success: true, data: brief }
+        }
+      }
+      return { success: false, message: response.message || '刷新用户信息失败' }
+    } catch (error) {
+      console.error('刷新用户信息失败:', error)
+      return { success: false, message: '刷新用户信息失败' }
+    }
   }
 
   // 供组件直接调用的简洁别名
@@ -119,6 +172,7 @@ const token = ref(localStorage.getItem('token') || '')
     login,
     register,
     logout,
-    clearToken
+    clearToken,
+    refreshUserBrief
   }
 })

@@ -5,19 +5,19 @@
       <div class="reminder" @click="handleReminderSelect">
         <span>通知</span>
         <figure v-if="unreadReminderCount" class="reminder-icon">
-          <img :src="reminderIconUrl" alt="未读" width="40px">
+          <img :src="reminderIconUrl" alt="未读" width="40px" />
           <span>{{ unreadReminderCount }}</span>
         </figure>
       </div>
-      <el-menu class="chat-menu" :default-active="String(currentSessionId !=-1|| '')" @select="handleSelect">
+      <el-menu class="chat-menu" :default-active="String(currentSessionId != -1 || '')" @select="handleSelect">
         <el-menu-item v-for="chatbox in appliedChatboxes" :index="String(chatbox.sessionId)">
           <div class="chatbox-item">
             <figure class="contact-avatar">
-              <img :src="chatbox.userAvatar1" alt="">
-              <img v-if="chatbox.unreadCount" :src="unreadUrl" alt="未读消息" class="contact-avatar__badge">
+              <img :src="chatbox.avatar2" alt="" />
+              <img v-if="chatbox.unreadCount" :src="unreadUrl" alt="未读消息" class="contact-avatar__badge" />
             </figure>
             <div class="chatbox-content">
-              <span class="chatbox-content-name">{{ chatbox.userName2 }}</span>
+              <span class="chatbox-content-name">{{ chatbox.username2 }}</span>
               <span>{{ chatbox.lastMessage }}</span>
             </div>
           </div>
@@ -28,12 +28,20 @@
     <section class="chatview-content">
       <div class="chatview-top">
         <div class="chatview-search">
-          <input v-model="searchInput" @keyup.enter="handleSearch" placeholder="请输入聊天记录的搜索关键词">
-          </input>
-          <div class="chatview-button" @click="handleSearch">搜索</div>
+          <el-select v-model="searchType" class="chatview-select" size="samll" :teleported="false" placeholder="选择类型">
+            <el-option label="用户" value="user" />
+            <el-option label="聊天记录" value="message" />
+          </el-select>
+          <el-input v-model="searchInput" class="chatview-input" size="samll" @keyup.enter="handleSearch"
+            :placeholder="searchPlaceholder" clearable>
+            <template #append>
+              <el-button type="primary" size="samll" class="chatview-button" @click="handleSearch">搜索</el-button>
+            </template>
+          </el-input>
         </div>
-      </div>     
-        <div v-if="isReminder" class="chat-content-main">
+      </div>
+
+      <div v-if="isReminder" class="chat-content-main">
         <div class="reminder-panel">
           <div class="reminder-header">
             <div>
@@ -48,41 +56,46 @@
             <article v-for="item in sortedReminders" :key="item.reminderId" class="reminder-card"
               :class="{ 'is-unread': !item.isRead }">
               <div class="reminder-card__meta">
-                <span class="reminder-type" :class="`type-${getReminderLabel(item.type)}`">
-                  {{ item.type }}
+                <span class="reminder-type" :class="`type-${item.type}`">
+                 {{getReminderLabel( item.type)}}
                 </span>
-                <span class="reminder-time">{{ formatTime(item.sendTime) }}</span>
+                <span class="reminder-time">{{
+                  formatTime(item.sendTime)
+                }}</span>
               </div>
               <p class="reminder-content">{{ item.content }}</p>
-              <button v-if="!item.isRead" class="reminder-button" @click="markRead(item)">标记已读</button>
+              <button v-if="!item.isRead" class="reminder-button" @click="markReminderRead(item)">
+                标记已读
+              </button>
             </article>
           </div>
           <div v-else class="reminder-empty">暂无通知</div>
         </div>
       </div>
-      <div v-else-if="!isReminder && currentSessionId!=-1" class="chat-content-main">
+      <div v-else-if="!isReminder && currentSessionId != -1" class="chat-content-main">
         <div class="chat-panel">
           <div class="chat-messages" ref="messageListRef">
             <div v-if="!messages.length" class="chat-content__empty"></div>
             <transition-group v-else name="msg-fade" :css="enableMsgAnim" tag="div" class="chat-messages__inner">
-              <div v-for="(msg, index) in messages" :key="`${msg.sessionId}-${msg.senderId}-${index}`" :id="`${msg.sessionId}-${msg.sendTime}`"
-                class="message-row" :class="{ 'is-self': isSelfMessage(msg) }">
-                <img class="message-avatar" :src="msg.senderAvatar" alt="avatar">
+              <div v-for="(msg, index) in messages" :key="`${msg.sessionId}-${msg.senderId}-${index}`"
+                :id="`${msg.sessionId}-${msg.sendTime}`" class="message-row" :class="{ 'is-self': isSelfMessage(msg) }">
+                <img class="message-avatar" :src="msg.senderAvatar" alt="avatar" />
                 <div class="message-body">
                   <div class="message-bubble">
                     {{ msg.content }}
                   </div>
-                  <span class="message-time">{{ formatTime(msg.sendTime) }}</span>
+                  <span class="message-time">{{
+                    formatTime(msg.sendTime)
+                  }}</span>
                 </div>
               </div>
             </transition-group>
             <!-- 一组可以带过渡 / 动画效果的列表元素容器 -->
           </div>
           <div class="chat-input-area">
-
             <textarea v-model="chatInput" class="chat-input" rows="3" placeholder="输入消息，Enter发送 / Shift+Enter换行"
               @keydown.enter.exact.prevent="handleSendClick">
-          </textarea>
+      </textarea>
             <button class="send-button" :disabled="!canSendMessage" @click="handleSendClick">
               发送
             </button>
@@ -94,183 +107,211 @@
       </div>
     </section>
 
-    <el-dialog v-model="visible" title="聊天记录" width="560px" destroy-on-close class="chat-record-dialog">
-        <el-menu @select="handleSearchMess">
-        <el-menu-item v-for="item in matchMessages" :index="item.sessionId+','+item.sendTime">
+    <el-dialog v-model="visible" title="搜索结果" width="560px" destroy-on-close class="chat-record-dialog">
+      <el-menu v-if="searchResults.length" @select="handleResultSelect">
+        <el-menu-item v-for="item in searchResults" :key="item.id" :index="item.id">
           <div class="chatbox-item">
             <figure class="contact-avatar">
-              <img :src="item.senderAvatar" >
+              <img :src="item.avatar" />
             </figure>
             <div class="chatbox-content">
-              <span class="chatbox-content-name">{{ item.senderName }}</span>
+              <div class="chatbox-content-header">
+                <span class="chatbox-content-name">{{ item.name }}</span>
+                <span class="chatbox-tag" :class="`result-type-${item.type}`">{{
+                  item.type === "message" ? "聊天记录" : "用户"
+                }}</span>
+              </div>
               <span>{{ item.content }}</span>
             </div>
           </div>
         </el-menu-item>
-      </el-menu> 
+      </el-menu>
+      <div v-else class="search-empty">暂无相关结果</div>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from "vue";
 import {
   sendMessageInterface,
   getMessageList,
   getSessionList,
   getUserDetail,
   getReminder,
-  markReminderRead,
+  markReminderAsRead,
   searchMessage,
+  searchUser,
+  createChat,
 } from "@/api/all";
 import { type message, type chatBox, type Reminder } from "@/api/all";
 import { ElMessage } from "element-plus";
-import { chatBoxFallback, fallbackAdminInfo, messageFallback, fallbackReminders } from "../components/admin/mockData";
-import reminderIcon from '@/assets/147_通知.png'
-import unreadIcon from '@/assets/红点消息.png'
+import {
+  chatBoxFallback,
+  messageFallback,
+  fallbackReminders,
+} from "../components/admin/mockData";
+import reminderIcon from "@/assets/147_通知.png";
+import unreadIcon from "@/assets/红点消息.png";
 import type { UserBrief } from "@/api/all";
 import topbar from "@/layout/topbar.vue";
+import router from "@/router";
 
+interface SearchResultItem {
+  id: string;
+  type: "message" | "user";
+  name: string;
+  avatar: string;
+  content: string;
+  sessionId?: number;
+  sendTime?: string;
+  userId?: number;
+}
 
 //数据
-const userInfo = ref<UserBrief | null>()
+const userInfo = ref<UserBrief | null>();
 const chatBoxes = ref<chatBox[]>([]);
-const messages = ref<message[]>([]);//当前聊天界面的message而不是所有message
+const messages = ref<message[]>([]); //当前聊天界面的message而不是所有message
 const chatInput = ref("");
-
 
 const currentSessionId = ref(-1);
 const searchInput = ref("");
-const reminders = ref<Reminder[]>([])
-const reminderIconUrl = ref(reminderIcon)
-const unreadUrl = ref(unreadIcon)
-const isReminder = ref(false)
-const messageListRef = ref<HTMLElement | null>(null)
-const enableMsgAnim = ref(true)
-const visible = ref(false)
-const matchMessages = ref<message[]>([])
-const isSearchJump=ref(false)
+const searchType = ref<"message" | "user">("user");
+const reminders = ref<Reminder[]>([]);
+const reminderIconUrl = ref(reminderIcon);
+const unreadUrl = ref(unreadIcon);
+const isReminder = ref(false);
+const messageListRef = ref<HTMLElement | null>(null);
+const enableMsgAnim = ref(true);
+const visible = ref(false);
+const searchResults = ref<SearchResultItem[]>([]);
+const isSearchJump = ref(false);
+const socket = ref<WebSocket | null>(null);
+const searchPlaceholder = computed(() =>
+  searchType.value === "message"
+    ? "请输入聊天记录的搜索关键词"
+    : "请输入要搜索的用户名,点击可以直接与他聊天"
+);
 
 //后者改变影响前者但是前者修改不会影响后者
 // 把username1固定为本人ID，构造appliedChatbox
 const appliedChatboxes = computed(() => {
-  const temp = chatBoxes.value.map(chatbox => {
+  const temp = chatBoxes.value.map((chatbox) => {
     // 使用条件判断来决定属性值
-    const shouldSwap = chatbox.userName2 === userInfo.value?.username;
+    const shouldSwap = chatbox.username2 === userInfo.value?.username;
 
     return {
       ...chatbox,
-      userName1: shouldSwap ? chatbox.userName2 : chatbox.userName1,
-      userName2: shouldSwap ? chatbox.userName1 : chatbox.userName2,
-      userAvatar1: shouldSwap ? chatbox.userAvatar2 : chatbox.userAvatar1,
-      userAvatar2: shouldSwap ? chatbox.userAvatar1 : chatbox.userAvatar2
+      username1: shouldSwap ? chatbox.username2 : chatbox.username1,
+      username2: shouldSwap ? chatbox.username1 : chatbox.username2,
+      avatar1: shouldSwap ? chatbox.avatar2 : chatbox.avatar1,
+      avatar2: shouldSwap ? chatbox.avatar1 : chatbox.avatar2,
     };
-  })
+  });
 
   return temp.sort((a, b) => {
-    const timeA = new Date(a.lastTime).getTime()
-    const timeB = new Date(b.lastTime).getTime()
-    return timeB - timeA
-  })
-})
-
-
+    const timeA = new Date(a.lastTime).getTime();
+    const timeB = new Date(b.lastTime).getTime();
+    return timeB - timeA;
+  });
+});
 
 //状态控制变量
-const useMockData = ref(false)
+const useMockData = ref(false);
 const loadingSession = ref(false);
 const laodingMessages = ref(false);
 const sending = ref(false);
+const fetchingMessages = ref(false); //避免重复触发消息拉取
 
-const unreadReminderCount = computed(() => reminders.value.filter(item => !item.isRead).length)
+const unreadReminderCount = computed(
+  () => reminders.value.filter((item) => !item.isRead).length
+);
 const reminderTypeDict: Record<string, string> = {
-  评论: 'comment',
-  点赞: 'like',
-  收藏: 'favorite',
-  系统消息: 'admin',
-}
-
-
+  comment: '评论',
+  like: '点赞',
+  favorite: ' 收藏',
+  system: '系统消息'
+};
 
 const sortedReminders = computed(() => {
-  return [...reminders.value].sort((a, b) => new Date(b.sendTime).getTime() - new Date(a.sendTime).getTime())
-})
+  return [...reminders.value].sort(
+    (a, b) => new Date(b.sendTime).getTime() - new Date(a.sendTime).getTime()
+  );
+});
 
-const canSendMessage = computed(() => chatInput.value.trim().length > 0 && currentSessionId.value!=-1)
+const canSendMessage = computed(
+  () => chatInput.value.trim().length > 0 && currentSessionId.value != -1
+);
 
 const formatTime = (time: string) => {
-  if (!time) return ''
-  const date = new Date(time)
-  if (Number.isNaN(date.getTime())) return time
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  const hours = date.getHours().toString().padStart(2, '0')
-  const minutes = date.getMinutes().toString().padStart(2, '0')
-  return `${month}月${day}日 ${hours}:${minutes}`
-}
+  if (!time) return "";
+  const date = new Date(time);
+  if (Number.isNaN(date.getTime())) return time;
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${month}月${day}日 ${hours}:${minutes}`;
+};
 
+const getReminderLabel = (type: string) => reminderTypeDict[type] ?? "未知";
 
-const getReminderLabel = (type: string) => reminderTypeDict[type] ?? '未知'
-
-
-const markRead = async (item: Reminder) => {
+const markReminderRead = async (item: Reminder) => {
   item.isRead = true;
   try {
-    const reponse = await markReminderRead(item.reminderId)
-    if (reponse.data.code === 200) {
-      return
+    const reponse = await markReminderAsRead( item.reminderId);
+    if (reponse.code === 200) {
+      return;
     }
   } catch {
-    ElMessage.error('标记已读失败')
+    ElMessage.error("标记已读失败");
     item.isRead = false;
   }
-}
+};
+
+
 
 const isSelfMessage = (msg: message) => {
-  const currentUserId = userInfo.value?.userId
-  if (!currentUserId) return false
-  return Number(msg.senderId) === Number(currentUserId)
-}
-
-
+  const currentUserId = userInfo.value?.userId;
+  if (!currentUserId) return false;
+  return Number(msg.senderId) === Number(currentUserId);
+};
 
 const getUserId = () => {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('userId')
-}
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("userId");
+};
 
 const fetchUserInfo = async () => {
-  const userId = getUserId()
+  const userId = getUserId();
 
   if (!userId) {
-    userInfo.value = fallbackAdminInfo
-    return
+    ElMessage.error("无法获取用户信息，请先登录");
+    router.push("/login");
   }
 
   try {
-    const { data } = await getUserDetail(userId as string)
-    userInfo.value = data.userBrief
+    const { data } = await getUserDetail(userId as string);
+    userInfo.value = data.userBrief;
+    // console.log(data),不是为啥这里data是响应体
+    // console.log(data.userBrief)
   } catch {
-    userInfo.value = fallbackAdminInfo
-    ElMessage.error('获取用户数据失败')
+    ElMessage.error("获取用户数据失败");
   }
-
-}
+};
 
 const getSessions = async () => {
   if (loadingSession.value) return;
 
   if (useMockData.value) {
-    chatBoxes.value = chatBoxFallback
-    return
+    chatBoxes.value = chatBoxFallback;
+    return;
   }
 
   try {
     loadingSession.value = true;
-    const { data } = await getSessionList(userInfo.value?.userId as number);
-    if (data.code === 200) {
-      chatBoxes.value = data.data;
-    }
+    const res = await getSessionList(userInfo.value?.userId as number);
+    chatBoxes.value = res.data; //类型没对齐的原因
   } catch {
     ElMessage.error("获取聊天列表失败");
   } finally {
@@ -280,129 +321,130 @@ const getSessions = async () => {
 
 const getReminders = async () => {
   if (useMockData.value) {
-    reminders.value = fallbackReminders
-    return
+    reminders.value = fallbackReminders;
+    return;
   }
 
   try {
-    const response = await getReminder(userInfo.value?.userId as number)
-    if (response.data.code === 200) {
-      reminders.value = response.data.data
-    }
+    const response = await getReminder(userInfo.value?.userId as number);
+    console.log('---------------')
+    console.log(response)
+    console.log(response.data)
+      reminders.value = response.data;
   } catch {
-    ElMessage.error('获取通知数据失败')
+    ElMessage.error("获取通知数据失败");
   }
-}
-  
-
-const handleSearchMess = async (key: string) => {
-  visible.value = false
-  const [sessionIdStr, sendTime] = key.split(',')
-  const sessionId = Number(sessionIdStr)
-
-  //先标记这是一次“搜索跳转”
-  isSearchJump.value = true
-
-  //等待会话切换 & 消息加载完成
-  await handleSelect(sessionId)
-
-  //等 DOM 更新完再去定位那条消息
-  await nextTick()
-  scrollMessage(sessionId, sendTime as string)
-}
+};
 
 
+//这个是搜索内容的点击处理
+const handleResultSelect = async (key: string) => {
+  const target = searchResults.value.find((item) => item.id === key);
+  if (!target) return;
+
+  visible.value = false;
+
+  if (target.type === "message" && target.sessionId && target.sendTime) {
+    isSearchJump.value = true;
+    await handleSelect(target.sessionId);
+    await nextTick();
+    scrollMessage(target.sessionId, target.sendTime);
+    return;
+  }
+
+  if (target.type === "user" && target.userId) {
+    const session = chatBoxes.value.find(
+      (item) => item.userId1 === target.userId || item.userId2 === target.userId
+    );
+    if (session) {
+      await handleSelect(session.sessionId);
+    } else {
+      await createChat(userInfo.value?.userId as number, target.userId);
+    }
+  }
+};
 
 //定位到指定聊天记录的滚动逻辑
 const scrollMessage = (sessionId: number, sendTime: string) => {
-  const msgId = `${sessionId}-${sendTime}`
-  const el = document.getElementById(msgId)
-  const container = messageListRef.value
-  if (!el || !container) return
+  const msgId = `${sessionId}-${sendTime}`;
+  const el = document.getElementById(msgId);
+  const container = messageListRef.value;
+  if (!el || !container) return;
 
-  const offsetTop = el.offsetTop - container.offsetTop
+  const offsetTop = el.offsetTop - container.offsetTop;
 
   // 对“消息列表容器”滚动
   container.scrollTo({
     top: offsetTop - 40,
     behavior: "smooth",
-  })
+  });
 
   // 搜索跳转已经完成，可以重新允许自动滚到底部
-  isSearchJump.value = false
-}
-
+  isSearchJump.value = false;
+};
 
 const scrollToLatest = () => {
   nextTick(() => {
-    const container = messageListRef.value
-    if (!container) return
-    container.scrollTop = container.scrollHeight
+    const container = messageListRef.value;
+    if (!container) return;
+    container.scrollTop = container.scrollHeight;
     // scrollTop：容器当前从顶部滚动下去的距离；scrollHeight：容器内部内容的总高度（只读）
     // 把当前滚动距离设置为内容的最大高度→ 滚动条直接跳到最底部。
-  })
-}
+  });
+};
+
+const isNearBottom = () => {
+  const container = messageListRef.value;
+  if (!container) return true;
+  const threshold = 100; // px 容忍区间
+  return (
+    container.scrollHeight - container.scrollTop - container.clientHeight <
+    threshold
+  );
+};
 
 const handleReminderSelect = () => {
-  isReminder.value = true
-}
+  isReminder.value = true;
+};
+
 
 
 //这个是聊天框的点击处理
 const handleSelect = async (sessionId: number) => {
   // 切换会话时先关闭动画
-  enableMsgAnim.value = false
-  isReminder.value = false
+  enableMsgAnim.value = false;
+  isReminder.value = false;
+  const sid = Number(sessionId);
 
-  const sid = Number(sessionId)
-  if (!sid) {
-    // sid 不合法也要把动画开回去
-    enableMsgAnim.value = true
-    return
-  }
-
-  currentSessionId.value = sid
-
-  const target = chatBoxes.value.find((item) => item.sessionId === sid)
-  if (target) target.unreadCount = 0
+  currentSessionId.value = sid;
 
   if (laodingMessages.value) {
-    enableMsgAnim.value = true
-    return
+    enableMsgAnim.value = true;
+    return;
   }
 
   if (useMockData.value) {
-    messages.value = messageFallback.filter((item) => item.sessionId === sid)
+    messages.value = messageFallback.filter((item) => item.sessionId === sid);
     // 等 DOM 更新完再开动画（这样切换不会动，但后续新消息会动）
-    await nextTick()
-    enableMsgAnim.value = true
-    return
+    await nextTick();
+    enableMsgAnim.value = true;
+    return;
   }
 
   try {
-    laodingMessages.value = true
-    const { data } = await getMessageList(
-      sid,
-      userInfo.value?.userId as number
-    )
-    if (data.code === 200) {
-      messages.value = data.data
-    } else {
-      messages.value = []
-    }
+    laodingMessages.value = true;
+    await fetchMessages(sid);
   } catch (err) {
-    messages.value = []
-    ElMessage.error("获取聊天记录失败")
+    messages.value = [];
+    ElMessage.error("获取聊天记录失败");
   } finally {
-    laodingMessages.value = false
-
-    // 同样：DOM 更新完再开动画
-    await nextTick()
-    enableMsgAnim.value = true
+    laodingMessages.value = false;
   }
-}
 
-
+  // 同样：DOM 更新完再开动画
+  await nextTick();
+  enableMsgAnim.value = true;
+};
 
 const sendMessage = async (
   sessionId: number,
@@ -416,9 +458,9 @@ const sendMessage = async (
 
   try {
     sending.value = true;
-    const { data } = await sendMessageInterface(sessionId, receiverId, content);
-    if (data.code === 200) {
-      chatInput.value=''
+    const res = await sendMessageInterface(sessionId, receiverId, content);
+    if (res.code === 200) {
+      chatInput.value = "";
     }
   } catch {
     ElMessage.error("发送失败");
@@ -427,77 +469,254 @@ const sendMessage = async (
   }
 };
 
+//将后端返回结果映射成要呈现的数据
+const mapMessagesToResults = (list: message[]): SearchResultItem[] =>
+  list.map((item) => ({
+    id: `${item.sessionId}-${item.sendTime}`,
+    type: "message",
+    name: item.senderName,
+    avatar: item.senderAvatar,
+    content: item.content,
+    sessionId: item.sessionId,
+    sendTime: item.sendTime,
+  }));
 
+//将后端返回结果映射成要呈现的数据
+const mapUsersToResults = (
+  list: Array<Pick<UserBrief, "userId" | "username" | "userAvatar" | "email">>
+): SearchResultItem[] =>
+  list.map((user) => ({
+    id: `user-${user.userId}`,
+    type: "user",
+    name: user.username,
+    avatar: user.userAvatar,
+    content: user.email || "用户",
+    userId: user.userId,
+  }));
 
-const handleSearch =async () => {
-  if (searchInput.value.trim() === '') return
-const  appliedInput = searchInput.value.trim()
+const handleSearch = async () => {
+  const appliedInput = searchInput.value.trim();
+  if (!appliedInput) return;
 
   if (useMockData.value) {
-  matchMessages.value=  messageFallback.filter((item) => 
-    item.content.includes(appliedInput)
-)
-  visible.value=true
-return 
+    if (searchType.value === "message") {
+      const matchedMessages = messageFallback.filter((item) =>
+        item.content.includes(appliedInput)
+      );
+      searchResults.value = mapMessagesToResults(matchedMessages);
+    } else {
+      const mockUsers = appliedChatboxes.value
+        .map((item) => ({
+          userId: item.userId2,
+          username: item.username2,
+          userAvatar: item.avatar2,
+          email: "",
+        }))
+        .filter((user) => user.username?.includes(appliedInput));
+      searchResults.value = mapUsersToResults(mockUsers);
+    }
+    visible.value = true;
+    return;
   }
 
   try {
-    const response = await searchMessage(userInfo.value?.userId as number, appliedInput)
-    matchMessages.value = response.data.data
-    visible.value =true
-  } catch(error) {
-  ElMessage.error('聊天消息搜索失败')
-}
+    if (searchType.value === "message") {
+      const response = await searchMessage(
+        userInfo.value?.userId as number,
+        appliedInput
+      );
+      searchResults.value = mapMessagesToResults(response.data ?? []);
+    } else {
+      const response = await searchUser(undefined, appliedInput);
+      searchResults.value = mapUsersToResults(response.data);
+    }
+    visible.value = true;
+  } catch (error) {
+    searchResults.value = [];
+    const errorTip =
+      searchType.value === "message" ? "聊天消息搜索失败" : "用户搜索失败";
+    ElMessage.error(errorTip);
+  }
 };
 
 const getReceiverIdBySession = (sessionId: number) => {
-  const chatbox = chatBoxes.value.find(item => item.sessionId === sessionId)
-  if (!chatbox) return null
-  if (chatbox.userId1 === userInfo.value?.userId) return chatbox.userId2
-  if (chatbox.userId2 === userInfo.value?.userId) return chatbox.userId1
-  return chatbox.userId2
-}
+  const chatbox = chatBoxes.value.find((item) => item.sessionId === sessionId);
+  if (!chatbox) return null;
+  if (chatbox.userId1 === userInfo.value?.userId) return chatbox.userId2;
+  if (chatbox.userId2 === userInfo.value?.userId) return chatbox.userId1;
+  return chatbox.userId2;
+};
+
+const fetchMessages = async (sessionId: number) => {
+  if (!sessionId || fetchingMessages.value) return;
+  try {
+    fetchingMessages.value = true;
+    const res = await getMessageList(
+      sessionId,
+      userInfo.value?.userId as number
+    );
+    messages.value = res.data;
+  } catch (err) {
+    // 拉取失败时提示，避免频繁轮询重复提示
+    if (!laodingMessages.value) {
+      ElMessage.error("获取聊天记录失败");
+    }
+  } finally {
+    fetchingMessages.value = false;
+  }
+};
+
+const updateChatboxPreview = (
+  sessionId: number,
+  content: string,
+  sendTime: string,
+  isCurrentSession: boolean
+) => {
+  const exists = chatBoxes.value.some((item) => item.sessionId === sessionId);
+  if (!exists) {
+    getSessions();
+    return;
+  }
+
+  chatBoxes.value = chatBoxes.value.map((item) =>
+    item.sessionId === sessionId
+      ? {
+        ...item,
+        lastMessage: content ?? item.lastMessage,
+        lastTime: sendTime ?? item.lastTime,
+        unreadCount: isCurrentSession ? 0 : item.unreadCount + 1,
+      }
+      : item
+  );
+};
+
+const handleIncomingChatMessage = (payload: any) => {
+  if (!payload || payload.type !== "chat_message" || !payload.data) return;
+  const receiverId = Number(payload.receiverId);
+  if (
+    receiverId &&
+    userInfo.value?.userId &&
+    receiverId !== Number(userInfo.value.userId)
+  ) {
+    return;
+  }
+
+  const data = payload.data;
+  const sessionId = Number(data.sessionId)
+
+  const incomingMessage: message = {
+    sessionId,
+    senderId: Number(data.senderId),
+    senderName: data.senderName || "",
+    senderAvatar: data.senderAvatar || "",
+    content: data.content || "",
+    sendTime: data.sendTime,
+    status: "未读" as any,
+  };
+
+  const isCurrentSession = sessionId === currentSessionId.value;
+
+  if (isCurrentSession) {
+    messages.value = [...messages.value, incomingMessage];
+  }
+
+  updateChatboxPreview(
+    sessionId,
+    incomingMessage.content,
+    incomingMessage.sendTime,
+    isCurrentSession
+  );
+};
+
+const initWebSocket = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  if (socket.value) {
+    socket.value.close();
+  }
+
+  const ws = new WebSocket(`ws://localhost:8080/api/ws?token=${token}`);
+  socket.value = ws;
+
+  ws.onmessage = (event: MessageEvent) => {
+    try {
+      const payload = JSON.parse(event.data);
+      handleIncomingChatMessage(payload);
+    } catch (error) {
+      console.error("解析 WebSocket 消息失败", error);
+    }
+  };
+
+  ws.onopen = () => {
+    console.log("WebSocket 连接成功");
+  };
+
+  ws.onerror = (event) => {
+    console.error("WebSocket 发生错误", event);
+  };
+
+  ws.onclose = () => {
+    socket.value = null;
+  };
+};
 
 const handleSendClick = async () => {
-  if (!canSendMessage.value || currentSessionId.value!=-1) return
-  const receiverId = getReceiverIdBySession(currentSessionId.value)
-  if (!receiverId)  return
+  if (!canSendMessage.value) return;
+  const receiverId = getReceiverIdBySession(currentSessionId.value);
+  try {
+      await sendMessage(
+    currentSessionId.value,
+    receiverId as number,
+    chatInput.value
+    );
+  } catch {
+    ElMessage.error('消息发送失败')
+  }
 
-  await sendMessage(currentSessionId.value, receiverId, chatInput.value)
-}
-
-
+  scrollToLatest()
+};
 
 watch(
   messages,
-  () => {
-    if (!isSearchJump.value) {
-      scrollToLatest()
+  async () => {
+    if (isSearchJump.value) return;
+    await nextTick();
+    if (isNearBottom()) {
+      scrollToLatest();
     }
   },
-  { flush: 'post', deep: true }
-  //post表示DOM更新完再执行回调
-)
+  { flush: "post", deep: true }
+);
 
 watch(currentSessionId, () => {
   if (!isSearchJump.value) {
-    scrollToLatest()
+    nextTick(() => {
+      const el = messageListRef.value;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
   }
-})
-
+});
 
 onMounted(async () => {
-  await fetchUserInfo()
-  getSessions()
-  getReminders()
-})
+  await fetchUserInfo();//要用await，因为得按顺序执行
+  await getSessions();
+  await getReminders();
+  initWebSocket();
+});
 
+onUnmounted(() => {
+  if (socket.value) {
+    socket.value.close();
+    socket.value = null;
+  }
+});
 </script>
 
 <style scoped>
 .chat-view {
   display: flex;
-height: calc(100vh - 70px);
+  height: calc(100vh - 70px);
   width: 100%;
   background: #f6f7fb;
   border: none;
@@ -531,7 +750,6 @@ height: calc(100vh - 70px);
   gap: 6px;
 }
 
-
 .chat-menu.el-menu {
   background: transparent;
   border-right: none;
@@ -557,7 +775,6 @@ height: calc(100vh - 70px);
   background: #ffffff;
   box-shadow: inset 0 0 0 1px #dfe5f7, 0 6px 16px rgba(17, 24, 39, 0.06);
 }
-
 
 .reminder {
   position: sticky;
@@ -604,9 +821,16 @@ height: calc(100vh - 70px);
   flex: 1;
 }
 
+.search-empty {
+  padding: 18px 0;
+  text-align: center;
+  color: #8a829f;
+  font-size: 14px;
+}
+
 /* 在浏览器检查下，可以看到这两个玩意的DOM元素在渲染时都没有被加上scopedId，所以全部包在deep里来脱离scoped控制避免在实际编译时被加上scopedId */
 :deep(.chat-record-dialog .el-dialog__body) {
-  margin-top:15px ;
+  margin-top: 15px;
   max-height: 420px;
   overflow-y: auto;
 }
@@ -679,77 +903,77 @@ height: calc(100vh - 70px);
   font-weight: 400;
 }
 
+.chatbox-content-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chatbox-tag {
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #4b5563;
+  background: #eef2ff;
+}
+
+.result-type-user {
+  color: #1d4ed8;
+  background: #e0e7ff;
+}
+
+.result-type-message {
+  color: #7c3aed;
+  background: #f3e8ff;
+}
+
 .chatview-content {
   display: flex;
   flex-direction: column;
   flex: 1 1 0;
   height: 100%;
   min-width: 0;
-  overflow:hidden;
+  overflow: hidden;
 }
 
 .chatview-top {
-  background-color: #f7f5f5;
-  width: 100%;
-  height: 55px;
+  padding: 10px 12px 4px;
+  background: #f7f7fb;
 }
 
 .chatview-search {
-  background-color: #fff;
-  height: 70%;
-  margin: 5px 5px 0px;
-  border: 1px solid #ddd;
   display: flex;
   align-items: center;
-  overflow: hidden;
-  border-radius: 8px;
+  gap: 10px;
+  background-color: #fff;
+  border: 1px solid #dfe1eb;
+  border-radius: 12px;
+  padding: 6px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
-.chatview-search:hover {
-  border-color: #b994fe;
+.chatview-select {
+  width: 142px;
+}
+
+.chatview-select :deep(.el-input__wrapper) {
+  border-radius: 8px;
+  height: 100px;
+}
+
+.chatview-input {
+  flex: 1;
+}
+
+.chatview-input :deep(.el-input__wrapper) {
+  min-height: 40px;
 }
 
 .chatview-button {
-  height: 100%;
-  /* 按钮高度与容器一致 */
-  width: 40px;
-  border: 1px solid #ddd;
-  /* 移除按钮默认边框 */
-  background: #fff;
-  color: #666;
-  font-size: 15px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  /* 垂直居中 */
-  justify-content: center;
-  /* 水平居中 */
+  min-height: 40px;
+  padding: 0 18px;
+  min-width: 88px;
 }
-
-.chatview-button:hover {
-  cursor: pointer;
-  /* 设置光标为手的样式 */
-  background: #f5f4f4;
-}
-
-.chatview-search input {
-  flex: 1;
-  height: 100%;
-  padding: 0 12px;
-  border: none;
-  outline: none;
-  /* 移除聚焦时的默认轮廓 */
-  font-size: 15px;
-  background: transparent;
-}
-
-.chat-view:has(input:focus) {
-  border-color: #c1a1fd;
-  /* 容器边框变紫色 */
-  box-shadow: 0 0 8px 3px rgba(185, 148, 254, 0.3);
-  /* 紫色外发光（荧光效果） */
-}
-
 
 .chat-content-main {
   flex: 1;
@@ -758,7 +982,6 @@ height: calc(100vh - 70px);
   min-height: 0;
   overflow: hidden;
 }
-
 
 .reminder-panel {
   display: flex;
@@ -904,9 +1127,9 @@ height: calc(100vh - 70px);
 }
 
 .reminder-button {
-margin-left: auto;
+  margin-left: auto;
   padding: 4px;
-  font-size:15px;
+  font-size: 15px;
   line-height: 2;
   border-radius: 5px;
   font-weight: 350;
@@ -915,7 +1138,6 @@ margin-left: auto;
 .reminder-button:hover {
   border-color: rgb(164, 211, 242);
 }
-
 
 .reminder-empty {
   width: 100%;
@@ -943,7 +1165,10 @@ margin-left: auto;
   flex-direction: column;
   gap: 14px;
   scroll-behavior: smooth;
-  background: radial-gradient(1200px 600px at 80% -10%, #eef2ff 0%, transparent 60%), #f6f7fb;
+  background: radial-gradient(1200px 600px at 80% -10%,
+      #eef2ff 0%,
+      transparent 60%),
+    #f6f7fb;
 }
 
 .chat-messages__inner {
@@ -973,13 +1198,11 @@ margin-left: auto;
   flex-direction: row-reverse;
 }
 
-
 .is-self {
   width: 80%;
   flex-direction: row-reverse;
   align-self: flex-end;
 }
-
 
 .message-avatar {
   width: 36px;
@@ -1055,7 +1278,6 @@ margin-left: auto;
   margin-left: 2px;
 }
 
-
 /* 这个输入区域是由固定最小高度的，可以计算 */
 .chat-input-area {
   display: flex;
@@ -1085,7 +1307,6 @@ margin-left: auto;
   border-color: #93c5fd;
   box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.35);
 }
-
 
 .send-button {
   height: 40px;
@@ -1120,7 +1341,6 @@ margin-left: auto;
   opacity: 0.4;
   cursor: not-allowed;
 }
-
 
 /* transition-group for messages */
 .msg-fade-enter-active,

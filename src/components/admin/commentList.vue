@@ -138,7 +138,7 @@ const fetchComments = async () => {
   loading.value = true
   try {
     const res = await getAdminComments()
-    comments.value = Array.isArray(res.data) ? res.data : []
+    comments.value =res.data
   } catch (error) {
     console.error('Failed to fetch comments:', error)
     ElMessage.info(TEXT.mockHint)
