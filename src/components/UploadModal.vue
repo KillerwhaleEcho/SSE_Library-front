@@ -175,10 +175,10 @@ const emit = defineEmits<{
 const uploadForm = reactive({
   file: null as File | null,
   cover: null as File | null,
-  categoryId: null as number | null,
+  categoryId: 0 as number,
   type: '' as 'book' | 'file' | 'video',
   name: '',
-  ISBN: null as number | null,
+  ISBN: '' as string,
   tags: [] as string[],
   author: '默认佚名',
   createYear: '未知',
@@ -196,8 +196,6 @@ const uploading = ref(false)
 
 // 表单验证规则
 const formRules: FormRules = {
-  file: [{  message: '请上传文件', trigger: 'change' }],
-  cover: [{  message: '请上传封面图片', trigger: 'change' }],
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
   type: [{ required: true, message: '请选择资料类型', trigger: 'change' }],
   name: [{ required: true, message: '请输入资料名称', trigger: 'blur' }],
@@ -210,11 +208,21 @@ const selectedCategoryId = computed(() => props.selectedCategoryId)
 
 // 方法
 const handleFileChange = (uploadFile: UploadFile) => {
-  uploadForm.file = uploadFile.raw
+  if (uploadFile.raw) {
+    uploadForm.file = uploadFile.raw
+  } else {
+    // 处理 raw 为 undefined 的情况
+    ElMessage.error('文件上传失败，请重试')
+  }
 }
 
 const handleCoverChange = (uploadFile: UploadFile) => {
-  uploadForm.cover = uploadFile.raw
+  if (uploadFile.raw) {
+    uploadForm.cover = uploadFile.raw
+  } else {
+    // 处理 raw 为 undefined 的情况
+    ElMessage.error('文件上传失败，请重试')
+  }
   if (uploadFile.raw?.type.startsWith('image/')) {
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -239,9 +247,6 @@ const submitUpload = async () => {
   if (!uploadFormRef.value) return
 
   try {
-    const valid = await uploadFormRef.value.validate()
-    if (!valid) return
-
     // 设置分类ID
     if (props.selectedCategoryId) {
       uploadForm.categoryId = props.selectedCategoryId
@@ -251,26 +256,39 @@ const submitUpload = async () => {
     console.log('上传者ID:', userId)
     uploadForm.uploaderId = userId
 
-    // 检查必需字段
-    if (!uploadForm.file || !uploadForm.cover || !uploadForm.categoryId) {
-      ElMessage.error('请完成必需字段的填写')
-      return
-    }
-
+    const valid = await uploadFormRef.value.validate()
+    if (!valid) return
     uploading.value = true
 
+    // 创建符合 API 接口定义的对象
+    const uploadData = {
+      // 使用可选链操作符，确保类型匹配
+      file: uploadForm.file ?? undefined,  // 如果是 null 就转为 undefined
+      cover: uploadForm.cover ?? undefined,
+      categoryId: uploadForm.categoryId,
+      type: uploadForm.type,
+      name: uploadForm.name,
+      ISBN: uploadForm.ISBN ?? undefined,
+      tags: uploadForm.tags,
+      author: uploadForm.author,
+      createYear: uploadForm.createYear,
+      uploaderId: uploadForm.uploaderId,
+      uploadTime: uploadForm.uploadTime,
+      introduction: uploadForm.introduction,
+      videoURL: uploadForm.type === 'video' ? uploadForm.videoURL : undefined
+    }
     // 调用上传接口
-    const response = await allApi.uploadFile(uploadForm)
+    const response = await allApi.uploadFile(uploadData)
     console.log('上传文件成功:', response)
     ElMessage.success('上传成功！')
     emit('update:visible', false)
     resetForm()
     emit('upload-success')
 
-    if (response.data?.infoBrief.documentId) {
-      router.push(`/bookInfo/${response.data.infoBrief.documentId}`)
+    if (response) {
+      //router.push(`/bookInfo/${response.data?.document?.infoBrief?.documentId}`)
     } else {
-      router.push('/home')
+      //router.push('/home')
     }
     
   } catch (error: any) {

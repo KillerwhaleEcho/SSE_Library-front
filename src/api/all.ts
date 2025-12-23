@@ -98,13 +98,13 @@ export interface UploadFile {
   categoryId: number,
   type: 'book' | 'file' | 'video',
   name: string,
-  ISBN: string,
-  tags: string[],
-  author: string | '默认佚名',
-  createYear: string | '未知',
+  ISBN?: string,
+  tags?: string[],
+  author?: string | '默认佚名',
+  createYear?: string | '未知',
   uploaderId: number,
-  introduction: string | '无',
-  videoURL: string | '无'
+  introduction?: string | '无',
+  videoURL?: string | '无'
 }
 
 // 分类相关类型
@@ -226,38 +226,7 @@ export const getHotDocuments = () => {
 
 // 4. 上传资料
 export const uploadFile = (data: UploadFile) => {
-  const formData = new FormData();
-
-  // 添加文件字段
-  formData.append('file', data.file);
-  formData.append('cover', data.cover);
-
-  // 添加其他字段
-  formData.append('categoryId', data.categoryId.toString());
-  formData.append('type', data.type);
-  formData.append('name', data.name);
-  formData.append('uploaderId', data.uploaderId.toString());
-  formData.append('uploadTime', data.uploadTime.toISOString());
-  formData.append('introduction', data.introduction);
-
-  // 处理可能为空的字段
-  if (data.tags !== null) {
-    formData.append('tags', data.tags.join(',')); // 数组转字符串
-  }
-  if (data.createYear !== null) {
-    formData.append('createYear', data.createYear);
-  }
-  if (data.author !== null) {
-    formData.append('author', data.author);
-  }
-  if (data.ISBN !== null) {
-    formData.append('ISBN', data.ISBN);
-  }
-  if (data.videoURL !== null) {
-    formData.append('videoURL', data.videoURL);
-  }
-
-  return service.post<ApiResponse<{ document: Document }>>('/user/document', formData, {
+  return service.post<ApiResponse<{ document: Document }>>('/user/document', data, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -310,19 +279,19 @@ export const searchBooksOrFiles = (
   type: 'book' | 'file' | 'video' | 'null',
   categoryId: number | null,
   year: string | null,
-  keyType: string | null,
-  keyword: string | null,
+  typeOfKey: 'name'|'author'|'bookISBN'|'introduction'|'tag'|'null',
+  key: string | null,
 ) => {
   return service.get<ApiResponse<{ documents: Document[] }>>('/searchdoc', {
-    params: { type, categoryId, year, keyType, keyword },
+    params: { type, categoryId, year, typeOfKey, key },
   });
 };
 
 
 // 10. 搜索分类和课程
-export const searchCategoriesAndCourses = (keyword: string, params?: { page?: number; pageSize?: number }) => {
-  return service.get<ApiResponse<{ categories: Category[]; courses: any[]; total: number }>>('/categoriesAndCourses/search', {
-    params: { keyword, ...params },
+export const searchCategoriesAndCourses = ( name:string ) => {
+  return service.get<ApiResponse<{ categories: Category[] }>>('/searchCat',  {
+    params: { name },
   });
 };
 

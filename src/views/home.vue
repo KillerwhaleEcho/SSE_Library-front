@@ -7,7 +7,7 @@
       <div class="search-guide">请选择资料类型、分类、年份、关键词类型以搜索资料</div>
       <el-row :gutter="20">
         <el-col :span="6"><div class="grid-content ep-bg-purple" />
-          <el-select v-model="type_value" placeholder="书籍or文件" style="width: 100%" placement="top-start" class="purple-border-select">
+          <el-select v-model="type" placeholder="书籍or文件" style="width: 100%" placement="top-start" class="purple-border-select">
             <el-option
               v-for="item in type_options"
               :key="item.value"
@@ -21,9 +21,9 @@
         </el-col>
         <el-col :span="6"><div class="grid-content ep-bg-purple" />
           <el-mention
-            v-model="year_value"
+            v-model="year"
             :options="year_options"
-            style="width: width: 100%"
+            style="width: 100%"
             placeholder="选择xx年以后"
             trigger=""
             ref="mentionRef"
@@ -31,7 +31,7 @@
           />
         </el-col>
         <el-col :span="6"><div class="grid-content ep-bg-purple" />
-          <el-select v-model="key_type_value" placeholder="关键词类型" style="width: 100%" placement="top-start" class="purple-border-select">
+          <el-select v-model="typeOfKey" placeholder="关键词类型" style="width: 100%" placement="top-start" class="purple-border-select">
             <el-option
               v-for="item in key_type_options"
               :key="item.value"
@@ -42,7 +42,7 @@
         </el-col>
       </el-row>
       <div class="input">
-        <input v-model="key_value" type="text" placeholder="请输入文件名字、关键字">
+        <input v-model="key" type="text" placeholder="请输入文件名字、关键字">
         <div class="search-button" @click="handleSearch">搜索</div>
       </div>
     </div>
@@ -163,8 +163,7 @@ const selectedCategoryName = ref<string | null>(null)
 const selectedCategoryId = ref<number | null>(null)
 const selectedUploadCategoryName = ref<string | null>(null)
 const selectedDocument = ref<allApi.Document | null>(null)
-const searchKeyword = ref('')
-const year_value = ref('')
+const year = ref('')
 const year_options = ref([
   {
     label: '2025',
@@ -193,7 +192,7 @@ const handleFocus = async (): Promise<void> => {
   }
 }
 
-const type_value = ref<'book' | 'file' | 'video' | 'null'>('null')
+const type = ref<'book' | 'file' | 'video' | 'null'>('null')
 const type_options = [
   {
     value: 'book',
@@ -213,7 +212,7 @@ const type_options = [
   },
 ]
 
-const key_type_value = ref('')
+const typeOfKey= ref<'name'|'author'|'bookISBN'|'introduction'|'tag'|'null'>('null')
 const key_type_options = [
   {
     value: 'name',
@@ -228,15 +227,19 @@ const key_type_options = [
     label: '标签',
   },
   {
-    value: 'ISBN',
+    value: 'bookISBN',
     label: 'ISBN',
+  },
+  {
+    value: 'introduction',
+    label: '简介信息',
   },
   {
     value: 'null',
     label: '不限',
   },
 ]
-const key_value = ref('')
+const key = ref('')
 
 // 分类数据
 const hotCategories = ref<allApi.Category[]>([])
@@ -373,11 +376,11 @@ const confirmCategory = async () => {
 const handleSearch = async () => {
   try {
     const response = await allApi.searchBooksOrFiles(
-      type_value.value,
+      type.value,
       selectedCategoryId.value,
-      year_value.value,
-      key_type_value.value,
-      key_value.value.trim()
+      year.value,
+      typeOfKey.value,
+      key.value.trim()
     )
     activeTab.value = 'fileList'
     console.log('搜索资料响应:', response)
@@ -399,6 +402,7 @@ const handleSearch = async () => {
 const resetCategory = () => {
    selectedCategoryName.value = ''
    selectedUploadCategoryName.value = ''
+   selectedCategoryId.value = null
 }
 
 const handleUploadSuccess = () => {
