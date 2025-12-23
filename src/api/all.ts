@@ -181,10 +181,7 @@ export interface UploadPostForm {
   senderId: number;
   title: string;
   content: string;
-  documents?: [
-    documentId: number,
-    cover: string
-  ];
+  documents?: Array<{documentId: number, cover: string}>;
 }
 
 export interface Reminder {
@@ -241,9 +238,6 @@ export const uploadPost = (data: UploadPostForm) => {
   formData.append('senderId', data.senderId.toString());
   formData.append('title', data.title);
   formData.append('content', data.content);
-  formData.append('sendTime', data.sendTime.toISOString());
-  formData.append('senderName', data.senderName);
-  formData.append('senderAvatar', data.senderAvatar);
 
   // 处理可选字段
   if (data.documents && data.documents.length > 0) {
@@ -251,7 +245,7 @@ export const uploadPost = (data: UploadPostForm) => {
     formData.append('documents', JSON.stringify(data.documents));
   }
 
-  return service.post<ApiResponse<string>>('/post', formData, {
+  return service.post<ApiResponse<{postId:number}  >>('/post', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -311,11 +305,6 @@ export const getPosts = (key: string, order: "time" | "hot") => {
 export const getPostDetail = (postId: number | string) => {
   return service.get<ApiResponse<PostDetail>>(`/post/${postId}`);
 };
-
-// 11.2 发帖
-export const createPost = (payload: { senderId: number; title: string; content: string; documentId?: number }) => {
-  return service.post<ApiResponse<{ postId: number }>>('/createPost', payload);
-}
 
 // 12. 获取提醒列表
 export const getReminders = (userId: number) => {

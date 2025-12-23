@@ -145,12 +145,13 @@ const getFileAuthor = (file: Document) => {
 
 const getFileType = (file: Document) => {
   const type = file?.infoBrief?.type
+  if (!type) return '未知类型' // 处理 null 或 undefined
   const typeMap: { [key: string]: string } = {
     'book': '书籍',
     'file': '文件',
     'video': '视频'
   }
-  return typeMap[type] || type || '未知类型'
+  return typeMap[type] ||  '未知类型'
 }
 
 const getFileInitials = (file: Document) => {
@@ -201,7 +202,7 @@ const handleSearch = async () => {
       filterType.value,
       filterCategoryId.value,
       '',
-      '',
+      'null',
       searchKeyword.value.trim()
     )
     console.log('搜索关联资料响应:', response)
@@ -236,7 +237,7 @@ const loadFiles = async () => {
     const response = await allApi.getHotDocuments()
     if (response.data) {
       console.log('获取关联文件数据成功', response.data)
-      fileList.value = response.data.filter(file => file?.infoBrief) // 过滤掉没有 infoBrief 的文件
+      fileList.value = response.data;  //filter(file => file?.infoBrief) // 过滤掉没有 infoBrief 的文件
     }
   } catch (error) {
     console.error('加载文件失败:', error)
