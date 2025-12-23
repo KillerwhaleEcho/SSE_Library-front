@@ -520,7 +520,21 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
     ElMessage.error('图片大小不能超过 2MB')
     return
   }
-
+  
+  // 创建预览
+  const reader = new FileReader()
+  
+  reader.onload = (e) => {
+    // e.target?.result 是 base64 格式的图片数据
+    avatarPreview.value = e.target?.result as string
+  }
+  
+  reader.onerror = () => {
+    ElMessage.error('图片读取失败')
+  }
+  
+  // 读取文件为 Data URL
+  reader.readAsDataURL(avatarRawFile.value)
 }
 
 // 注册处理函数中调用方式调整
