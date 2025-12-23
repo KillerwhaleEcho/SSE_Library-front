@@ -61,7 +61,7 @@
         <div 
           class="tab-nav-item" 
           :class="{ 'active': activeTab === 'fileList' }"
-          @click="activeTab = 'fileList'"
+          @click="switchToFileList"
         >
           文件列表
         </div>
@@ -164,17 +164,6 @@ const selectedCategoryId = ref<number | null>(null)
 const selectedUploadCategoryName = ref<string | null>(null)
 const selectedDocument = ref<allApi.Document | null>(null)
 const searchKeyword = ref('')
-
-// 同时监视两个数据，变化时触发同一个回调
-watch(
-  [showCategoryDialog, showUploadModal], // 要监视的数据源数组
-  ([newCategoryVal, newUploadVal], [oldCategoryVal, oldUploadVal]) => {
-    console.log('弹窗状态变化：')
-    console.log('showCategoryDialog：', { 旧值: oldCategoryVal, 新值: newCategoryVal })
-    console.log('showUploadModal：', { 旧值: oldUploadVal, 新值: newUploadVal })
-  }
-)
-
 const year_value = ref('')
 const year_options = ref([
   {
@@ -262,6 +251,11 @@ onMounted(() => {
   // 初始加载推荐数据
   loadRecommendData()
 })
+
+const switchToFileList = () =>{
+  activeTab.value = 'fileList'
+  handleSearch()
+}
 
 // 方法
 const loadRecommendData = () => {

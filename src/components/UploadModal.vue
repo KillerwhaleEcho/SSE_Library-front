@@ -118,18 +118,6 @@
         <el-input v-model="uploadForm.createYear" placeholder="请输入出版年份" />
       </el-form-item>
 
-      <!-- 上传者ID -->
-
-      <!-- 上传时间 -->
-      <el-form-item label="上传时间" prop="uploadTime">
-        <el-date-picker
-          v-model="uploadForm.uploadTime"
-          type="datetime"
-          placeholder="选择上传时间"
-          style="width: 100%"
-        />
-      </el-form-item>
-
       <!-- 介绍 -->
       <el-form-item label="介绍" prop="introduction">
         <el-input 
@@ -208,8 +196,8 @@ const uploading = ref(false)
 
 // 表单验证规则
 const formRules: FormRules = {
-  file: [{ required: true, message: '请上传文件', trigger: 'change' }],
-  cover: [{ required: true, message: '请上传封面图片', trigger: 'change' }],
+  file: [{  message: '请上传文件', trigger: 'change' }],
+  cover: [{  message: '请上传封面图片', trigger: 'change' }],
   categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
   type: [{ required: true, message: '请选择资料类型', trigger: 'change' }],
   name: [{ required: true, message: '请输入资料名称', trigger: 'blur' }],

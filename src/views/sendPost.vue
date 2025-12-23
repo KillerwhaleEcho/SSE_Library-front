@@ -125,8 +125,6 @@ const handleSubmit = async () => {
   try {
     // 获取当前用户ID（假设从本地存储获取）
     const userId = Number(localStorage.getItem('userId') || '0')
-    const userName = localStorage.getItem('userName') || ''
-    const userAvatar = localStorage.getItem('userAvatar') || ''
 
     if (!userId) {
       ElMessage.error('请先登录')
@@ -136,11 +134,8 @@ const handleSubmit = async () => {
     // 构造提交数据
     const postData: allApi.UploadPostForm = {
       senderId: userId,
-      senderName: userName,
-      senderAvatar: userAvatar,
       title: postTitle.value.trim(),
       content: postContent.value.trim(),
-      sendTime: new Date(),
     }
 
     // 添加可选字段

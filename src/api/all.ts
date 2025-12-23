@@ -179,11 +179,8 @@ export interface PostDetail {
 
 export interface UploadPostForm {
   senderId: number;
-  senderName: string;
-  senderAvatar: string;
   title: string;
   content: string;
-  sendTime: Date;
   documents?: [
     documentId: number,
     cover: string
