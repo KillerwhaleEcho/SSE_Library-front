@@ -175,7 +175,7 @@ const emit = defineEmits<{
 const uploadForm = reactive({
   file: null as File | null,
   cover: null as File | null,
-  categoryId: 0 as number,
+  categoryId: null as number | null,
   type: '' as 'book' | 'file' | 'video',
   name: '',
   ISBN: '' as string,
@@ -247,9 +247,12 @@ const submitUpload = async () => {
   if (!uploadFormRef.value) return
 
   try {
-    // 设置分类ID
-    if (props.selectedCategoryId) {
-      uploadForm.categoryId = props.selectedCategoryId
+    // 确保 categoryId 有值
+    if (selectedCategoryId.value === null || selectedCategoryId.value === undefined) {
+        alert('请选择分类');
+        return;
+    }else{
+      uploadForm.categoryId = selectedCategoryId.value;
     }
     // 设置上传者ID（假设从本地存储获取）
     const userId = Number(localStorage.getItem('userId') || '0')

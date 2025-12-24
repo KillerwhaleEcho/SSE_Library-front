@@ -38,16 +38,20 @@
 
     <!-- 使用分离的组件 -->
     <CategoryDialog 
-      v-model:visible="showCategoryDialog"
+      :visible="showCategoryDialog"
+      @update:visible="showCategoryDialog = $event"
       :all-categories="allCategories"
       :selected-category-name="selectedCategoryName"
+      :selected-category-id="selectedCategoryId"
       @category-selected="onCategorySelected"
       @reset-category="resetCategory"
+      @category-added="handleCategoryAdded"
     />
 
     <UploadModal 
       v-model:visible="showUploadModal"
       :selected-category-name="selectedUploadCategoryName"
+      :selected-category-id="selectedCategoryId"
       @open-category-dialog="showCategoryDialog = true"
       @upload-success="handleUploadSuccess"
     />
@@ -62,6 +66,7 @@ import UploadModal from '@/components/UploadModal.vue'
 import { onMounted, ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import * as allApi from '@/api/all.ts'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 
@@ -156,6 +161,19 @@ const getAllCategories = async () => {
     throw error
   }
 }
+
+const handleCategoryAdded = async () => {
+  console.log('分类添加成功，重新加载分类数据');
+  
+  try {
+    await getAllCategories();
+    
+    ElMessage.success('分类数据已更新');
+  } catch (error) {
+    console.error('刷新分类数据失败:', error);
+    ElMessage.error('刷新数据失败');
+  }
+};
 
 onMounted(async () => {
   getPosts()

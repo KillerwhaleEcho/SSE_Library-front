@@ -181,7 +181,7 @@ export interface UploadPostForm {
   senderId: number;
   title: string;
   content: string;
-  documents?: Array<{documentId: number, cover: string}>;
+  documents?: number[];
 }
 
 export interface Reminder {
@@ -232,24 +232,7 @@ export const uploadFile = (data: UploadFile) => {
 
 // 上传帖子接口
 export const uploadPost = (data: UploadPostForm) => {
-  const formData = new FormData();
-
-  // 添加必需字段
-  formData.append('senderId', data.senderId.toString());
-  formData.append('title', data.title);
-  formData.append('content', data.content);
-
-  // 处理可选字段
-  if (data.documents && data.documents.length > 0) {
-    // 假设 documents 是一个数组，需要序列化
-    formData.append('documents', JSON.stringify(data.documents));
-  }
-
-  return service.post<ApiResponse<{postId:number}  >>('/post', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  });
+  return service.post<ApiResponse<{postId:number}  >>('/post', data);
 };
 
 // 5. 获取书籍列表

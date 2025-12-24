@@ -1,5 +1,5 @@
 <template>
-  <topbar></topbar>
+  <topbar class="topbar" @open-upload-modal="showUploadModal = true"></topbar>
   <div class="chat-view">
     <aside class="chat-list">
       <div class="reminder" @click="handleReminderSelect">
@@ -129,6 +129,26 @@
       <div v-else class="search-empty">暂无相关结果</div>
     </el-dialog>
   </div>
+
+  <!-- 使用分离的组件 -->
+  <CategoryDialog 
+    :visible="showCategoryDialog"
+    @update:visible="showCategoryDialog = $event"
+    :all-categories="allCategories"
+    :selected-category-name="selectedCategoryName"
+    :selected-category-id="selectedCategoryId"
+    @category-selected="onCategorySelected"
+    @reset-category="resetCategory"
+    @category-added="handleCategoryAdded"
+  />
+
+  <UploadModal 
+    v-model:visible="showUploadModal"
+    :selected-category-name="selectedUploadCategoryName"
+    :selected-category-id="selectedCategoryId"
+    @open-category-dialog="showCategoryDialog = true"
+    @upload-success="handleUploadSuccess"
+  />
 </template>
 
 <script setup lang="ts">
@@ -154,8 +174,11 @@ import {
 import reminderIcon from "@/assets/147_通知.png";
 import unreadIcon from "@/assets/红点消息.png";
 import type { UserBrief } from "@/api/all";
+import * as allApi from "@/api/all";
 import topbar from "@/layout/topbar.vue";
 import router from "@/router";
+import CategoryDialog from '@/components/CategoryDialog.vue'
+import UploadModal from '@/components/UploadModal.vue'
 
 interface SearchResultItem {
   id: string;
@@ -173,6 +196,15 @@ const userInfo = ref<UserBrief | null>();
 const chatBoxes = ref<chatBox[]>([]);
 const messages = ref<message[]>([]); //当前聊天界面的message而不是所有message
 const chatInput = ref("");
+
+const showCategoryDialog = ref(false)
+const showUploadModal = ref(false)
+// 分类相关数据
+const allCategories = ref<allApi.Category[]>([])
+const selectedCategoryName = ref<string | null>(null)
+const selectedCategoryId = ref<number | null>(null)
+const selectedUploadCategoryName = ref<string | null>(null)
+
 
 const currentSessionId = ref(-1);
 const searchInput = ref("");
@@ -676,6 +708,73 @@ const handleSendClick = async () => {
 
   scrollToLatest()
 };
+
+// 分类相关方法
+const onCategorySelected = (selected: allApi.Category) => {
+  console.log('选中的分类：', selected) 
+  showCategoryDialog.value = false
+  selectedCategoryId.value = selected.id
+  
+  if (showUploadModal.value === false) {
+    // 如果在搜索场景下选择分类
+    selectedCategoryName.value = selected.name
+  } else {
+    // 如果在上传场景下选择分类
+    selectedUploadCategoryName.value = selected.name
+  }
+}
+
+// 重置分类
+const resetCategory = () => {
+  selectedCategoryName.value = null
+  selectedUploadCategoryName.value = null
+  selectedCategoryId.value = null
+}
+
+// 获取所有分类
+const getAllCategories = async () => {
+  try {
+    const response = await allApi.getAllCategories()
+    if (response.data) {
+      allCategories.value = response.data
+    } else {
+      allCategories.value = []
+      console.warn('获取分类数据格式不正确')
+    }
+    return allCategories.value
+  } catch (error) {
+    console.error('获取所有分类失败:', error)
+    allCategories.value = []
+    throw error
+  }
+}
+
+// 上传成功处理
+const handleUploadSuccess = () => {
+  console.log('上传成功，可以刷新数据')
+}
+
+const handleCategoryAdded = async () => {
+  console.log('分类添加成功，重新加载分类数据');
+  
+  try {
+    await getAllCategories();
+    
+    ElMessage.success('分类数据已更新');
+  } catch (error) {
+    console.error('刷新分类数据失败:', error);
+    ElMessage.error('刷新数据失败');
+  }
+};
+watch(() => showUploadModal.value, (newVal, oldVal) => {
+  console.log('showUploadModal 变化:', oldVal, '->', newVal)
+  
+  if (newVal) {
+    console.log('聊天页上传模态框已打开')
+  } else {
+    console.log('聊天页上传模态框已关闭')
+  }
+})
 
 watch(
   messages,

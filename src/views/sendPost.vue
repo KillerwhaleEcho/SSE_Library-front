@@ -1,6 +1,6 @@
 <template>
   <div class="create-post-page">
-    <topbar class="topbar"></topbar>
+    <topbar class="topbar" @open-upload-modal="showUploadModal = true"></topbar>
 
     <div class="post-container">
       <!-- 页面标题 -->
@@ -80,6 +80,25 @@
     <FileLibraryModal :visible="showFileLibrary" @update:visible="showFileLibrary = $event"
       :selected-files="selectedFiles" @files-selected="handleFilesSelected" />
   </div>
+  <!-- 使用分离的组件 -->
+  <CategoryDialog 
+    :visible="showCategoryDialog"
+    @update:visible="showCategoryDialog = $event"
+    :all-categories="allCategories"
+    :selected-category-name="selectedCategoryName"
+    :selected-category-id="selectedCategoryId"
+    @category-selected="onCategorySelected"
+    @reset-category="resetCategory"
+    @category-added="handleCategoryAdded"
+  />
+
+  <UploadModal 
+    v-model:visible="showUploadModal"
+    :selected-category-name="selectedUploadCategoryName"
+    :selected-category-id="selectedCategoryId"
+    @open-category-dialog="showCategoryDialog = true"
+    @upload-success="handleUploadSuccess"
+  />
 </template>
 
 <script setup lang="ts">
@@ -90,8 +109,18 @@ import { useRouter } from 'vue-router'
 import type { Document } from '@/api/all.ts'
 import * as allApi from '@/api/all.ts'
 import { ElMessage } from 'element-plus'
+import CategoryDialog from '@/components/CategoryDialog.vue'
+import UploadModal from '@/components/UploadModal.vue'
 
 const router = useRouter()
+
+const showCategoryDialog = ref(false)
+const showUploadModal = ref(false)
+// 分类相关数据
+const allCategories = ref<allApi.Category[]>([])
+const selectedCategoryName = ref<string | null>(null)
+const selectedCategoryId = ref<number | null>(null)
+const selectedUploadCategoryName = ref<string | null>(null)
 
 // 表单数据
 const postTitle = ref('')
@@ -141,10 +170,9 @@ const handleSubmit = async () => {
     // 添加可选字段
     // 如果有选中的文件，添加到 documents 字段
     if (selectedFiles.value.length > 0) {
-      postData.documents = selectedFiles.value.map(file => ({
-        documentId: file.infoBrief.documentId,
-        cover: file.infoBrief.cover || '' // 使用文件的封面，如果没有则为空字符串
-      }))
+      postData.documents = selectedFiles.value.map(file => 
+        Number(file.infoBrief.documentId) || file.infoBrief.documentId
+      );
     }
 
     console.log('提交帖子数据:', postData)
@@ -180,6 +208,64 @@ const handleCancel = () => {
     router.push('/posts')
   }
 }
+
+// 分类相关方法
+const onCategorySelected = (selected: allApi.Category) => {
+  console.log('选中的分类：', selected) 
+  showCategoryDialog.value = false
+  selectedCategoryId.value = selected.id
+  
+  if (showUploadModal.value === false) {
+    // 如果在搜索场景下选择分类
+    selectedCategoryName.value = selected.name
+  } else {
+    // 如果在上传场景下选择分类
+    selectedUploadCategoryName.value = selected.name
+  }
+}
+
+// 重置分类
+const resetCategory = () => {
+  selectedCategoryName.value = null
+  selectedUploadCategoryName.value = null
+  selectedCategoryId.value = null
+}
+
+// 获取所有分类
+const getAllCategories = async () => {
+  try {
+    const response = await allApi.getAllCategories()
+    if (response.data) {
+      allCategories.value = response.data
+    } else {
+      allCategories.value = []
+      console.warn('获取分类数据格式不正确')
+    }
+    return allCategories.value
+  } catch (error) {
+    console.error('获取所有分类失败:', error)
+    allCategories.value = []
+    throw error
+  }
+}
+
+// 上传成功处理
+const handleUploadSuccess = () => {
+  console.log('上传成功，可以刷新数据')
+}
+
+const handleCategoryAdded = async () => {
+  console.log('分类添加成功，重新加载分类数据');
+  
+  try {
+    await getAllCategories();
+    
+    ElMessage.success('分类数据已更新');
+  } catch (error) {
+    console.error('刷新分类数据失败:', error);
+    ElMessage.error('刷新数据失败');
+  }
+};
 </script>
 
 <style scoped>

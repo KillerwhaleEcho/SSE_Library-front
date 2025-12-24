@@ -400,9 +400,9 @@ const handleSearch = async () => {
 
 // 修改分类重置方法
 const resetCategory = () => {
-   selectedCategoryName.value = ''
-   selectedUploadCategoryName.value = ''
-   selectedCategoryId.value = null
+  selectedCategoryName.value = ''
+  selectedUploadCategoryName.value = ''
+  selectedCategoryId.value = null
 }
 
 const handleUploadSuccess = () => {
