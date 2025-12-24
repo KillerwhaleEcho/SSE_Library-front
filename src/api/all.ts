@@ -232,7 +232,7 @@ export const uploadFile = (data: UploadFile) => {
 
 // 上传帖子接口
 export const uploadPost = (data: UploadPostForm) => {
-  return service.post<ApiResponse<{postId:number}  >>('/post', data);
+  return service.post<ApiResponse<{ postId: number }>>('/post', data);
 };
 
 // 5. 获取书籍列表
@@ -256,7 +256,7 @@ export const searchBooksOrFiles = (
   type: 'book' | 'file' | 'video' | 'null',
   categoryId: number | null,
   year: string | null,
-  typeOfKey: 'name'|'author'|'bookISBN'|'introduction'|'tag'|'null',
+  typeOfKey: 'name' | 'author' | 'bookISBN' | 'introduction' | 'tag' | 'null',
   key: string | null,
 ) => {
   return service.get<ApiResponse<{ documents: Document[] }>>('/searchdoc', {
@@ -266,8 +266,8 @@ export const searchBooksOrFiles = (
 
 
 // 10. 搜索分类和课程
-export const searchCategoriesAndCourses = ( name:string ) => {
-  return service.get<ApiResponse<{ categories: Category[] }>>('/searchCat',  {
+export const searchCategoriesAndCourses = (name: string) => {
+  return service.get<ApiResponse<{ categories: Category[] }>>('/searchCat', {
     params: { name },
   });
 };
@@ -318,7 +318,7 @@ export const getDocumentDetail = (documentId: string | number) => {
 
 // 根据来源获取评论
 export const getCommentsBySource = (sourceType: CommentSourceType | string, sourceId: string | number) => {
-  return service.get<ApiResponse<DocumentComment[]>>(`/${sourceType}/${sourceId}/comments`);
+  return service.get<ApiResponse<DocumentComment[]>>(`/comments/${sourceType}/${sourceId}`);
 };
 
 // 获取指定用户发表过的所有评论
@@ -398,12 +398,12 @@ export const updateDocumentStatus = (payload: { documentId: number; status: 'ope
 
 // 发送消息,接口名加上interface避免重名
 export const sendMessageInterface = (sessionId: number, receiverId: number, content: string) => {
-  return service.post<ApiResponse<{code:number,data:any }>>('/chat/message', { sessionId, receiverId, content })
+  return service.post<ApiResponse<{ code: number, data: any }>>('/chat/message', { sessionId, receiverId, content })
 }
 
 //获取总未读消息数量
-export const getUnreadMessage = (type:string,id: number) => {
-  return service.get<ApiResponse<number>>('/unreadMessage',{params:{type,id} })
+export const getUnreadMessage = (type: string, id: number) => {
+  return service.get<ApiResponse<number>>('/unreadMessage', { params: { type, id } })
 }
 
 //创建聊天
@@ -417,7 +417,7 @@ export const createChat = (myId: number, oppositeId: number) => {
 
 //获取聊天回话列表
 export const getSessionList = (userId: number) => {
-  return service.get<ApiResponse<chatBox[]>>('/chat/sessions', { params: { userId }  })
+  return service.get<ApiResponse<chatBox[]>>('/chat/sessions', { params: { userId } })
 }
 
 
@@ -437,7 +437,7 @@ export const searchMessage = (userId: number, searchKey: string) => {
 
 //搜索用户
 export const searchUser = (userId?: number, username?: string) => {
-  return service.get<ApiResponse<UserBrief[]>>("/admin/user",{params:{userId,username}});
+  return service.get<ApiResponse<UserBrief[]>>("/admin/user", { params: { userId, username } });
 }
 
 //获取提醒（通知）
