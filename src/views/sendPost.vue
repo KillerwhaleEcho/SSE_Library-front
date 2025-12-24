@@ -186,7 +186,12 @@ const handleSubmit = async () => {
     // 跳转到帖子列表页或帖子详情页
     // 如果接口返回了帖子ID，可以跳转到帖子详情页
     if (response) {
-      router.push(`/post/${response.data.postId}`)
+      router.push({
+        path: '/postInfo',
+        query: {
+          postId: (response.data as any).postId
+        }
+      })
     } else {
       router.push('/posts')
     }

@@ -289,9 +289,14 @@ const submitUpload = async () => {
     emit('upload-success')
 
     if (response) {
-      //router.push(`/bookInfo/${response.data?.document?.infoBrief?.documentId}`)
+      router.push({
+      path: '/bookInfo',
+      query: {
+        id: (response.data as any).documentId
+      }
+    })
     } else {
-      //router.push('/home')
+      router.push('/home')
     }
     
   } catch (error: any) {

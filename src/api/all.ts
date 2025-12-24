@@ -223,7 +223,7 @@ export const getHotDocuments = () => {
 
 // 4. 上传资料
 export const uploadFile = (data: UploadFile) => {
-  return service.post<ApiResponse<{ document: Document }>>('/user/document', data, {
+  return service.post<ApiResponse<{ documentId: number }>>('/user/document', data, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
