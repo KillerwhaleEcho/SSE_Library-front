@@ -158,6 +158,13 @@ const postContentBlocks = computed(() => {
 		.filter((item) => item.length > 0)
 })
 
+const applyLocalFavoriteDelta = (delta: number) => {
+	if (!postDetail.value) return
+	const current = Number(postDetail.value.collectCount ?? 0)
+	const next = Math.max(0, current + delta)
+	postDetail.value = { ...postDetail.value, collectCount: next }
+}
+
 const updatePageTitle = () => {
 	const title = postDetail.value?.title || '帖子'
 	document.title = `${title} - 帖子详情`
@@ -262,6 +269,7 @@ const handleFavorite = async () => {
 	const payload: FavoriteActionPayload = { userId: currentUserId, sourceId, type: 'post' }
 	try {
 		await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
+		applyLocalFavoriteDelta(wasFavorited ? -1 : 1)
 		await refreshFavoriteJudgement()
 		try {
 			await authStore.refreshUserBrief()

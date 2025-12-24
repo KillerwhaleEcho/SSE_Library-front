@@ -207,6 +207,19 @@ const formattedDate = (value?: string | null) => {
     return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
+const applyLocalFavoriteDelta = (delta: number) => {
+    if (!documentDetail.value?.infoBrief) return
+    const current = Number(documentDetail.value.infoBrief.collections ?? 0)
+    const next = Math.max(0, current + delta)
+    documentDetail.value = {
+        ...documentDetail.value,
+        infoBrief: {
+            ...documentDetail.value.infoBrief,
+            collections: next,
+        },
+    }
+}
+
 const docStatusDisplayMap: Record<string, string> = {
     open: '开放',
     closed: '关闭',
@@ -373,6 +386,7 @@ const handleFavorite = async () => {
 
     try {
         await (wasFavorited ? deleteUserFavor(payload) : postUserAddFavor(payload))
+        applyLocalFavoriteDelta(wasFavorited ? -1 : 1)
         await refreshFavoriteJudgement()
         try {
             await authStore.refreshUserBrief()
