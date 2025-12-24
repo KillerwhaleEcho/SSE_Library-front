@@ -395,6 +395,13 @@ export const updateDocumentStatus = (payload: { documentId: number; status: 'ope
   return service.put<ApiResponse<null>>('/admin/document/status', payload);
 };
 
+// 普通用户撤回自己的上传
+export const withdrawUserUpload = (documentId: number, userId: number) => {
+  return service.delete<ApiResponse<null>>('/user/withdrawUpload', {
+    params: { documentId, userId },
+  });
+};
+
 
 // 发送消息,接口名加上interface避免重名
 export const sendMessageInterface = (sessionId: number, receiverId: number, content: string) => {

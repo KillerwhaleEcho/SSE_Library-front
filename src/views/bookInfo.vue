@@ -67,7 +67,7 @@
                                     <span>下载</span>
                                 </button>
                             </div>
-                            <div v-if="isAdminViewer" class="document-actions-row admin-action-row">
+                            <div v-if="isAdminViewer && !isUploaderViewer" class="document-actions-row admin-action-row">
                                 <button class="doc-action-button admin" :class="{ disabled: statusUpdating }"
                                     :disabled="statusUpdating" @click="handleStatusUpdate('open')">
                                     <span>开放 open</span>
@@ -75,6 +75,12 @@
                                 <button class="doc-action-button admin" :class="{ disabled: statusUpdating }"
                                     :disabled="statusUpdating" @click="handleStatusUpdate('closed')">
                                     <span>关闭 closed</span>
+                                </button>
+                            </div>
+                            <div v-else-if="isUploaderViewer" class="document-actions-row admin-action-row">
+                                <button class="doc-action-button admin" :class="{ disabled: withdrawProcessing }"
+                                    :disabled="withdrawProcessing" @click="handleWithdraw">
+                                    <span>撤回 withdraw</span>
                                 </button>
                             </div>
                         </div>
@@ -141,6 +147,7 @@ import {
     postUserAddFavor,
     deleteUserFavor,
     updateDocumentStatus,
+    withdrawUserUpload,
 } from '@/api/all.ts'
 import previewIcon from '@/assets/147_阅读.png'
 import likeIcon from '@/assets/喜欢_like.png'
@@ -159,6 +166,7 @@ const favoriteProcessing = ref(false)
 const favoriteJudgement = ref(false)
 const previewLoading = ref(false)
 const statusUpdating = ref(false)
+const withdrawProcessing = ref(false)
 const activeDiscussionTab = ref<'comment' | 'post'>('comment')
 
 const brief = computed(() => documentDetail.value?.infoBrief ?? null)
@@ -181,6 +189,26 @@ const canPreview = computed(() => brief.value?.type === 'book' && Boolean(docume
 const tags = computed(() => documentDetail.value?.tags ?? [])
 const previewButtonText = computed(() => (previewLoading.value ? '加载中...' : '预览'))
 const isAdminViewer = computed(() => userInfo.value?.role === 'admin')
+const localUserIdFromStorage = computed<number | null>(() => {
+    try {
+        const raw = localStorage.getItem('userBrief')
+        if (!raw) return null
+        const parsed = JSON.parse(raw)
+        const id = Number(parsed?.userId)
+        return Number.isFinite(id) ? id : null
+    } catch (error) {
+        console.warn('解析本地用户信息失败', error)
+        return null
+    }
+})
+const uploaderUserId = computed<number | null>(() => documentDetail.value?.uploader?.userId ?? null)
+const isUploaderViewer = computed(() => {
+    const uploaderId = uploaderUserId.value
+    if (uploaderId === null || uploaderId === undefined) return false
+    const localId = localUserIdFromStorage.value ?? userInfo.value?.userId ?? null
+    if (localId === null || localId === undefined) return false
+    return Number(localId) === Number(uploaderId)
+})
 const documentPosts = computed<Post[]>(() => documentDetail.value?.postList ?? [])
 
 const favoriteLabel = computed(() => (favoriteJudgement.value ? '停止收藏' : '收藏'))
@@ -239,7 +267,7 @@ const baseDetails = computed(() => {
         { label: '出版年份', value: documentDetail.value.createYear ?? '' },
         { label: 'ISBN', value: documentDetail.value.bookISBN ?? '' },
     ]
-    if (isAdminViewer.value && brief.value.status) {
+    if ((isAdminViewer.value || isUploaderViewer.value) && brief.value.status) {
         details.unshift({ label: '状态', value: currentDocumentStatus.value })
     }
     return details
@@ -423,6 +451,38 @@ const handleStatusUpdate = async (targetStatus: 'open' | 'closed') => {
         ElMessage.error(error?.message || '更新状态失败')
     } finally {
         statusUpdating.value = false
+    }
+}
+
+const handleWithdraw = async () => {
+    if (!isUploaderViewer.value || withdrawProcessing.value) return
+    const docNumericId = documentNumericId.value
+    const uploaderId = uploaderUserId.value
+    if (docNumericId === null || docNumericId === undefined || uploaderId === null || uploaderId === undefined) {
+        ElMessage.warning('未找到文档或上传者信息，无法撤回')
+        return
+    }
+
+    withdrawProcessing.value = true
+    try {
+        await withdrawUserUpload(Number(docNumericId), Number(uploaderId))
+        ElMessage.success('撤回成功')
+        documentDetail.value = documentDetail.value
+            ? {
+                ...documentDetail.value,
+                infoBrief: {
+                    ...documentDetail.value.infoBrief,
+                    status: 'withdrawn',
+                },
+            }
+            : null
+        if (documentId.value) {
+            await loadDocumentDetail(documentId.value)
+        }
+    } catch (error: any) {
+        ElMessage.error(error?.message || '撤回失败')
+    } finally {
+        withdrawProcessing.value = false
     }
 }
 
