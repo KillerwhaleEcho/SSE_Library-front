@@ -334,7 +334,12 @@ const getHotDocuments = async () => {
 const onBookSelected = (selected: allApi.Document) => {
   console.log('选中的资料：', selected) 
   selectedDocument.value = selected
-  router.push('/document/' + selected.infoBrief.documentId)
+  router.push({
+    path: '/bookInfo',
+    query: {
+      id: selected.infoBrief.documentId
+    }
+  })
 }
 
 // 处理选中的分类数据
