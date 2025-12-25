@@ -27,7 +27,7 @@
                                     作者：{{ documentDetail.author }}
                                 </p>
                                 <p class="doc-meta" v-if="brief?.documentId">
-                                    文档编号：{{ brief?.documentId }}
+                                    编号：{{ brief?.documentId }}
                                 </p>
                                 <div class="stats-row" v-if="brief">
                                     <div class="stat-item">
@@ -63,8 +63,8 @@
                                     <span>{{ previewButtonText }}</span>
                                 </button>
                                 <button class="doc-action-button" @click="handleDownload">
-                                    <img :src="downloadIcon" alt="下载" class="action-icon" />
-                                    <span>下载</span>
+                                    <img :src="downloadButtonIcon" :alt="downloadButtonLabel" class="action-icon" />
+                                    <span>{{ downloadButtonLabel }}</span>
                                 </button>
                             </div>
                             <div v-if="isAdminViewer && !isUploaderViewer"
@@ -154,6 +154,7 @@ import previewIcon from '@/assets/147_阅读.png'
 import likeIcon from '@/assets/喜欢_like.png'
 import unlikeIcon from '@/assets/不喜欢_unlike.png'
 import downloadIcon from '@/assets/下载3_download-three.png'
+import previewOpenIcon from '@/assets/预览-打开_preview-open.png'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -214,6 +215,9 @@ const documentPosts = computed<Post[]>(() => documentDetail.value?.postList ?? [
 
 const favoriteLabel = computed(() => (favoriteJudgement.value ? '停止收藏' : '收藏'))
 const favoriteIconSrc = computed(() => (favoriteJudgement.value ? unlikeIcon : likeIcon))
+const isVideoDocument = computed(() => brief.value?.type === 'video')
+const downloadButtonLabel = computed(() => (isVideoDocument.value ? '查看' : '下载'))
+const downloadButtonIcon = computed(() => (isVideoDocument.value ? previewOpenIcon : downloadIcon))
 
 const typeMap: Record<string, string> = {
     book: '书籍',
