@@ -9,52 +9,30 @@
           <input type="text" v-model="searchKey" placeholder="搜索帖子关键字...">
           <button class="search-btn" @click="getPosts">搜索</button>
         </div>
-        
+
         <div class="sort-control">
           <span>排序方式：</span>
-          <button 
-            class="sort-btn" 
-            :class="{ active: sortOrder === 'time' }" 
-            @click="setSortOrder('time')"
-          >按发布时间</button>
-          <button 
-            class="sort-btn" 
-            :class="{ active: sortOrder === 'hot' }" 
-            @click="setSortOrder('hot')"
-          >按热度</button>
+          <button class="sort-btn" :class="{ active: sortOrder === 'time' }"
+            @click="setSortOrder('time')">按发布时间</button>
+          <button class="sort-btn" :class="{ active: sortOrder === 'hot' }" @click="setSortOrder('hot')">按热度</button>
         </div>
       </div>
-      
+
       <!-- 帖子列表 -->
       <div class="posts-list">
-        <PostItem 
-          v-for="post in posts" 
-          :key="post.postId" 
-          :post="post"
-          @click="onPostSelected(post)"
-        />
+        <PostItem v-for="post in posts" :key="post.postId" :post="post" @click="onPostSelected(post)" />
       </div>
     </div>
 
     <!-- 使用分离的组件 -->
-    <CategoryDialog 
-      :visible="showCategoryDialog"
-      @update:visible="showCategoryDialog = $event"
-      :all-categories="allCategories"
-      :selected-category-name="selectedCategoryName"
-      :selected-category-id="selectedCategoryId"
-      @category-selected="onCategorySelected"
-      @reset-category="resetCategory"
-      @category-added="handleCategoryAdded"
-    />
+    <CategoryDialog :visible="showCategoryDialog" @update:visible="showCategoryDialog = $event"
+      :all-categories="allCategories" :selected-category-name="selectedCategoryName"
+      :selected-category-id="selectedCategoryId" @category-selected="onCategorySelected" @reset-category="resetCategory"
+      @category-added="handleCategoryAdded" />
 
-    <UploadModal 
-      v-model:visible="showUploadModal"
-      :selected-category-name="selectedUploadCategoryName"
-      :selected-category-id="selectedCategoryId"
-      @open-category-dialog="showCategoryDialog = true"
-      @upload-success="handleUploadSuccess"
-    />
+    <UploadModal v-model:visible="showUploadModal" :selected-category-name="selectedUploadCategoryName"
+      :selected-category-id="selectedCategoryId" @open-category-dialog="showCategoryDialog = true"
+      @upload-success="handleUploadSuccess" />
   </div>
 </template>
 
@@ -96,7 +74,7 @@ const getPosts = async () => {
   try {
     const response = await allApi.getPosts(searchKey.value, sortOrder.value)
     if (response.data) {
-      posts.value = response.data 
+      posts.value = response.data
     } else {
       posts.value = []
       console.warn('获取帖子数据格式不正确')
@@ -112,15 +90,15 @@ const getPosts = async () => {
 // 帖子点击事件
 const onPostSelected = (post: allApi.Post) => {
   console.log('选中的帖子:', post)
-  router.push('/post/' + post.postId)
+  router.push({ path: '/postInfo', query: { postId: String(post.postId) } })
 }
 
 // 分类相关方法
 const onCategorySelected = (selected: allApi.Category) => {
-  console.log('选中的分类：', selected) 
+  console.log('选中的分类：', selected)
   showCategoryDialog.value = false
   selectedCategoryId.value = selected.id
-  
+
   if (showUploadModal.value === false) {
     // 如果在搜索场景下选择分类
     selectedCategoryName.value = selected.name
@@ -164,10 +142,10 @@ const getAllCategories = async () => {
 
 const handleCategoryAdded = async () => {
   console.log('分类添加成功，重新加载分类数据');
-  
+
   try {
     await getAllCategories();
-    
+
     ElMessage.success('分类数据已更新');
   } catch (error) {
     console.error('刷新分类数据失败:', error);
@@ -187,22 +165,30 @@ onMounted(async () => {
   width: 100vw;
   height: 100vh;
   display: flex;
-  flex-direction: column; /* 子元素沿垂直方向排列 */
-  justify-content: flex-start; /* 竖直方向从顶部开始排列（默认） */
-  align-items: center; /* 水平方向居中对齐 */
-  overflow-y: auto; /* 允许垂直滚动 */
-  scrollbar-width: none; /* Firefox：隐藏滚动条 */
-  -ms-overflow-style: none; /* IE/Edge：隐藏滚动条 */
+  flex-direction: column;
+  /* 子元素沿垂直方向排列 */
+  justify-content: flex-start;
+  /* 竖直方向从顶部开始排列（默认） */
+  align-items: center;
+  /* 水平方向居中对齐 */
+  overflow-y: auto;
+  /* 允许垂直滚动 */
+  scrollbar-width: none;
+  /* Firefox：隐藏滚动条 */
+  -ms-overflow-style: none;
+  /* IE/Edge：隐藏滚动条 */
 }
 
 .posts-page::-webkit-scrollbar {
-  display: none; 
+  display: none;
 }
 
 .posts-container {
-  width: 60%; 
-  margin-left: auto; /* 左侧自动外边距 */
-  margin-right: auto; /* 右侧自动外边距 */
+  width: 60%;
+  margin-left: auto;
+  /* 左侧自动外边距 */
+  margin-right: auto;
+  /* 右侧自动外边距 */
 }
 
 /* 搜索和排序控制区 */
