@@ -30,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import * as allApi from '@/api/all.ts'
 
 import defaultCover from '@/assets/coverexp.png'; // 引入默认封面图
@@ -39,11 +40,12 @@ const props = defineProps<{
   post: allApi.Post;
 }>();
 
+const router = useRouter()
+
 const openPostDetail = () => {
   const postId = props.post?.postId
   if (typeof postId !== 'number') return
-  const targetUrl = `/postInfo?postId=${postId}`
-  window.open(targetUrl, '_blank', 'noopener')
+  router.push({ path: '/postInfo', query: { postId: String(postId) } })
 }
 </script>
 
