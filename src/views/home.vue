@@ -6,38 +6,28 @@
     <div class="searchForm">
       <div class="search-guide">请选择资料类型、分类、年份、关键词类型以搜索资料</div>
       <el-row :gutter="20">
-        <el-col :span="6"><div class="grid-content ep-bg-purple" />
-          <el-select v-model="type" placeholder="书籍or文件" style="width: 100%" placement="top-start" class="purple-border-select">
-            <el-option
-              v-for="item in type_options"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
+        <el-col :span="6">
+          <div class="grid-content ep-bg-purple" />
+          <el-select v-model="type" placeholder="书籍or文件" style="width: 100%" placement="top-start"
+            class="purple-border-select">
+            <el-option v-for="item in type_options" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-col>
-        <el-col :span="6"><div class="grid-content ep-bg-purple" />
-          <button class="category-select-btn" @click="showCategoryDialog = true">{{ selectedCategoryName || 'category' }}</button>
+        <el-col :span="6">
+          <div class="grid-content ep-bg-purple" />
+          <button class="category-select-btn" @click="showCategoryDialog = true">{{ selectedCategoryName || 'category'
+            }}</button>
         </el-col>
-        <el-col :span="6"><div class="grid-content ep-bg-purple" />
-          <el-mention
-            v-model="year"
-            :options="year_options"
-            style="width: 100%"
-            placeholder="选择xx年以后"
-            trigger=""
-            ref="mentionRef"
-            @focus="handleFocus"
-          />
+        <el-col :span="6">
+          <div class="grid-content ep-bg-purple" />
+          <el-mention v-model="year" :options="year_options" style="width: 100%" placeholder="选择xx年以后" trigger=""
+            ref="mentionRef" @focus="handleFocus" />
         </el-col>
-        <el-col :span="6"><div class="grid-content ep-bg-purple" />
-          <el-select v-model="typeOfKey" placeholder="关键词类型" style="width: 100%" placement="top-start" class="purple-border-select">
-            <el-option
-              v-for="item in key_type_options"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
+        <el-col :span="6">
+          <div class="grid-content ep-bg-purple" />
+          <el-select v-model="typeOfKey" placeholder="关键词类型" style="width: 100%" placement="top-start"
+            class="purple-border-select">
+            <el-option v-for="item in key_type_options" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-col>
       </el-row>
@@ -51,18 +41,10 @@
     <div class="tabs-container" :class="{ 'active': activeTab }">
       <!-- 标签页导航 -->
       <div class="tabs-nav">
-        <div 
-          class="tab-nav-item" 
-          :class="{ 'active': activeTab === 'recommend' }"
-          @click="activeTab = 'recommend'"
-        >
+        <div class="tab-nav-item" :class="{ 'active': activeTab === 'recommend' }" @click="activeTab = 'recommend'">
           推荐
         </div>
-        <div 
-          class="tab-nav-item" 
-          :class="{ 'active': activeTab === 'fileList' }"
-          @click="switchToFileList"
-        >
+        <div class="tab-nav-item" :class="{ 'active': activeTab === 'fileList' }" @click="switchToFileList">
           文件列表
         </div>
       </div>
@@ -77,12 +59,8 @@
               <h3>热门分类</h3>
               <div class="category-list">
                 <!-- 循环渲染分类组件 -->
-                <CategoryItem 
-                  v-for="category in hotCategories" 
-                  :key="category.id" 
-                  :category="category"
-                  @click="onCategorySelected(category)"
-                />
+                <CategoryItem v-for="category in hotCategories" :key="category.id" :category="category"
+                  @click="onCategorySelected(category)" />
               </div>
             </div>
 
@@ -91,12 +69,8 @@
               <h3>热门书籍</h3>
               <div class="book-list">
                 <!-- 循环渲染图书组件 -->
-                <BookItem 
-                  v-for="book in hotBooks" 
-                  :key="book.infoBrief.documentId" 
-                  :document="book"
-                  @click="onBookSelected(book)"
-                />
+                <BookItem v-for="book in hotBooks" :key="book.infoBrief.documentId" :document="book"
+                  @click="onBookSelected(book)" />
               </div>
             </div>
           </div>
@@ -107,12 +81,8 @@
           <div class="file-list-container">
             <div class="book-list">
               <!-- 循环渲染图书组件 -->
-              <BookItem 
-                v-for="book in fileList" 
-                :key="book.infoBrief.documentId" 
-                :document="book"
-                @click="onBookSelected(book)"
-              />
+              <BookItem v-for="book in fileList" :key="book.infoBrief.documentId" :document="book"
+                @click="onBookSelected(book)" />
             </div>
           </div>
         </div>
@@ -120,24 +90,14 @@
     </div>
 
     <!-- 使用分离的组件 -->
-    <CategoryDialog 
-      :visible="showCategoryDialog"
-      @update:visible="showCategoryDialog = $event"
-      :all-categories="allCategories"
-      :selected-category-name="selectedCategoryName"
-      :selected-category-id="selectedCategoryId"
-      @category-selected="onCategorySelected"
-      @reset-category="resetCategory"
-      @category-added="handleCategoryAdded"
-    />
+    <CategoryDialog :visible="showCategoryDialog" @update:visible="showCategoryDialog = $event"
+      :all-categories="allCategories" :selected-category-name="selectedCategoryName"
+      :selected-category-id="selectedCategoryId" @category-selected="onCategorySelected" @reset-category="resetCategory"
+      @category-added="handleCategoryAdded" />
 
-    <UploadModal 
-      v-model:visible="showUploadModal"
-      :selected-category-name="selectedUploadCategoryName"
-      :selected-category-id="selectedCategoryId"
-      @open-category-dialog="showCategoryDialog = true"
-      @upload-success="handleUploadSuccess"
-    />
+    <UploadModal v-model:visible="showUploadModal" :selected-category-name="selectedUploadCategoryName"
+      :selected-category-id="selectedCategoryId" @open-category-dialog="showCategoryDialog = true"
+      @upload-success="handleUploadSuccess" />
   </div>
 </template>
 
@@ -212,7 +172,7 @@ const type_options = [
   },
 ]
 
-const typeOfKey= ref<'name'|'author'|'bookISBN'|'introduction'|'tag'|'null'>('null')
+const typeOfKey = ref<'name' | 'author' | 'bookISBN' | 'introduction' | 'tag' | 'null'>('null')
 const key_type_options = [
   {
     value: 'name',
@@ -251,11 +211,12 @@ const fileList = ref<allApi.Document[]>([])
 
 // 生命周期
 onMounted(() => {
+  document.title = 'SSE-Library - 首页'
   // 初始加载推荐数据
   loadRecommendData()
 })
 
-const switchToFileList = () =>{
+const switchToFileList = () => {
   activeTab.value = 'fileList'
   handleSearch()
 }
@@ -282,7 +243,7 @@ const getHotCategories = async () => {
       hotCategories.value = []
       console.warn('获取分类数据格式不正确')
     }
-    
+
     return hotCategories.value
   } catch (error) {
     console.error('获取热门分类失败:', error)
@@ -296,7 +257,7 @@ const getAllCategories = async () => {
   try {
     // 调用接口，传入is_suggest参数（根据实际需求决定是否需要）
     const response = await allApi.getAllCategories()
-    
+
     // 假设接口返回的数据结构中，data包含categories数组
     if (response.data) {
       allCategories.value = response.data
@@ -318,7 +279,7 @@ const getHotDocuments = async () => {
   try {
     const response = await allApi.getHotDocuments()
     if (response.data) {
-      hotBooks.value = response.data 
+      hotBooks.value = response.data
     } else {
       hotBooks.value = []
       console.warn('获取热门资料数据格式不正确')
@@ -332,7 +293,7 @@ const getHotDocuments = async () => {
 }
 
 const onBookSelected = (selected: allApi.Document) => {
-  console.log('选中的资料：', selected) 
+  console.log('选中的资料：', selected)
   selectedDocument.value = selected
   router.push({
     path: '/bookInfo',
@@ -344,7 +305,7 @@ const onBookSelected = (selected: allApi.Document) => {
 
 // 处理选中的分类数据
 const onCategorySelected = (selected: allApi.Category) => {
-  console.log('选中的分类：', selected) 
+  console.log('选中的分类：', selected)
   showCategoryDialog.value = false
   selectedCategoryId.value = selected.id
   selectedCategory.value = selected
@@ -364,7 +325,7 @@ const confirmCategory = async () => {
       const response = await allApi.getBookList(false, selectedCategoryId.value)
       console.log('资料响应:', response)
       if (response.data) {
-        fileList.value = response.data 
+        fileList.value = response.data
       } else {
         fileList.value = []
         console.warn('获取资料数据格式不正确')
@@ -390,7 +351,7 @@ const handleSearch = async () => {
     activeTab.value = 'fileList'
     console.log('搜索资料响应:', response)
     if (response.data) {
-      fileList.value = response.data 
+      fileList.value = response.data
     } else {
       fileList.value = []
       console.warn('获取搜索资料数据格式不正确')
@@ -417,15 +378,15 @@ const handleUploadSuccess = () => {
 
 const handleCategoryAdded = async () => {
   console.log('分类添加成功，重新加载分类数据');
-  
+
   try {
     await getAllCategories();
-    
+
     // 如果是当前在文件列表标签页，也重新获取资料列表
     if (activeTab.value === 'fileList' && selectedCategoryId.value) {
       await confirmCategory();
     }
-    
+
     ElMessage.success('分类数据已更新');
   } catch (error) {
     console.error('刷新分类数据失败:', error);
@@ -435,40 +396,49 @@ const handleCategoryAdded = async () => {
 </script>
 
 <style scoped>
-.home-container{
+.home-container {
   position: relative;
   width: 100vw;
   height: 100vh;
   display: flex;
-  flex-direction: column; /* 子元素沿垂直方向排列 */
-  justify-content: flex-start; /* 竖直方向从顶部开始排列（默认） */
-  align-items: center; /* 水平方向居中对齐 */
-  overflow-y: auto; /* 允许垂直滚动 */
-  scrollbar-width: none; /* Firefox：隐藏滚动条 */
-  -ms-overflow-style: none; /* IE/Edge：隐藏滚动条 */
+  flex-direction: column;
+  /* 子元素沿垂直方向排列 */
+  justify-content: flex-start;
+  /* 竖直方向从顶部开始排列（默认） */
+  align-items: center;
+  /* 水平方向居中对齐 */
+  overflow-y: auto;
+  /* 允许垂直滚动 */
+  scrollbar-width: none;
+  /* Firefox：隐藏滚动条 */
+  -ms-overflow-style: none;
+  /* IE/Edge：隐藏滚动条 */
 }
 
 .home-container::-webkit-scrollbar {
-  display: none; 
+  display: none;
 }
 
 .topbar {
-  position: fixed; /* 固定在顶部 */
+  position: fixed;
+  /* 固定在顶部 */
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 100; /* 较高层级，默认覆盖在搜索表单上方 */
+  z-index: 100;
+  /* 较高层级，默认覆盖在搜索表单上方 */
   /* 其他样式（背景色等，确保不透明） */
-  background: #fff; /* 必须有背景色，避免内容穿透 */
+  background: #fff;
+  /* 必须有背景色，避免内容穿透 */
 }
 
 .searchForm {
   position: absolute;
   top: 15%;
-  left: 15%; 
-  width: 70%;  
+  left: 15%;
+  width: 70%;
   height: 25%;
-  border-radius: 10px; 
+  border-radius: 10px;
   z-index: 99;
 }
 
@@ -494,58 +464,70 @@ const handleCategoryAdded = async () => {
 
 /* 针对自定义类名的下拉框，修改选中/聚焦时的边框样式 */
 .purple-border-select {
-  --el-select-border-color: #ddd; /* 默认边框色 */
-  --el-select-hover-border-color: #b994fe; /*  hover 时边框色 */
-  --el-select-focus-border-color: #b994fe; /* 聚焦/选中时边框色 */
+  --el-select-border-color: #ddd;
+  /* 默认边框色 */
+  --el-select-hover-border-color: #b994fe;
+  /*  hover 时边框色 */
+  --el-select-focus-border-color: #b994fe;
+  /* 聚焦/选中时边框色 */
 }
 
 .category-select-btn {
   width: 100%;
   height: 32px;
-  background-color: #ffffff; 
-  border: 1.4px solid #ddd; 
-  color: #bab9b9; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  transition: all 0.2s; 
-  line-height: 0px; 
+  background-color: #ffffff;
+  border: 1.4px solid #ddd;
+  color: #bab9b9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 0px;
   text-align: left;
   /* 可选：添加左侧内边距，避免文字贴边框 */
-  padding-left: 12px; 
+  padding-left: 12px;
 }
 
 /* 3. 按钮 hover 状态：增强交互反馈 */
 .category-select-btn:hover {
-  border-color: #c1a1fd; /* 边框色加深 */
+  border-color: #c1a1fd;
+  /* 边框色加深 */
 }
 
 .input {
   position: absolute;
   margin-top: 15px;
-  width: 100%; 
+  width: 100%;
   height: 30%;
-  border: 2px solid #ddd;  /* 容器边框 */
-  display: flex;  /* 使用flex布局让输入框和按钮并排显示 */
-  align-items: center;  /* 垂直居中对齐 */
-  overflow: hidden;  /* 防止内部元素超出容器 */
+  border: 2px solid #ddd;
+  /* 容器边框 */
+  display: flex;
+  /* 使用flex布局让输入框和按钮并排显示 */
+  align-items: center;
+  /* 垂直居中对齐 */
+  overflow: hidden;
+  /* 防止内部元素超出容器 */
 }
 
 .input :hover {
-  border-color: #b994fe; 
+  border-color: #b994fe;
 }
 
 /* 按钮样式调整 */
 .input .search-button {
-  height: 100%;  /* 按钮高度与容器一致 */
+  height: 100%;
+  /* 按钮高度与容器一致 */
   width: 100px;
-  border: 1px solid #ddd;  /* 移除按钮默认边框 */
+  border: 1px solid #ddd;
+  /* 移除按钮默认边框 */
   background: #fff;
   color: #666;
   font-size: 20px;
   font-weight: 500;
   display: flex;
-  align-items: center; /* 垂直居中 */
-  justify-content: center; /* 水平居中 */
+  align-items: center;
+  /* 垂直居中 */
+  justify-content: center;
+  /* 水平居中 */
 }
 
 .input .search-button:hover {
@@ -555,18 +537,26 @@ const handleCategoryAdded = async () => {
 
 /* 输入框样式 */
 .input input {
-  flex: 1;  /* 让输入框占满剩余空间 */
-  height: 100%;  /* 输入框高度与容器一致 */
-  padding: 0 12px;  /* 内部间距 */
-  border: none;  /* 移除默认边框 */
-  outline: none;  /* 移除聚焦时的默认轮廓 */
-  font-size: 20px;  /* 字体大小 */
+  flex: 1;
+  /* 让输入框占满剩余空间 */
+  height: 100%;
+  /* 输入框高度与容器一致 */
+  padding: 0 12px;
+  /* 内部间距 */
+  border: none;
+  /* 移除默认边框 */
+  outline: none;
+  /* 移除聚焦时的默认轮廓 */
+  font-size: 20px;
+  /* 字体大小 */
   background: transparent;
 }
 
 .input:has(input:focus) {
-  border-color: #c1a1fd; /* 容器边框变紫色 */
-  box-shadow: 0 0 8px 3px rgba(185, 148, 254, 0.3); /* 紫色外发光（荧光效果） */
+  border-color: #c1a1fd;
+  /* 容器边框变紫色 */
+  box-shadow: 0 0 8px 3px rgba(185, 148, 254, 0.3);
+  /* 紫色外发光（荧光效果） */
 }
 
 /* 标签页容器样式 */
@@ -591,8 +581,10 @@ const handleCategoryAdded = async () => {
 }
 
 .tab-nav-item.active {
-  border-bottom-color: #b994fe; /* 选中标签下划线颜色 */
-  color: #b994fe; /* 选中标签文字颜色 */
+  border-bottom-color: #b994fe;
+  /* 选中标签下划线颜色 */
+  color: #b994fe;
+  /* 选中标签文字颜色 */
   font-weight: 500;
 }
 

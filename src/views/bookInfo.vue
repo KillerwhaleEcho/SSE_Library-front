@@ -67,7 +67,8 @@
                                     <span>下载</span>
                                 </button>
                             </div>
-                            <div v-if="isAdminViewer && !isUploaderViewer" class="document-actions-row admin-action-row">
+                            <div v-if="isAdminViewer && !isUploaderViewer"
+                                class="document-actions-row admin-action-row">
                                 <button class="doc-action-button admin" :class="{ disabled: statusUpdating }"
                                     :disabled="statusUpdating" @click="handleStatusUpdate('open')">
                                     <span>开放 open</span>
@@ -250,9 +251,9 @@ const applyLocalFavoriteDelta = (delta: number) => {
 
 const docStatusDisplayMap: Record<string, string> = {
     open: '开放',
-    closed: '关闭',
+    closed: '已被管理员关闭',
     pending: '待审核',
-    withdrawn: '已撤回',
+    withdrawn: '用户已撤回',
 }
 const currentDocumentStatus = computed(() => (brief.value?.status ? docStatusDisplayMap[brief.value.status] ?? brief.value.status : '未知'))
 const baseDetails = computed(() => {
