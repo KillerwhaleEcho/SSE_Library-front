@@ -32,15 +32,14 @@
  export interface DocumentEditForm {
   documentId: number | null
   type: string
-  category: string
+  categoryId: number|null
   name: string
   isbn: string
   tags: string
   author: string
   createYear: string
-  coverUrl: string
-  coverFile: File | null
+  cover: File | string | null
   introduction: string
-  file: File | null
+  file: File | string | null
   vedioURL: string
 }

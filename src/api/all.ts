@@ -235,7 +235,7 @@ export const uploadPost = (data: UploadPostForm) => {
   return service.post<ApiResponse<{ postId: number }>>('/post', data);
 };
 
-// 5. 获取书籍列表
+// 5. 获取书籍列表,is_suggest是否是推荐的
 export const getBookList = (is_suggest: boolean, categoryId?: number) => {
   return service.get<ApiResponse<{ documents: Document[] }>>('/documents', {
     params: { is_suggest, categoryId },
@@ -247,8 +247,12 @@ export const updateFileStatus = (docId: number, status: string) => { return serv
 
 
 // 6. 修改资料信息
-export const updateFileInfo = (data: DocumentEditForm) => {
-  return service.put<ApiResponse<null>>('/document', data)
+export const updateFileInfo = (data: FormData) => {
+  return service.put<ApiResponse<null>>('/document', data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 }
 
 // 7. 搜索书籍或文件
