@@ -307,7 +307,7 @@ const editForm = reactive<DocumentEditForm>({
   introduction: "",
   file: "",
   //后端传过来的数据，所以是个url，但是你传获取得是文件
-  vedioURL: "",
+  videoURL: "",
 });
 
 const normalizeDocument = (doc: Document): Document => {
@@ -425,7 +425,7 @@ const openEditDialog = async (row: Document) => {
   editForm.cover = row.infoBrief.cover || "";
   editForm.introduction = row.introduction || "";
   editForm.file = (row.infoBrief.type === "file" ? row.URL : "") || "";
-  editForm.vedioURL = (row.infoBrief.type === "video" ? row.URL : "") || "";
+  editForm.videoURL = (row.infoBrief.type === "video" ? row.URL : "") || "";
 
   try {
     const res = await getCategoriesAndCourses();
@@ -456,7 +456,7 @@ const resetEditForm = () => {
   editForm.cover = "";
   editForm.introduction = "";
   editForm.file = "";
-  editForm.vedioURL = "";
+  editForm.videoURL = "";
   coverPreview.value = "";
 };
 
@@ -497,7 +497,7 @@ const buildDocumentEditFormData = (data: DocumentEditForm) => {
   }
 
   if (data.type === "video") {
-    formData.append("vedioURL", data.vedioURL);
+    formData.append("vedioURL", data.videoURL);
   }
 
   for (const [k, v] of formData.entries()) {
@@ -510,7 +510,7 @@ const buildDocumentEditFormData = (data: DocumentEditForm) => {
 const handleSaveEdit = async () => {
   if (saving.value) return;
 
-  if (editForm.type === "video" && !editForm.vedioURL.trim()) {
+  if (editForm.type === "video" && !editForm.videoURL.trim()) {
     ElMessage.warning("当前文档类型为视频，视频链接不能为空");
     return;
   }

@@ -41,5 +41,5 @@
   cover: File | string | null
   introduction: string
   file: File | string | null
-  vedioURL: string
+  videoURL: string
 }
