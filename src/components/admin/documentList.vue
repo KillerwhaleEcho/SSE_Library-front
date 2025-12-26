@@ -40,7 +40,7 @@
 
       <div class="document-card__table">
         <el-table
-          :data="displayedDocuments"
+          :data="filteredDocuments"
           border
           v-loading="loading"
           element-loading-text="正在加载资料，请稍候…"
@@ -168,6 +168,15 @@
           <el-input v-model="editForm.vedioURL" clearable />
         </el-form-item>
         <el-form-item label="封面">
+          <div class="cover-preview">
+            <img
+              v-if="coverPreview"
+              :src="coverPreview"
+              alt="封面预览"
+              class="cover-img"
+            />
+            <span v-else class="cover-placeholder">暂无封面</span>
+          </div>
           <el-upload
             class="document-edit-form__upload"
             :auto-upload="false"
@@ -212,10 +221,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, type UploadFile } from "element-plus";
-import { getBookList, updateFileInfo, updateFileStatus,getCategoriesAndCourses, type Category } from "../../api/all";
+import {
+  getBookList,
+  updateFileInfo,
+  updateFileStatus,
+  getCategoriesAndCourses,
+  type Category,
+} from "../../api/all";
 import { type DocumentEditForm } from "../../types/api";
 import { type Document } from "@/api/all.ts";
 import { MOCK_DOCUMENTS } from "./mockData";
@@ -226,10 +241,11 @@ const appliedKeyword = ref("");
 
 const USE_MOCK = false;
 const documents = ref<Document[]>([]);
-const categories=ref<Category[]>([])
+const categories = ref<Category[]>([]);
 const loading = ref(false);
 const editVisible = ref(false);
 const saving = ref(false);
+const coverPreview = ref("");
 const showReviewingOnly = ref(false); //控制是否只展示待审核数据
 
 const delay = (ms: number) =>
@@ -245,9 +261,9 @@ const STATUS_OPTIONS = [
 ] as const;
 
 // 这段代码最终的结果是："开放" | "审核中" | "关闭" | "已撤回"
-type DocumentStatusEH = (typeof STATUS_OPTIONS)[number]['label']
+type DocumentStatusEH = (typeof STATUS_OPTIONS)[number]["label"];
 
-// 按照要求返回资料，搜索逻辑也在其中。所以这个函数可以表示为：源数据 + 派生条件 -> 计算得到展示列表
+//先过滤得到基本数据，再执行搜索逻辑
 const filteredDocuments = computed<Document[]>(() => {
   const keyword = appliedKeyword.value.toLowerCase();
 
@@ -259,48 +275,47 @@ const filteredDocuments = computed<Document[]>(() => {
     return baseList;
   }
 
-  return baseList.filter((item) => {
-    const name = item.infoBrief.name?.toLowerCase() ?? "";
-    const author = item.author?.toLowerCase() ?? "";
-    return name.includes(keyword) || author.includes(keyword);
-  });
+  return baseList
+    .filter((item) => {
+      const name = item.infoBrief.name?.toLowerCase() ?? "";
+      const author = item.author?.toLowerCase() ?? "";
+      return name.includes(keyword) || author.includes(keyword);
+    })
+    .slice(0, 25);
 });
-
-const displayedDocuments = computed<Document[]>(() =>
-  filteredDocuments.value.slice(0, 10)
-);
 
 const handleSearch = () => {
   appliedKeyword.value = searchInput.value.trim();
 };
 
 const handleClear = () => {
-  searchInput.value = '';
-  appliedKeyword.value = '';
-}
-
+  searchInput.value = "";
+  appliedKeyword.value = "";
+};
 
 const editForm = reactive<DocumentEditForm>({
   documentId: null,
   type: "",
-  categoryId:null,
+  categoryId: null,
   name: "",
   isbn: "",
   tags: "",
   author: "",
   createYear: "",
-  cover: '',//后端传过来的实际上是个url，但是你传给后端的得是个file
+  cover: "",
+  //后端传过来的实际上是个url，但是你传给后端的得是个file
   introduction: "",
-  file: '',//后端传过来的数据，所以是个url，但是你传获取得是文件
+  file: "",
+  //后端传过来的数据，所以是个url，但是你传获取得是文件
   vedioURL: "",
 });
 
-
-
 const normalizeDocument = (doc: Document): Document => {
-  const normalizedStatus: DocumentStatusEH = STATUS_OPTIONS.find((option) => option.label === doc.infoBrief.status)?.label ?? 'pending'
-  const normalizedCover = doc.infoBrief?.cover ?? ''
-  const normalizedURL = doc.URL ?? ''
+  const normalizedStatus: DocumentStatusEH =
+    STATUS_OPTIONS.find((option) => option.label === doc.infoBrief.status)
+      ?.label ?? "pending";
+  const normalizedCover = doc.infoBrief?.cover ?? "";
+  const normalizedURL = doc.URL ?? "";
 
   return {
     ...doc,
@@ -308,28 +323,29 @@ const normalizeDocument = (doc: Document): Document => {
     infoBrief: {
       ...doc.infoBrief,
       status: normalizedStatus as DocumentStatusEH,
-      uploadTime: doc.infoBrief.uploadTime || '',
-      name: doc.infoBrief.name || '',
-      category: doc.infoBrief.category || '',
+      uploadTime: doc.infoBrief.uploadTime || "",
+      name: doc.infoBrief.name || "",
+      category: doc.infoBrief.category || "",
       cover: normalizedCover,
     },
-    introduction: doc.introduction || '',
-    bookISBN: doc.bookISBN || '',
+    introduction: doc.introduction || "",
+    bookISBN: doc.bookISBN || "",
     tags: Array.isArray(doc.tags) ? doc.tags : [],
-  }
-}
+  };
+};
 
 const fetchDocuments = async () => {
   loading.value = true;
   if (USE_MOCK) {
-      await delay(300);
-      documents.value = MOCK_DOCUMENTS.map((item) => normalizeDocument(item));
-      ElMessage.info("当前展示为模拟数据");
-      return;
-    }
+    await delay(300);
+    documents.value = MOCK_DOCUMENTS.map((item) => normalizeDocument(item));
+    ElMessage.info("当前展示为模拟数据");
+    loading.value = false;
+    return;
+  }
 
   try {
-    const res = await getBookList(false)
+    const res = await getBookList(false);
 
     const list = Array.isArray(res.data) ? res.data : [];
     if (list.length === 0) {
@@ -366,7 +382,6 @@ const toggleReviewingFilter = () => {
 };
 
 const handleStatusChange = async (row: Document, nextStatus: string) => {
-
   const previous = row.infoBrief.status;
   row.infoBrief.status = nextStatus as typeof row.infoBrief.status;
 
@@ -375,13 +390,13 @@ const handleStatusChange = async (row: Document, nextStatus: string) => {
       await delay(200);
       const mockIndex = MOCK_DOCUMENTS.findIndex(
         (item) => item.infoBrief.documentId === row.infoBrief.documentId
-      );   // find 和 findIndex 的本质区别:一个返回元素本身一个返回下标
+      ); // find 和 findIndex 的本质区别:一个返回元素本身一个返回下标
       if (mockIndex !== -1) {
         MOCK_DOCUMENTS[mockIndex]!.infoBrief.status =
-          nextStatus as typeof MOCK_DOCUMENTS[number]["infoBrief"]["status"];//这里的number代表索引的类型，后面都是在选取属性
+          nextStatus as (typeof MOCK_DOCUMENTS)[number]["infoBrief"]["status"]; //这里的number代表索引的类型，后面都是在选取属性
       }
     } else {
-      await updateFileStatus(row.infoBrief.documentId, nextStatus)
+      await updateFileStatus(row.infoBrief.documentId, nextStatus);
     }
     ElMessage.success("状态更新成功");
   } catch (error) {
@@ -396,11 +411,11 @@ const releaseBlob = (value: string | File | null) => {
   }
 };
 
-const openEditDialog =async (row: Document) => {
+const openEditDialog = async (row: Document) => {
   editVisible.value = true;
 
   editForm.documentId = row.infoBrief.documentId ?? null;
-  editForm.categoryId = null
+  editForm.categoryId = null;
   editForm.type = row.infoBrief.type || "";
   editForm.name = row.infoBrief.name || "";
   editForm.isbn = row.bookISBN || "";
@@ -413,8 +428,8 @@ const openEditDialog =async (row: Document) => {
   editForm.vedioURL = (row.infoBrief.type === "video" ? row.URL : "") || "";
 
   try {
-    const res = await getCategoriesAndCourses()
-    categories.value = res.data
+    const res = await getCategoriesAndCourses();
+    categories.value = res.data;
     //如果有多个相同name，有可能无法找到正确值
     const matchedCategory = categories.value.find(
       (item) => item.name === row.infoBrief.category
@@ -423,12 +438,12 @@ const openEditDialog =async (row: Document) => {
       editForm.categoryId = matchedCategory.id;
     }
   } catch {
-    ElMessage.error('获取分类失败')
+    ElMessage.error("获取分类失败");
   }
 };
 
 const resetEditForm = () => {
-  releaseBlob(editForm.cover);
+  releaseBlob(coverPreview.value);
 
   editForm.documentId = null;
   editForm.categoryId = null;
@@ -440,19 +455,17 @@ const resetEditForm = () => {
   editForm.createYear = "";
   editForm.cover = "";
   editForm.introduction = "";
-  editForm.file = '';
+  editForm.file = "";
   editForm.vedioURL = "";
-
+  coverPreview.value = "";
 };
-
 
 const handleCoverChange = (file: UploadFile) => {
   const raw = file.raw;
   if (raw) {
-    releaseBlob(editForm.cover);
     editForm.cover = raw;
   }
-  ElMessage.success('选择封面成功')
+  ElMessage.success("选择封面成功");
 };
 
 const handleDocumentChange = (file: UploadFile) => {
@@ -460,55 +473,52 @@ const handleDocumentChange = (file: UploadFile) => {
   if (raw) {
     editForm.file = raw;
   }
-  ElMessage.success('选择文件成功')
+  ElMessage.success("选择文件成功");
 };
 
 const buildDocumentEditFormData = (data: DocumentEditForm) => {
   const formData = new FormData();
-  formData.append('documentId', String(data.documentId));
-  formData.append('type', data.type);
-  formData.append('categoryId', String(data.categoryId));
-  formData.append('name', data.name);
-  formData.append('ISBN', data.isbn);
-  formData.append('tags', data.tags);
-  formData.append('author', data.author);
-  formData.append('createYear', data.createYear);
-  formData.append('introduction', data.introduction);
+  formData.append("documentId", String(data.documentId));
+  formData.append("type", data.type);
+  formData.append("categoryId", String(data.categoryId));
+  formData.append("name", data.name);
+  formData.append("ISBN", data.isbn);
+  formData.append("tags", data.tags);
+  formData.append("author", data.author);
+  formData.append("createYear", data.createYear);
+  formData.append("introduction", data.introduction);
 
   if (data.cover instanceof File) {
-    formData.append('cover', data.cover);
-  } else if (typeof data.cover === 'string') {
-    formData.append('cover', data.cover);
+    formData.append("cover", data.cover);
   }
 
-  if (data.type === 'file' && data.file instanceof File) {
-    formData.append('file', data.file);
+  if ((data.type === "file"||data.type==='book' )&& data.file instanceof File) {
+    formData.append("file", data.file);
   }
 
-  if (data.type === 'video') {
-    formData.append('vedioURL', data.vedioURL);
+  if (data.type === "video") {
+    formData.append("vedioURL", data.vedioURL);
   }
 
-  for (const [k, v] of formData.entries()){
-console.log(k,v)
+  for (const [k, v] of formData.entries()) {
+    console.log(k, v);
   }
 
   return formData;
 };
 
 const handleSaveEdit = async () => {
-  if (saving.value) return
+  if (saving.value) return;
 
   if (editForm.type === "video" && !editForm.vedioURL.trim()) {
     ElMessage.warning("当前文档类型为视频，视频链接不能为空");
     return;
   }
 
-
   saving.value = true;
 
   try {
-    await updateFileInfo(buildDocumentEditFormData(editForm))
+    await updateFileInfo(buildDocumentEditFormData(editForm));
     await fetchDocuments();
 
     ElMessage.success("资料信息已更新");
@@ -521,6 +531,20 @@ const handleSaveEdit = async () => {
 };
 
 onMounted(fetchDocuments);
+
+watch(
+  () => editForm.cover,
+  (value) => {
+    releaseBlob(coverPreview.value);
+    if (value instanceof File) {
+      coverPreview.value = URL.createObjectURL(value);
+      return;
+    }
+    //url经过处理已经变成string了
+    coverPreview.value = typeof value === "string" ? value : ""; //typeof的结果是字符串
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped lang="css">
@@ -641,7 +665,7 @@ onMounted(fetchDocuments);
 }
 
 .cover-img {
-  width: 80%;
+  width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
@@ -670,5 +694,29 @@ onMounted(fetchDocuments);
   margin-top: 6px;
   font-size: 12px;
   color: #999;
+}
+
+.cover-preview {
+  margin: 0px 20px 10px 10px;
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cover-placeholder {
+  font-size: 12px;
+  color: #9ca3af;
 }
 </style>

@@ -28,45 +28,11 @@
           {{ TEXT.refresh }}
         </el-button>
       </header>
-
       <section class="comment-card__body" v-loading="loading" :element-loading-text="TEXT.loading">
         <el-empty v-if="!loading && displayedComments.length === 0" :description="TEXT.empty" />
-
-        <el-timeline v-else class="comment-timeline">
-          <el-timeline-item v-for="comment in displayedComments" :key="comment.commentId"
-            :timestamp="formatDateTime(comment.create_at)" placement="top">
-            <article class="comment-item">
-              <header class="comment-item__meta">
-                <div class="comment-item__user">
-                  <el-avatar :src="comment.commenter?.userAvatar" :size="44" class="comment-item__avatar">
-                    {{ getAvatarFallback(comment.commenter?.username) }}
-                  </el-avatar>
-                  <div class="comment-item__info">
-                    <span class="comment-item__name">
-                      {{ comment.commenter?.username || TEXT.unknownUser }}
-                    </span>
-                    <span class="comment-item__id">
-                      ID: {{ comment.commenter?.userId ?? "-" }}
-                    </span>
-                  </div>
-                </div>
-
-                <div class="comment-item__meta-right">
-                  <el-tag v-if="comment.document?.name" size="small" type="info" class="comment-item__doc">
-                    {{ comment.document.name }}
-                  </el-tag>
-                  <el-button type="danger" link size="small" @click="handleDelete(comment)">
-                    {{ TEXT.delete }}
-                  </el-button>
-                </div>
-              </header>
-
-              <p class="comment-item__content">
-                {{ comment.content }}
-              </p>
-            </article>
-          </el-timeline-item>
-        </el-timeline>
+<CommentSection :viewer="userInfo" :show-comment-user="true" :show-source-name="true">
+</CommentSection>
+        
       </section>
     </el-card>
   </div>
@@ -78,6 +44,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { deleteAdminComment, getAdminComments, type CommentItem } from '@/api/admin'
 import { createMockComments } from './mockData'
 import { type UserBrief, getUserDetail } from '@/api/all'
+import CommentSection from '../comments/CommentSection.vue'
 
 const TEXT = {
   refresh: '刷新',
@@ -167,35 +134,6 @@ watch(searchKey, () => {
   resetSearch()
 })
 
-const handleDelete = async (comment: CommentItem) => {
-  const username = comment.commenter?.username || TEXT.unknownUser
-  const documentId = comment.document?.documentId
-
-  if (documentId === undefined || documentId === null) {
-    ElMessage.error(TEXT.missingDocument)
-    return
-  }
-
-  try {
-    await ElMessageBox.confirm(TEXT.confirmMessage(username), TEXT.confirmTitle, {
-      confirmButtonText: TEXT.delete,
-      cancelButtonText: TEXT.cancel,
-      type: 'warning',
-    })
-
-    await deleteAdminComment(documentId)
-
-    comments.value = comments.value.filter((item) => item.commentId !== comment.commentId)
-    // filter会收集结果为true的item；或者直接fetch一次新数据
-    ElMessage.success(TEXT.deleteSuccess)
-  } catch (error) {
-    if (error === 'cancel') {
-      return
-    }
-    console.error('Failed to delete comment:', error)
-    ElMessage.error(TEXT.deleteFailed)
-  }
-}
 
 const formatDateTime = (value: string) => {
   const timestamp = Date.parse(value)
@@ -210,12 +148,6 @@ const formatDateTime = (value: string) => {
   )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
-const getAvatarFallback = (username?: string) => {
-  if (!username) {
-    return 'U'
-  }
-  return username.trim().charAt(0).toUpperCase() || 'U'
-}
 
 const getUserId = () => {
   if (typeof window === 'undefined') return null
@@ -224,18 +156,15 @@ const getUserId = () => {
 
 const fetchUserInfo = async () => {
   const userId = getUserId()
-
   try {
     const { data } = await getUserDetail(userId as string)
     userInfo.value = data.userBrief
   } catch {
     ElMessage.error('获取用户数据失败')
   }
-
 }
 
 onMounted(() => {
-  fetchComments()
   fetchUserInfo()
 })
 

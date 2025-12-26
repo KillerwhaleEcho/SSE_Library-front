@@ -413,8 +413,8 @@ export const sendMessageInterface = (sessionId: number, receiverId: number, cont
 }
 
 //获取总未读消息数量
-export const getUnreadMessage = (type: string, id: number) => {
-  return service.get<ApiResponse<number>>('/unreadMessage', { params: { type, id } })
+export const getUnreadMessage = (Type: string, id: number) => {
+  return service.get<ApiResponse<number>>('/unreadMessage', { params: { Type, id } })
 }
 
 //创建聊天
