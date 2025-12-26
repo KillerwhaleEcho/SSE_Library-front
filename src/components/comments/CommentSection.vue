@@ -1,7 +1,7 @@
 <!--
 CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选择评论数据源，可展示指定文档/帖子、指定用户或全部评论；
 在来源模式下支持登录后发表评论与回复，并会通过 sourceData 区分 document/post。
-可配置显示的部分：评论编辑框(showEditor)、评论用户信息(showCommentUser)、回复按钮(showReplyButton)、评论关联来源标签(showSourceName)。
+可配置显示的部分：评论编辑框(showEditor)、评论用户信息(showCommentUser)、回复按钮(showReplyButton)、评论关联来源标签(showSourceName)、非来源模式下的本地搜索条(showSearchBar)。
 
 调用示例：
 <CommentSection
@@ -13,11 +13,34 @@ CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选�
     :show-comment-user="true"
     :show-reply-button="true"
     :show-source-name="true"
+    :show-search-bar="false"
 />
+<!-- 非来源模式示例（用户页/管理页可本地搜索）：
+<CommentSection :viewer="currentViewer" :show-editor="false" :show-reply-button="false" :show-search-bar="true" />
+-->
 -->
 
 <template>
     <section class="comments-section">
+        <div v-if="shouldShowSearchBar" class="comment-search">
+            <el-select v-model="searchKey" placeholder="请选择搜索类型" class="comment-search__select" size="large">
+                <el-option label="姓名" value="name" />
+                <el-option label="评论内容" value="content" />
+                <el-option label="评论时间" value="time" />
+            </el-select>
+            <el-input v-if="searchKey !== 'time'" v-model="searchInput" placeholder="请输入搜索内容"
+                class="comment-search__input" clearable @clear="resetSearch" @keyup.enter="handleSearch" size="large">
+                <template #append>
+                    <el-button @click="handleSearch">
+                        搜索
+                    </el-button>
+                </template>
+            </el-input>
+
+            <el-date-picker v-else v-model="searchDate" type="date" placeholder="请选择日期" class="comment-search__input"
+                clearable format="YYYY-MM-DD" value-format="YYYY-MM-DD" @change="handleSearch" @clear="resetSearch"
+                size="large" />
+        </div>
         <div v-if="shouldShowEditor" class="comment-editor">
             <el-input v-model="commentContent" type="textarea" :rows="4" maxlength="500" show-word-limit
                 placeholder="轻轻敲醒沉睡的心灵，让我看看你的点评..." />
@@ -82,7 +105,7 @@ CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选�
                                         <div class="reply-parent-header">
                                             <span class="reply-parent-name">{{ item.parent.commenter.username }}</span>
                                             <span class="reply-parent-time">{{ formattedDate(item.parent.createdAt)
-                                            }}</span>
+                                                }}</span>
                                         </div>
                                         <p class="reply-parent-content">{{ item.parent.content || '（原评论暂无内容）' }}</p>
                                     </div>
@@ -163,6 +186,7 @@ const props = defineProps<{
     showCommentUser?: boolean
     showReplyButton?: boolean
     showSourceName?: boolean
+    showSearchBar?: boolean
 }>()
 
 const router = useRouter()
@@ -177,6 +201,10 @@ const replyingTo = ref<DocumentComment | null>(null)
 const replyingContent = ref('')
 const replyingModalVisible = ref(false)
 const deletingCommentMap = ref<Record<number, boolean>>({})
+const searchKey = ref<'name' | 'content' | 'time' | ''>('')
+const searchInput = ref('')
+const searchDate = ref<string | null>('')
+const appliedKeyword = ref('')
 
 const shouldShowCommentUser = computed(() => props.showCommentUser !== false)
 const shouldShowSourceName = computed(() => props.showSourceName === true)
@@ -265,9 +293,9 @@ const isSourceMode = computed(() => commentFetchMode.value.kind === 'source')
 const shouldShowEditor = computed(() => props.showEditor !== false && isSourceMode.value)
 const shouldShowReplyButton = computed(() => props.showReplyButton !== false && isSourceMode.value)
 const hasCommentsSource = computed(() => commentFetchMode.value.kind !== 'none')
-const hasComments = computed(() => comments.value.length > 0)
 const normalizedViewerRole = computed(() => (effectiveViewer.value?.role || '').toLowerCase())
 const viewerUserId = computed(() => effectiveViewer.value?.userId ?? null)
+const shouldShowSearchBar = computed(() => props.showSearchBar !== false && !isSourceMode.value)
 
 const canDeleteComment = (comment: DocumentComment) => {
     const role = normalizedViewerRole.value
@@ -280,6 +308,20 @@ const canDeleteComment = (comment: DocumentComment) => {
 }
 
 const isDeletingComment = (commentId: number) => deletingCommentMap.value[commentId] === true
+
+const handleSearch = () => {
+    if (searchKey.value === 'time') {
+        appliedKeyword.value = (searchDate.value || '').trim()
+    } else {
+        appliedKeyword.value = searchInput.value.trim()
+    }
+}
+
+const resetSearch = () => {
+    searchInput.value = ''
+    searchDate.value = ''
+    appliedKeyword.value = ''
+}
 
 const handleDeleteComment = async (comment: DocumentComment) => {
     if (!effectiveViewer.value) {
@@ -321,22 +363,6 @@ interface DisplayComment {
     parentError: boolean
 }
 
-const displayComments = computed<DisplayComment[]>(() =>
-    comments.value.map((item) => {
-        const parentId = item.parentId ?? null
-        const parentLoading = parentId !== null ? parentLoadingState.value[parentId] ?? false : false
-        const parentError = parentId !== null ? parentErrorState.value[parentId] ?? false : false
-        const parentData = parentId !== null ? parentCommentCache.value[parentId] ?? null : null
-        return {
-            comment: item,
-            parent: parentData,
-            parentId,
-            parentLoading,
-            parentError,
-        }
-    })
-)
-
 const formatTwoDigit = (value: number) => value.toString().padStart(2, '0')
 
 const formattedDate = (value?: string | null) => {
@@ -351,6 +377,43 @@ const formattedDate = (value?: string | null) => {
     const minutes = formatTwoDigit(date.getMinutes())
     return `${year}-${month}-${day} ${hours}:${minutes}`
 }
+
+const filteredComments = computed<DocumentComment[]>(() => {
+    if (!shouldShowSearchBar.value) return comments.value
+    const keyword = appliedKeyword.value.trim().toLowerCase()
+    if (!keyword) return comments.value
+
+    const activeKey = searchKey.value
+    const matchers: Record<typeof activeKey, (item: DocumentComment) => boolean> = {
+        name: (item) => (item.commenter?.username || '').toLowerCase().includes(keyword),
+        content: (item) => (item.content || '').toLowerCase().includes(keyword),
+        time: (item) => formattedDate(item.createdAt)?.toLowerCase().includes(keyword),
+        '': (item) =>
+            (item.commenter?.username || '').toLowerCase().includes(keyword) ||
+            (item.content || '').toLowerCase().includes(keyword) ||
+            formattedDate(item.createdAt)?.toLowerCase().includes(keyword),
+    }
+
+    return comments.value.filter(matchers[activeKey])
+})
+
+const hasComments = computed(() => filteredComments.value.length > 0)
+
+const displayComments = computed<DisplayComment[]>(() =>
+    filteredComments.value.map((item) => {
+        const parentId = item.parentId ?? null
+        const parentLoading = parentId !== null ? parentLoadingState.value[parentId] ?? false : false
+        const parentError = parentId !== null ? parentErrorState.value[parentId] ?? false : false
+        const parentData = parentId !== null ? parentCommentCache.value[parentId] ?? null : null
+        return {
+            comment: item,
+            parent: parentData,
+            parentId,
+            parentLoading,
+            parentError,
+        }
+    })
+)
 
 const resetParentCommentState = () => {
     parentCommentCache.value = {}
@@ -607,10 +670,17 @@ watch(
             replyingTo.value = null
             replyingModalVisible.value = false
         }
+        if (mode.kind === 'source') {
+            resetSearch()
+        }
         await refreshComments(mode)
     },
     { immediate: true },
 )
+
+watch(searchKey, () => {
+    resetSearch()
+})
 
 watch(
     () => [props.sourceId, props.sourceType, props.sourceData],
@@ -633,6 +703,26 @@ watch(
     display: flex;
     flex-direction: column;
     gap: 24px;
+}
+
+.comment-search {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.comment-search__select {
+    width: 150px;
+}
+
+.comment-search__input {
+    flex: 1;
+    min-width: 260px;
+}
+
+.comment-search__input :deep(.el-input__wrapper) {
+    width: 100%;
 }
 
 .comment-editor {

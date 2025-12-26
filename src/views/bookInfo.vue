@@ -114,7 +114,7 @@
                     <CommentSection v-if="documentDetail && documentNumericId !== null" source-type="document"
                         :source-id="documentNumericId" :source-data="documentSourceData" :viewer="commentViewer"
                         :show-editor="true" :show-comment-user="true" :show-reply-button="true"
-                        :show-source-name="false" />
+                        :show-source-name="false" :show-search-bar="false" />
                 </div>
                 <div v-else class="discussion-panel">
                     <div v-if="documentPosts.length" class="post-list">

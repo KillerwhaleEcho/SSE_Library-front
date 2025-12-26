@@ -30,9 +30,9 @@
       </header>
       <section class="comment-card__body" v-loading="loading" :element-loading-text="TEXT.loading">
         <el-empty v-if="!loading && displayedComments.length === 0" :description="TEXT.empty" />
-<CommentSection :viewer="userInfo" :show-comment-user="true" :show-source-name="true">
-</CommentSection>
-        
+        <CommentSection :viewer="userInfo" :show-comment-user="true" :show-source-name="true" :show-search-bar="true">
+        </CommentSection>
+
       </section>
     </el-card>
   </div>
@@ -105,7 +105,7 @@ const fetchComments = async () => {
   loading.value = true
   try {
     const res = await getAdminComments()
-    comments.value =res.data
+    comments.value = res.data
   } catch (error) {
     console.error('Failed to fetch comments:', error)
     ElMessage.info(TEXT.mockHint)
