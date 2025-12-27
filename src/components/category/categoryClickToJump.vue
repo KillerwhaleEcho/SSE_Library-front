@@ -18,6 +18,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import * as allApi from '@/api/all.ts'
 
 const props = defineProps<{
@@ -28,8 +29,14 @@ const emit = defineEmits<{
   (e: 'click', category: allApi.Category): void
 }>()
 
+const router = useRouter()
+
 const handleClick = () => {
   emit('click', props.category)
+  const targetId = props.category?.id
+  if (typeof targetId === 'number' && Number.isFinite(targetId)) {
+    router.push({ path: '/categoryInfo', query: { id: targetId } })
+  }
 }
 </script>
 

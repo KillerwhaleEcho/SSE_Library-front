@@ -43,7 +43,9 @@
                                     <span v-for="tag in tags" :key="tag" class="tag-chip">{{ tag }}</span>
                                 </div>
                                 <div class="meta-grid" v-if="baseDetails.length">
-                                    <div v-for="item in baseDetails" :key="item.label" class="meta-item">
+                                    <div v-for="item in baseDetails" :key="item.label"
+                                        :class="['meta-item', { clickable: item.key === 'category' && item.value }]"
+                                        @click="item.key === 'category' && item.value ? handleCategoryNavigate() : null">
                                         <span class="meta-label">{{ item.label }}</span>
                                         <span class="meta-value">{{ item.value || '暂无' }}</span>
                                     </div>
@@ -130,7 +132,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import topbar from '@/layout/topbar.vue'
 import CommentSection from '@/components/comments/CommentSection.vue'
@@ -143,6 +145,7 @@ import {
     type CommentSourceData,
     type FavoriteActionPayload,
     type UserBrief,
+    getCategoryByName,
     getDocumentDetail,
     getUserFavoriteJudgement,
     postUserAddFavor,
@@ -158,6 +161,7 @@ import previewOpenIcon from '@/assets/预览-打开_preview-open.png'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const { userInfo } = storeToRefs(authStore)
 
@@ -260,15 +264,17 @@ const docStatusDisplayMap: Record<string, string> = {
     withdrawn: '用户已撤回',
 }
 const currentDocumentStatus = computed(() => (brief.value?.status ? docStatusDisplayMap[brief.value.status] ?? brief.value.status : '未知'))
-const baseDetails = computed(() => {
-    if (!documentDetail.value || !brief.value) return [] as Array<{ label: string; value: string }>
-    const details: Array<{ label: string; value: string }> = [
+type BaseDetail = { label: string; value: string; key?: string }
+
+const baseDetails = computed<BaseDetail[]>(() => {
+    if (!documentDetail.value || !brief.value) return []
+    const details: BaseDetail[] = [
         {
             label: '资料类型',
             value: typeMap[brief.value.type ?? ''] ?? (brief.value.type ?? '未知'),
         },
         { label: '上传时间', value: formattedDate(brief.value.uploadTime) },
-        { label: '分类', value: brief.value.category ?? '' },
+        { label: '分类', value: brief.value.category ?? '', key: 'category' },
         { label: '出版年份', value: documentDetail.value.createYear ?? '' },
         { label: 'ISBN', value: documentDetail.value.bookISBN ?? '' },
     ]
@@ -277,6 +283,32 @@ const baseDetails = computed(() => {
     }
     return details
 })
+
+const handleCategoryNavigate = async () => {
+    const name = brief.value?.category
+    if (!name) {
+        ElMessage.warning('暂无分类信息')
+        return
+    }
+    try {
+        const res = await getCategoryByName(name)
+        const list = Array.isArray(res.data)
+            ? res.data
+            : Array.isArray((res as any)?.data)
+                ? (res as any).data
+                : []
+        const target = list[0]
+        const targetId = target?.id ?? target?.categoryId
+        if (typeof targetId === 'number' && Number.isFinite(targetId)) {
+            const url = router.resolve({ path: '/categoryInfo', query: { id: targetId } }).href
+            window.open(url, '_blank')
+            return
+        }
+        ElMessage.warning('未找到对应分类')
+    } catch (error: any) {
+        ElMessage.error(error?.message || '获取分类信息失败')
+    }
+}
 
 const commentViewer = computed<UserBrief | null>(() => {
     if (!userInfo.value) return null
@@ -743,6 +775,10 @@ watch(
     background: #f8fafc;
     border-radius: 12px;
     padding: 12px;
+}
+
+.meta-item.clickable {
+    cursor: pointer;
 }
 
 .meta-label {

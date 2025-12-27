@@ -16,7 +16,7 @@
         <el-col :span="6">
           <div class="grid-content ep-bg-purple" />
           <button class="category-select-btn" @click="showCategoryDialog = true">{{ selectedCategoryName || 'category'
-            }}</button>
+          }}</button>
         </el-col>
         <el-col :span="6">
           <div class="grid-content ep-bg-purple" />
@@ -59,7 +59,7 @@
               <h3>热门分类</h3>
               <div class="category-list">
                 <!-- 循环渲染分类组件 -->
-                <CategoryItem v-for="category in hotCategories" :key="category.id" :category="category"
+                <CategoryClickToJump v-for="category in hotCategories" :key="category.id" :category="category"
                   @click="onCategorySelected(category)" />
               </div>
             </div>
@@ -106,7 +106,7 @@ import topbar from '@/layout/topbar.vue'
 import { useRouter } from 'vue-router'
 import { ref, onMounted, nextTick, reactive, watch } from 'vue'
 import * as allApi from '@/api/all.ts'
-import CategoryItem from '@/components/categoryItem.vue'
+import CategoryClickToJump from '@/components/category/categoryClickToJump.vue'
 import BookItem from '@/components/bookItem.vue'
 import CategoryDialog from '@/components/CategoryDialog.vue'
 import UploadModal from '@/components/UploadModal.vue'

@@ -8,8 +8,9 @@
                 <div v-else-if="category" class="info-card">
                     <div class="info-header">
                         <div class="title-block">
-                            <p class="category-id">ID {{ category.id }}</p>
                             <h1 class="category-name">{{ category.name }}</h1>
+                            <p class="category-id">ID {{ category.id }}</p>
+                            <p class="desc-label">简介</p>
                             <p class="category-desc">{{ category.description || '暂无描述' }}</p>
                         </div>
                         <div :class="['category-badge', category.isCourse ? 'course' : 'category']">
@@ -18,24 +19,12 @@
                     </div>
                     <div class="info-grid">
                         <div class="info-item">
-                            <span class="label">是否课程</span>
-                            <span class="value">{{ category.isCourse ? '是' : '否' }}</span>
-                        </div>
-                        <div class="info-item">
                             <span class="label">文件数</span>
                             <span class="value">{{ category.fileCounts ?? 0 }}</span>
                         </div>
                         <div class="info-item">
                             <span class="label">浏览量</span>
                             <span class="value">{{ category.readCounts ?? 0 }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">所属分类 ID</span>
-                            <span class="value">{{ category.parentId ?? '无' }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">包含课程数</span>
-                            <span class="value">{{ childCategories.length }}</span>
                         </div>
                     </div>
                 </div>
@@ -46,13 +35,13 @@
                 <div v-if="parentCategory" class="relation-block">
                     <h2 class="section-title">所属分类</h2>
                     <div class="category-list">
-                        <CategoryItem :category="parentCategory" />
+                        <CategoryClickToJump :category="parentCategory" />
                     </div>
                 </div>
                 <div v-if="childCategories.length" class="relation-block">
                     <h2 class="section-title">包含课程</h2>
                     <div class="category-list">
-                        <CategoryItem v-for="item in childCategories" :key="item.id" :category="item" />
+                        <CategoryClickToJump v-for="item in childCategories" :key="item.id" :category="item" />
                     </div>
                 </div>
             </section>
@@ -77,7 +66,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import topbar from '@/layout/topbar.vue'
-import CategoryItem from '@/components/categoryItem.vue'
+import CategoryClickToJump from '@/components/category/categoryClickToJump.vue'
 import BookItem from '@/components/bookItem.vue'
 import { ElMessage } from 'element-plus'
 import {
@@ -162,6 +151,7 @@ const loadCategory = async (catId: number) => {
         normalized.parentId = (res.data as any)?.parentId ?? (res.data as any)?.parent_id ?? normalized.parentId ?? null
         normalized.children = normalized.children ?? []
         category.value = normalized
+        document.title = `${normalized.name} - 分类详情`
         childCategories.value = normalized.children ?? []
 
         if (normalized.parentId !== null && normalized.parentId !== undefined) {
@@ -230,14 +220,14 @@ watch(resolvedCategoryId, (next) => {
 .info-card {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
 }
 
 .info-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 12px;
+    gap: 16px;
 }
 
 .title-block {
@@ -251,10 +241,16 @@ watch(resolvedCategoryId, (next) => {
 }
 
 .category-name {
-    margin: 4px 0 8px;
+    margin: 0 0 6px;
     font-size: 28px;
     font-weight: 700;
     color: #2d2d2d;
+}
+
+.desc-label {
+    margin: 12px 0 4px;
+    color: #a0a0a0;
+    font-size: 13px;
 }
 
 .category-desc {
@@ -283,7 +279,7 @@ watch(resolvedCategoryId, (next) => {
 .info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
+    gap: 16px;
 }
 
 .info-item {
