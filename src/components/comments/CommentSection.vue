@@ -27,6 +27,7 @@ CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选�
                 <el-option label="姓名" value="name" />
                 <el-option label="评论内容" value="content" />
                 <el-option label="评论时间" value="time" />
+                <el-option label="评论地点" value="place" />
             </el-select>
             <el-input v-if="searchKey !== 'time'" v-model="searchInput" placeholder="请输入搜索内容"
                 class="comment-search__input" clearable @clear="resetSearch" @keyup.enter="handleSearch" size="large">
@@ -201,7 +202,7 @@ const replyingTo = ref<DocumentComment | null>(null)
 const replyingContent = ref('')
 const replyingModalVisible = ref(false)
 const deletingCommentMap = ref<Record<number, boolean>>({})
-const searchKey = ref<'name' | 'content' | 'time' | ''>('')
+const searchKey = ref<'name' | 'content' | 'time' | 'place' | ''>('')
 const searchInput = ref('')
 const searchDate = ref<string | null>('')
 const appliedKeyword = ref('')
@@ -388,10 +389,12 @@ const filteredComments = computed<DocumentComment[]>(() => {
         name: (item) => (item.commenter?.username || '').toLowerCase().includes(keyword),
         content: (item) => (item.content || '').toLowerCase().includes(keyword),
         time: (item) => formattedDate(item.createdAt)?.toLowerCase().includes(keyword),
+        place: (item) => (item.sourceData?.name || '').toLowerCase().includes(keyword),
         '': (item) =>
             (item.commenter?.username || '').toLowerCase().includes(keyword) ||
             (item.content || '').toLowerCase().includes(keyword) ||
-            formattedDate(item.createdAt)?.toLowerCase().includes(keyword),
+            formattedDate(item.createdAt)?.toLowerCase().includes(keyword) ||
+            (item.sourceData?.name || '').toLowerCase().includes(keyword),
     }
 
     return comments.value.filter(matchers[activeKey])
