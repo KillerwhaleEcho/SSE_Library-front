@@ -1,6 +1,7 @@
 <!--
 CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选择评论数据源，可展示指定文档/帖子、指定用户或全部评论；
-在来源模式下支持登录后发表评论与回复，并会通过 sourceData 区分 document/post。
+“来源模式”指传入 sourceType/sourceId/sourceData（如文档/帖子详情页），此时展示对应来源的评论，并支持登陆后发表/回复评论；
+“非来源模式”指未提供来源，但有 viewer（如用户页/管理页），会根据身份拉取用户或全部评论，并可开启本地搜索；
 可配置显示的部分：评论编辑框(showEditor)、评论用户信息(showCommentUser)、回复按钮(showReplyButton)、评论关联来源标签(showSourceName)、非来源模式下的本地搜索条(showSearchBar)。
 
 调用示例：
@@ -345,6 +346,9 @@ const handleDeleteComment = async (comment: DocumentComment) => {
         }
         ElMessage.success('评论删除成功')
         await refreshComments(commentFetchMode.value)
+        if (commentFetchMode.value.kind === 'source') {
+            router.go(0)
+        }
     } catch (error: any) {
         ElMessage.error(error?.message || '删除评论失败')
     } finally {
@@ -625,6 +629,7 @@ const postComment = async (source: 'main' | 'reply') => {
             console.warn('刷新用户信息失败', error)
         }
         ElMessage.success(response.message || '评论发表成功')
+        router.go(0)
     } catch (error: any) {
         ElMessage.error(error?.message || '评论发表失败')
     } finally {
