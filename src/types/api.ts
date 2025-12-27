@@ -35,7 +35,7 @@
   categoryId: number|null
   name: string
   isbn: string
-  tags: string
+  tags: string[]
   author: string
   createYear: string
   cover: File | string | null

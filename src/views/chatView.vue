@@ -29,10 +29,15 @@
               />
             </figure>
             <div class="chatbox-content">
-              <span class="chatbox-content-name">{{ chatbox.username2 }}</span>
-              <span>{{ chatbox.lastMessage }}</span>
+              <div class="chatbox-up">
+                 <span class="chatbox-content-name">{{
+                  chatbox.username2
+                }}</span>
+                <span class="chatbox-content-time">{{ formatTime(chatbox.lastTime )}}</span>  
+              </div> 
+               <span>[{{chatbox.unreadCount}}条]  {{ chatbox.lastMessage }}</span>
+              </div>
             </div>
-          </div>
         </el-menu-item>
       </el-menu>
     </aside>
@@ -211,8 +216,6 @@
 
   <!-- 使用分离的组件 -->
   <CategoryDialog
-  v-if="showCategoryDialog"
-  destory-on-close 
     :visible="showCategoryDialog"
     @update:visible="showCategoryDialog = $event"
     :all-categories="allCategories"
@@ -224,7 +227,6 @@
   />
 
   <UploadModal
-  destory-on-close
     v-model:visible="showUploadModal"
     :selected-category-name="selectedUploadCategoryName"
     :selected-category-id="selectedCategoryId"
@@ -366,7 +368,6 @@ const formatTime = (time: string) => {
   const minutes = date.getMinutes().toString().padStart(2, "0");
   return `${month}月${day}日 ${hours}:${minutes}`;
 };
-
 
 const getReminderLabel = (type: string) => reminderTypeDict[type] ?? "未知";
 
@@ -661,9 +662,9 @@ const fetchMessages = async (sessionId: number) => {
       sessionId,
       userInfo.value?.userId as number
     );
-    console.log('+++++++++++++')
-    console.log(res)
-    console.log('res.data')
+    console.log("+++++++++++++");
+    console.log(res);
+    console.log("res.data");
     messages.value = Array.isArray(res.data) ? res.data : [];
   } catch (err) {
     // 拉取失败时提示，避免频繁轮询重复提示
@@ -936,6 +937,7 @@ onUnmounted(() => {
 
 .chat-menu .el-menu-item {
   height: auto;
+  width: 100%;
   line-height: normal;
   padding: 0 !important;
   border-radius: 8px;
@@ -1019,7 +1021,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  min-width: 0;
+  width: 100%;
 }
 
 .contact-avatar {
@@ -1077,9 +1079,25 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
+.chatbox-up{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+}
+
+
+
 .chatbox-content-name {
   font-size: 16px;
   font-weight: 400;
+}
+
+.chatbox-content-time{
+  font-size: 10px;
+  font-weight: 200;
+  margin-left: auto;
 }
 
 .chatbox-content-header {
@@ -1087,7 +1105,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
 }
-
 .chatbox-tag {
   padding: 2px 6px;
   border-radius: 6px;
