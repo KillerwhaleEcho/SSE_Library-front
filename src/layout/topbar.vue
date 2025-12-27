@@ -13,7 +13,7 @@
       </router-link>
       <router-link to="/chat" class="icon-container" data-tooltip="聊天">
            <img src="@/assets/147_对话-08.png" alt="聊天">
-           <div class="badge" v-if="unreadMessage>0">{{ unreadMessage }}</div>
+           <div class="badge" v-if="unreadChatMessage>0">{{ unreadChatMessage }}</div>
       </router-link>
 
       <ReminderBox 
@@ -69,7 +69,7 @@ const showCategoryDialog = ref(false)
 const allCategories = ref<any[]>([])
 const selectedCategoryName = ref<string | null>(null)
 const selectedCategoryId = ref<number | null>(null)
-const unreadMessage = ref(0)
+const unreadChatMessage = ref(0)
 const unreadReminder=ref(0)
 const socket=ref<WebSocket|null>(null)
 
@@ -123,18 +123,9 @@ const fetchReminders = async () => {
 const getUnreadCountOfMessages = async() => {
   try {
     const res= await allApi.getUnreadMessage('message',userId);
-    unreadMessage.value=res.data
+    unreadChatMessage.value=res.data
   } catch {
-    console.log('获取未读消息数量失败')
-  }
-}
-
-const getUnreadCountOfReminder = async () => {
-    try {
-  const res= await allApi.getUnreadMessage('reminder',userId);
-    unreadMessage.value=res.data
-  } catch {
-    console.log('获取未读消息数量失败')
+    console.log('获取未读聊天数量失败')
   }
 }
 
@@ -153,7 +144,7 @@ const initWebSocket = () => {
     try {
       const payload = JSON.parse(event.data);
       if (payload.type === 'chat-message') {
-        unreadMessage.value++
+        unreadChatMessage.value++
       } else {
         unreadReminder.value++
       }
@@ -177,7 +168,6 @@ const initWebSocket = () => {
 onMounted(() => {
   fetchReminders();
   getUnreadCountOfMessages()
-  getUnreadCountOfReminder()
   initWebSocket()
 })
 
