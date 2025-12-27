@@ -112,10 +112,12 @@ export interface Category {
   id: number;
   name: string;
   is_course: boolean;
+  isCourse?: boolean;
   fileCounts: number;
   readCounts: number;
   description?: string;
   parent_id?: number;
+  parentId?: number;
   children?: Category[];
 }
 
@@ -220,6 +222,30 @@ export const getHotDocuments = () => {
   return service.get<ApiResponse<{ documents: Document[] }>>('/documents', {
     params: { is_suggest: true, categoryId: undefined }
   });
+};
+
+// 删除分类或课程
+export const deleteCategory = (name?: string) => {
+  return service.delete<ApiResponse<{ message?: string }>>('/category', {
+    params: { name }
+  });
+};
+
+// 根据分类 ID 获取详情
+export const getCategoryById = (categoryId: number) => {
+  return service.get<ApiResponse<Category>>(`/category/${categoryId}`);
+};
+
+// 根据分类名搜索
+export const getCategoryByName = (name?: string) => {
+  return service.get<ApiResponse<Category[]>>('/searchcat', {
+    params: { name },
+  });
+};
+
+// 修改分类或课程信息
+export const editCategory = (payload: { id?: number; name?: string; description?: string; isCourse?: boolean | string; parentId?: number }) => {
+  return service.put<ApiResponse<Category>>('/category', payload);
 };
 
 

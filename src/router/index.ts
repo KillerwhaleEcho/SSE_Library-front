@@ -45,6 +45,16 @@ const routes: Array<RouteRecordRaw> = [
     props: (route) => ({ postId: route.query.postId }),
   },
   {
+    path: '/categoryInfo',
+    name: 'CategoryInfo',
+    component: () => import('@/views/categoryInfo.vue'),
+    meta: { requiresAuth: true },
+    props: (route) => {
+      const parsed = Number(route.query.id);
+      return { categoryId: Number.isFinite(parsed) ? parsed : undefined };
+    },
+  },
+  {
     path: '/user',
     name: 'User',
     component: User,
