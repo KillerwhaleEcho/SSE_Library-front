@@ -104,6 +104,30 @@
                     <p v-if="!uploadsDocs.length" class="placeholder">暂无上传记录</p>
                 </template>
 
+                <template v-else-if="activeTab === 'posts'">
+                    <div class="doc-tabs">
+                        <button type="button" class="doc-tab" :class="{ active: activePostTab === 'collect' }"
+                            @click="activePostTab = 'collect'">
+                            收藏
+                        </button>
+                        <span class="tab-divider">|</span>
+                        <button type="button" class="doc-tab" :class="{ active: activePostTab === 'mine' }"
+                            @click="activePostTab = 'mine'">
+                            我的发帖
+                        </button>
+                    </div>
+
+                    <div v-if="activePostTab === 'collect'">
+                        <PostItem v-for="post in collectPosts" :key="post.postId" :post="post" />
+                        <p v-if="!collectPosts.length" class="placeholder">暂无收藏帖子</p>
+                    </div>
+
+                    <div v-else>
+                        <PostItem v-for="post in myPosts" :key="post.postId" :post="post" />
+                        <p v-if="!myPosts.length" class="placeholder">暂无发帖记录</p>
+                    </div>
+                </template>
+
                 <template v-else>
                     <p class="placeholder">{{ activePlaceholder }}</p>
                 </template>
@@ -127,15 +151,16 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import topbar from '@/layout/topbar.vue'
-import { getUserAll, getUserUploadDoc, updateUserProfile, type UserAll } from '@/api/user'
+import { getUserAll, getUserPostList, getUserUploadDoc, updateUserProfile, type UserAll } from '@/api/user'
 import { useAuthStore } from '@/stores/auth'
 import BookListItem from '@/components/bookListItem.vue'
 import CommentSection from '@/components/comments/CommentSection.vue'
-import type { Document, InfoBrief, UserBrief } from '@/api/all.ts'
+import type { Document, InfoBrief, Post, UserBrief } from '@/api/all.ts'
 import * as allApi from "@/api/all";
 import { ElMessage } from 'element-plus'
 import CategoryDialog from '@/components/CategoryDialog.vue'
 import UploadModal from '@/components/UploadModal.vue'
+import PostItem from '@/components/postItem.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -160,6 +185,9 @@ const allCategories = ref<allApi.Category[]>([])
 const selectedCategoryName = ref<string | null>(null)
 const selectedCategoryId = ref<number | null>(null)
 const selectedUploadCategoryName = ref<string | null>(null)
+const collectPosts = ref<Post[]>([])
+const myPosts = ref<Post[]>([])
+const activePostTab = ref<'collect' | 'mine'>('collect')
 
 type TabKey = 'docs' | 'comments' | 'uploads' | 'posts'
 interface TabItem {
@@ -274,6 +302,30 @@ const fetchUserUploads = async () => {
         }
     } catch (error) {
         console.error('获取上传记录失败', error)
+        errorMessage.value = '网络异常，请稍后重试'
+    }
+}
+
+const fetchUserPosts = async () => {
+    errorMessage.value = ''
+    collectPosts.value = []
+    myPosts.value = []
+
+    if (!resolvedUserId.value) {
+        errorMessage.value = '未能获取用户信息，请先登录。'
+        return
+    }
+
+    try {
+        const res = await getUserPostList(resolvedUserId.value)
+        if (res.code === 200 || res.code === 0) {
+            collectPosts.value = res.data?.collectPostList ?? []
+            myPosts.value = res.data?.myPostList ?? []
+        } else {
+            errorMessage.value = res.message || '获取帖子列表失败'
+        }
+    } catch (error) {
+        console.error('获取帖子列表失败', error)
         errorMessage.value = '网络异常，请稍后重试'
     }
 }
@@ -467,6 +519,9 @@ watch(
         if (activeTab.value === 'uploads') {
             fetchUserUploads()
         }
+        if (activeTab.value === 'posts') {
+            fetchUserPosts()
+        }
     },
 )
 
@@ -479,6 +534,9 @@ watch(activeTab, (tab) => {
     updateUnderline()
     if (tab === 'uploads') {
         fetchUserUploads()
+    }
+    if (tab === 'posts') {
+        fetchUserPosts()
     }
 })
 </script>

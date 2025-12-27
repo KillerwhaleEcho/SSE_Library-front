@@ -153,6 +153,8 @@ export interface chatBox {
 export interface Post {
   postId: number;
   senderId: number;
+  senderName: string;
+  senderAvatar: string;
   title: string;
   content: string;
   collectCount: number;
