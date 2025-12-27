@@ -9,35 +9,26 @@
           <span>{{ unreadReminderCount }}</span>
         </figure>
       </div>
-      <el-menu
-        class="chat-menu"
-        :default-active="String(currentSessionId != -1 || '')"
-        @select="handleSelect"
-      >
-        <el-menu-item
-          v-for="chatbox in appliedChatboxes"
-          :index="String(chatbox.sessionId)"
-        >
+      <el-menu class="chat-menu" :default-active="String(currentSessionId != -1 || '')" @select="handleSelect">
+        <el-menu-item v-for="chatbox in appliedChatboxes" :index="chatbox">
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="chatbox.avatar2" alt="" />
-              <img
-                v-if="chatbox.unreadCount"
-                :src="unreadUrl"
-                alt="未读消息"
-                class="contact-avatar__badge"
-              />
+              <img v-if="chatbox.unreadCount>0" :src="unreadUrl" alt="未读消息" class="contact-avatar__badge" />
             </figure>
             <div class="chatbox-content">
               <div class="chatbox-up">
-                 <span class="chatbox-content-name">{{
+                <span class="chatbox-content-name">{{
                   chatbox.username2
                 }}</span>
-                <span class="chatbox-content-time">{{ formatTime(chatbox.lastTime )}}</span>  
-              </div> 
-               <span>[{{chatbox.unreadCount}}条]  {{ chatbox.lastMessage }}</span>
+                <span class="chatbox-content-time">{{ formatTime(chatbox.lastTime) }}</span>
+              </div>
+              <div class="chatbox-down">
+                <span v-if="chatbox.unreadCount>0">[{{ chatbox.unreadCount }}条]</span> 
+                <span> {{ chatbox.lastMessage }}</span>
               </div>
             </div>
+          </div>
         </el-menu-item>
       </el-menu>
     </aside>
@@ -45,32 +36,14 @@
     <section class="chatview-content">
       <div class="chatview-top">
         <div class="chatview-search">
-          <el-select
-            v-model="searchType"
-            class="chatview-select"
-            size="samll"
-            :teleported="false"
-            placeholder="选择类型"
-          >
+          <el-select v-model="searchType" class="chatview-select" size="samll" :teleported="false" placeholder="选择类型">
             <el-option label="用户" value="user" />
             <el-option label="聊天记录" value="message" />
           </el-select>
-          <el-input
-            v-model="searchInput"
-            class="chatview-input"
-            size="samll"
-            @keyup.enter="handleSearch"
-            :placeholder="searchPlaceholder"
-            clearable
-          >
+          <el-input v-model="searchInput" class="chatview-input" size="samll" @keyup.enter="handleSearch"
+            :placeholder="searchPlaceholder" clearable>
             <template #append>
-              <el-button
-                type="primary"
-                size="samll"
-                class="chatview-button"
-                @click="handleSearch"
-                >搜索</el-button
-              >
+              <el-button type="primary" size="samll" class="chatview-button" @click="handleSearch">搜索</el-button>
             </template>
           </el-input>
         </div>
@@ -83,21 +56,13 @@
               <p class="reminder-title">通知中心</p>
             </div>
             <div class="reminder-stats">
-              <span class="reminder-chip reminder-chip__primary"
-                >未读 {{ unreadReminderCount }}</span
-              >
-              <span class="reminder-chip reminder-chip__ghost"
-                >全部 {{ reminders.length }}</span
-              >
+              <span class="reminder-chip reminder-chip__primary">未读 {{ unreadReminderCount }}</span>
+              <span class="reminder-chip reminder-chip__ghost">全部 {{ reminders.length }}</span>
             </div>
           </div>
           <div v-if="sortedReminders.length" class="reminder-list">
-            <article
-              v-for="item in sortedReminders"
-              :key="item.reminderId"
-              class="reminder-card"
-              :class="{ 'is-unread': !item.isRead }"
-            >
+            <article v-for="item in sortedReminders" :key="item.reminderId" class="reminder-card"
+              :class="{ 'is-unread': !item.isRead }">
               <div class="reminder-card__meta">
                 <span class="reminder-type" :class="`type-${item.type}`">
                   {{ getReminderLabel(item.type) }}
@@ -107,11 +72,7 @@
                 }}</span>
               </div>
               <p class="reminder-content">{{ item.content }}</p>
-              <button
-                v-if="!item.isRead"
-                class="reminder-button"
-                @click="markReminderRead(item)"
-              >
+              <button v-if="!item.isRead" class="reminder-button" @click="markReminderRead(item)">
                 标记已读
               </button>
             </article>
@@ -119,32 +80,14 @@
           <div v-else class="reminder-empty">暂无通知</div>
         </div>
       </div>
-      <div
-        v-else-if="!isReminder && currentSessionId != -1"
-        class="chat-content-main"
-      >
+      <div v-else-if="!isReminder && currentSessionId != -1" class="chat-content-main">
         <div class="chat-panel">
           <div class="chat-messages" ref="messageListRef">
             <div v-if="!messages.length" class="chat-content__empty"></div>
-            <transition-group
-              v-else
-              name="msg-fade"
-              :css="enableMsgAnim"
-              tag="div"
-              class="chat-messages__inner"
-            >
-              <div
-                v-for="(msg, index) in messages"
-                :key="`${msg.sessionId}-${msg.senderId}-${index}`"
-                :id="`${msg.sessionId}-${msg.sendTime}`"
-                class="message-row"
-                :class="{ 'is-self': isSelfMessage(msg) }"
-              >
-                <img
-                  class="message-avatar"
-                  :src="msg.senderAvatar"
-                  alt="avatar"
-                />
+            <transition-group v-else name="msg-fade" :css="enableMsgAnim" tag="div" class="chat-messages__inner">
+              <div v-for="(msg, index) in messages" :key="`${msg.sessionId}-${msg.senderId}-${index}`"
+                :id="`${msg.sessionId}-${msg.sendTime}`" class="message-row" :class="{ 'is-self': isSelfMessage(msg) }">
+                <img class="message-avatar" :src="msg.senderAvatar" alt="avatar" />
                 <div class="message-body">
                   <div class="message-bubble">
                     {{ msg.content }}
@@ -158,19 +101,10 @@
             <!-- 一组可以带过渡 / 动画效果的列表元素容器 -->
           </div>
           <div class="chat-input-area">
-            <textarea
-              v-model="chatInput"
-              class="chat-input"
-              rows="3"
-              placeholder="输入消息，Enter发送 / Shift+Enter换行"
-              @keydown.enter.exact.prevent="handleSendClick"
-            >
-            </textarea>
-            <button
-              class="send-button"
-              :disabled="!canSendMessage"
-              @click="handleSendClick"
-            >
+            <textarea v-model="chatInput" class="chat-input" rows="3" placeholder="输入消息，Enter发送 / Shift+Enter换行"
+              @keydown.enter.exact.prevent="handleSendClick">
+      </textarea>
+            <button class="send-button" :disabled="!canSendMessage" @click="handleSendClick">
               发送
             </button>
           </div>
@@ -181,19 +115,9 @@
       </div>
     </section>
 
-    <el-dialog
-      v-model="visible"
-      title="搜索结果"
-      width="560px"
-      destroy-on-close
-      class="chat-record-dialog"
-    >
+    <el-dialog v-model="visible" title="搜索结果" width="560px" destroy-on-close class="chat-record-dialog">
       <el-menu v-if="searchResults.length" @select="handleResultSelect">
-        <el-menu-item
-          v-for="item in searchResults"
-          :key="item.id"
-          :index="item.id"
-        >
+        <el-menu-item v-for="item in searchResults" :key="item.id" :index="item.id">
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="item.avatar" />
@@ -215,24 +139,14 @@
   </div>
 
   <!-- 使用分离的组件 -->
-  <CategoryDialog
-    :visible="showCategoryDialog"
-    @update:visible="showCategoryDialog = $event"
-    :all-categories="allCategories"
-    :selected-category-name="selectedCategoryName"
-    :selected-category-id="selectedCategoryId"
-    @category-selected="onCategorySelected"
-    @reset-category="resetCategory"
-    @category-added="handleCategoryAdded"
-  />
+  <CategoryDialog :visible="showCategoryDialog" @update:visible="showCategoryDialog = $event"
+    :all-categories="allCategories" :selected-category-name="selectedCategoryName"
+    :selected-category-id="selectedCategoryId" @category-selected="onCategorySelected" @reset-category="resetCategory"
+    @category-added="handleCategoryAdded" />
 
-  <UploadModal
-    v-model:visible="showUploadModal"
-    :selected-category-name="selectedUploadCategoryName"
-    :selected-category-id="selectedCategoryId"
-    @open-category-dialog="showCategoryDialog = true"
-    @upload-success="handleUploadSuccess"
-  />
+  <UploadModal v-model:visible="showUploadModal" :selected-category-name="selectedUploadCategoryName"
+    :selected-category-id="selectedCategoryId" @open-category-dialog="showCategoryDialog = true"
+    @upload-success="handleUploadSuccess" />
 </template>
 
 <script setup lang="ts">
@@ -514,26 +428,21 @@ const isNearBottom = () => {
 
 const handleReminderSelect = () => {
   isReminder.value = true;
+  currentSessionId.value = -1
+  messages.value=[]
 };
 
 //这个是聊天框的点击处理
-const handleSelect = async (sessionId: number) => {
+const handleSelect = async (session:chatBox) => {
   // 切换会话时先关闭动画
   enableMsgAnim.value = false;
   isReminder.value = false;
-  const sid = Number(sessionId);
+  const sid = Number(session.sessionId);
+  session.unreadCount = 0;
 
   currentSessionId.value = sid;
-
+  
   if (laodingMessages.value) {
-    enableMsgAnim.value = true;
-    return;
-  }
-
-  if (useMockData.value) {
-    messages.value = messageFallback.filter((item) => item.sessionId === sid);
-    // 等 DOM 更新完再开动画（这样切换不会动，但后续新消息会动）
-    await nextTick();
     enableMsgAnim.value = true;
     return;
   }
@@ -691,11 +600,11 @@ const updateChatboxPreview = (
   chatBoxes.value = chatBoxes.value.map((item) =>
     item.sessionId === sessionId
       ? {
-          ...item,
-          lastMessage: content ?? item.lastMessage,
-          lastTime: sendTime ?? item.lastTime,
-          unreadCount: isCurrentSession ? 0 : item.unreadCount + 1,
-        }
+        ...item,
+        lastMessage: content ?? item.lastMessage,
+        lastTime: sendTime ?? item.lastTime,
+        unreadCount: isCurrentSession ? 0 : item.unreadCount + 1,
+      }
       : item
   );
 };
@@ -1079,7 +988,7 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-.chatbox-up{
+.chatbox-up {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1094,10 +1003,14 @@ onUnmounted(() => {
   font-weight: 400;
 }
 
-.chatbox-content-time{
+.chatbox-content-time {
   font-size: 10px;
   font-weight: 200;
   margin-left: auto;
+}
+
+.chatbox-down{
+  display: flex;
 }
 
 .chatbox-content-header {
@@ -1105,6 +1018,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
 }
+
 .chatbox-tag {
   padding: 2px 6px;
   border-radius: 6px;
@@ -1361,11 +1275,9 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 14px;
   scroll-behavior: smooth;
-  background: radial-gradient(
-      1200px 600px at 80% -10%,
+  background: radial-gradient(1200px 600px at 80% -10%,
       #eef2ff 0%,
-      transparent 60%
-    ),
+      transparent 60%),
     #f6f7fb;
 }
 
