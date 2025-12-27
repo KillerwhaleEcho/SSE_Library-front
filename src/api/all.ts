@@ -243,7 +243,7 @@ export const getBookList = (is_suggest: boolean, categoryId?: number) => {
 };
 
 // 修改资料状态
-export const updateFileStatus = (docId: number, status: string) => { return service.put<ApiResponse<null>>('/admin/document/status', { docId, status }) }
+export const updateFileStatus = (documentId: number, status: string) => { return service.put<ApiResponse<null>>('/admin/document/status', { documentId, status }) }
 
 
 // 6. 修改资料信息
@@ -448,7 +448,7 @@ export const searchMessage = (userId: number, searchKey: string) => {
 
 //搜索用户
 export const searchUser = (userId?: number, username?: string) => {
-  return service.get<ApiResponse<UserBrief[]>>("/admin/user", { params: { userId, username } });
+  return service.get<ApiResponse<UserBrief[]>>("/user", { params: { userId, username } });
 }
 
 //获取提醒（通知）

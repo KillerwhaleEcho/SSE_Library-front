@@ -263,7 +263,7 @@ const STATUS_OPTIONS = [
 // 这段代码最终的结果是："开放" | "审核中" | "关闭" | "已撤回"
 type DocumentStatusEH = (typeof STATUS_OPTIONS)[number]["label"];
 
-//先过滤得到基本数据，再执行搜索逻辑
+//先过滤得到基本数据，再执行搜索逻辑.如果不是搜索结果就只返回25个数据
 const filteredDocuments = computed<Document[]>(() => {
   const keyword = appliedKeyword.value.toLowerCase();
 
@@ -272,7 +272,7 @@ const filteredDocuments = computed<Document[]>(() => {
     : documents.value;
 
   if (!keyword) {
-    return baseList;
+    return baseList.slice(0,25);
   }
 
   return baseList
@@ -280,9 +280,9 @@ const filteredDocuments = computed<Document[]>(() => {
       const name = item.infoBrief.name?.toLowerCase() ?? "";
       const author = item.author?.toLowerCase() ?? "";
       return name.includes(keyword) || author.includes(keyword);
-    })
-    .slice(0, 25);
-});
+    });
+})
+
 
 const handleSearch = () => {
   appliedKeyword.value = searchInput.value.trim();

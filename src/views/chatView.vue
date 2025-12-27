@@ -9,12 +9,24 @@
           <span>{{ unreadReminderCount }}</span>
         </figure>
       </div>
-      <el-menu class="chat-menu" :default-active="String(currentSessionId != -1 || '')" @select="handleSelect">
-        <el-menu-item v-for="chatbox in appliedChatboxes" :index="String(chatbox.sessionId)">
+      <el-menu
+        class="chat-menu"
+        :default-active="String(currentSessionId != -1 || '')"
+        @select="handleSelect"
+      >
+        <el-menu-item
+          v-for="chatbox in appliedChatboxes"
+          :index="String(chatbox.sessionId)"
+        >
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="chatbox.avatar2" alt="" />
-              <img v-if="chatbox.unreadCount" :src="unreadUrl" alt="未读消息" class="contact-avatar__badge" />
+              <img
+                v-if="chatbox.unreadCount"
+                :src="unreadUrl"
+                alt="未读消息"
+                class="contact-avatar__badge"
+              />
             </figure>
             <div class="chatbox-content">
               <span class="chatbox-content-name">{{ chatbox.username2 }}</span>
@@ -28,14 +40,32 @@
     <section class="chatview-content">
       <div class="chatview-top">
         <div class="chatview-search">
-          <el-select v-model="searchType" class="chatview-select" size="samll" :teleported="false" placeholder="选择类型">
+          <el-select
+            v-model="searchType"
+            class="chatview-select"
+            size="samll"
+            :teleported="false"
+            placeholder="选择类型"
+          >
             <el-option label="用户" value="user" />
             <el-option label="聊天记录" value="message" />
           </el-select>
-          <el-input v-model="searchInput" class="chatview-input" size="samll" @keyup.enter="handleSearch"
-            :placeholder="searchPlaceholder" clearable>
+          <el-input
+            v-model="searchInput"
+            class="chatview-input"
+            size="samll"
+            @keyup.enter="handleSearch"
+            :placeholder="searchPlaceholder"
+            clearable
+          >
             <template #append>
-              <el-button type="primary" size="samll" class="chatview-button" @click="handleSearch">搜索</el-button>
+              <el-button
+                type="primary"
+                size="samll"
+                class="chatview-button"
+                @click="handleSearch"
+                >搜索</el-button
+              >
             </template>
           </el-input>
         </div>
@@ -48,23 +78,35 @@
               <p class="reminder-title">通知中心</p>
             </div>
             <div class="reminder-stats">
-              <span class="reminder-chip reminder-chip__primary">未读 {{ unreadReminderCount }}</span>
-              <span class="reminder-chip reminder-chip__ghost">全部 {{ reminders.length }}</span>
+              <span class="reminder-chip reminder-chip__primary"
+                >未读 {{ unreadReminderCount }}</span
+              >
+              <span class="reminder-chip reminder-chip__ghost"
+                >全部 {{ reminders.length }}</span
+              >
             </div>
           </div>
           <div v-if="sortedReminders.length" class="reminder-list">
-            <article v-for="item in sortedReminders" :key="item.reminderId" class="reminder-card"
-              :class="{ 'is-unread': !item.isRead }">
+            <article
+              v-for="item in sortedReminders"
+              :key="item.reminderId"
+              class="reminder-card"
+              :class="{ 'is-unread': !item.isRead }"
+            >
               <div class="reminder-card__meta">
                 <span class="reminder-type" :class="`type-${item.type}`">
-                 {{getReminderLabel( item.type)}}
+                  {{ getReminderLabel(item.type) }}
                 </span>
                 <span class="reminder-time">{{
                   formatTime(item.sendTime)
                 }}</span>
               </div>
               <p class="reminder-content">{{ item.content }}</p>
-              <button v-if="!item.isRead" class="reminder-button" @click="markReminderRead(item)">
+              <button
+                v-if="!item.isRead"
+                class="reminder-button"
+                @click="markReminderRead(item)"
+              >
                 标记已读
               </button>
             </article>
@@ -72,14 +114,32 @@
           <div v-else class="reminder-empty">暂无通知</div>
         </div>
       </div>
-      <div v-else-if="!isReminder && currentSessionId != -1" class="chat-content-main">
+      <div
+        v-else-if="!isReminder && currentSessionId != -1"
+        class="chat-content-main"
+      >
         <div class="chat-panel">
           <div class="chat-messages" ref="messageListRef">
             <div v-if="!messages.length" class="chat-content__empty"></div>
-            <transition-group v-else name="msg-fade" :css="enableMsgAnim" tag="div" class="chat-messages__inner">
-              <div v-for="(msg, index) in messages" :key="`${msg.sessionId}-${msg.senderId}-${index}`"
-                :id="`${msg.sessionId}-${msg.sendTime}`" class="message-row" :class="{ 'is-self': isSelfMessage(msg) }">
-                <img class="message-avatar" :src="msg.senderAvatar" alt="avatar" />
+            <transition-group
+              v-else
+              name="msg-fade"
+              :css="enableMsgAnim"
+              tag="div"
+              class="chat-messages__inner"
+            >
+              <div
+                v-for="(msg, index) in messages"
+                :key="`${msg.sessionId}-${msg.senderId}-${index}`"
+                :id="`${msg.sessionId}-${msg.sendTime}`"
+                class="message-row"
+                :class="{ 'is-self': isSelfMessage(msg) }"
+              >
+                <img
+                  class="message-avatar"
+                  :src="msg.senderAvatar"
+                  alt="avatar"
+                />
                 <div class="message-body">
                   <div class="message-bubble">
                     {{ msg.content }}
@@ -93,10 +153,19 @@
             <!-- 一组可以带过渡 / 动画效果的列表元素容器 -->
           </div>
           <div class="chat-input-area">
-            <textarea v-model="chatInput" class="chat-input" rows="3" placeholder="输入消息，Enter发送 / Shift+Enter换行"
-              @keydown.enter.exact.prevent="handleSendClick">
-      </textarea>
-            <button class="send-button" :disabled="!canSendMessage" @click="handleSendClick">
+            <textarea
+              v-model="chatInput"
+              class="chat-input"
+              rows="3"
+              placeholder="输入消息，Enter发送 / Shift+Enter换行"
+              @keydown.enter.exact.prevent="handleSendClick"
+            >
+            </textarea>
+            <button
+              class="send-button"
+              :disabled="!canSendMessage"
+              @click="handleSendClick"
+            >
               发送
             </button>
           </div>
@@ -107,9 +176,19 @@
       </div>
     </section>
 
-    <el-dialog v-model="visible" title="搜索结果" width="560px" destroy-on-close class="chat-record-dialog">
+    <el-dialog
+      v-model="visible"
+      title="搜索结果"
+      width="560px"
+      destroy-on-close
+      class="chat-record-dialog"
+    >
       <el-menu v-if="searchResults.length" @select="handleResultSelect">
-        <el-menu-item v-for="item in searchResults" :key="item.id" :index="item.id">
+        <el-menu-item
+          v-for="item in searchResults"
+          :key="item.id"
+          :index="item.id"
+        >
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="item.avatar" />
@@ -131,7 +210,9 @@
   </div>
 
   <!-- 使用分离的组件 -->
-  <CategoryDialog 
+  <CategoryDialog
+  v-if="showCategoryDialog"
+  destory-on-close 
     :visible="showCategoryDialog"
     @update:visible="showCategoryDialog = $event"
     :all-categories="allCategories"
@@ -142,7 +223,8 @@
     @category-added="handleCategoryAdded"
   />
 
-  <UploadModal 
+  <UploadModal
+  destory-on-close
     v-model:visible="showUploadModal"
     :selected-category-name="selectedUploadCategoryName"
     :selected-category-id="selectedCategoryId"
@@ -177,8 +259,8 @@ import type { UserBrief } from "@/api/all";
 import * as allApi from "@/api/all";
 import topbar from "@/layout/topbar.vue";
 import router from "@/router";
-import CategoryDialog from '@/components/CategoryDialog.vue'
-import UploadModal from '@/components/UploadModal.vue'
+import CategoryDialog from "@/components/CategoryDialog.vue";
+import UploadModal from "@/components/UploadModal.vue";
 
 interface SearchResultItem {
   id: string;
@@ -197,14 +279,13 @@ const chatBoxes = ref<chatBox[]>([]);
 const messages = ref<message[]>([]); //当前聊天界面的message而不是所有message
 const chatInput = ref("");
 
-const showCategoryDialog = ref(false)
-const showUploadModal = ref(false)
+const showCategoryDialog = ref(false);
+const showUploadModal = ref(false);
 // 分类相关数据
-const allCategories = ref<allApi.Category[]>([])
-const selectedCategoryName = ref<string | null>(null)
-const selectedCategoryId = ref<number | null>(null)
-const selectedUploadCategoryName = ref<string | null>(null)
-
+const allCategories = ref<allApi.Category[]>([]);
+const selectedCategoryName = ref<string | null>(null);
+const selectedCategoryId = ref<number | null>(null);
+const selectedUploadCategoryName = ref<string | null>(null);
 
 const currentSessionId = ref(-1);
 const searchInput = ref("");
@@ -256,13 +337,13 @@ const sending = ref(false);
 const fetchingMessages = ref(false); //避免重复触发消息拉取
 
 const unreadReminderCount = computed(
-  () => reminders.value.filter((item) => !item.isRead).length
+  () => (reminders.value ?? []).filter((item) => !item.isRead).length
 );
 const reminderTypeDict: Record<string, string> = {
-  comment: '评论',
-  like: '点赞',
-  favorite: ' 收藏',
-  system: '系统消息'
+  comment: "评论",
+  like: "点赞",
+  favorite: " 收藏",
+  system: "系统消息",
 };
 
 const sortedReminders = computed(() => {
@@ -286,12 +367,13 @@ const formatTime = (time: string) => {
   return `${month}月${day}日 ${hours}:${minutes}`;
 };
 
+
 const getReminderLabel = (type: string) => reminderTypeDict[type] ?? "未知";
 
 const markReminderRead = async (item: Reminder) => {
   item.isRead = true;
   try {
-    const reponse = await markReminderAsRead( item.reminderId);
+    const reponse = await markReminderAsRead(item.reminderId);
     if (reponse.code === 200) {
       return;
     }
@@ -300,8 +382,6 @@ const markReminderRead = async (item: Reminder) => {
     item.isRead = false;
   }
 };
-
-
 
 const isSelfMessage = (msg: message) => {
   const currentUserId = userInfo.value?.userId;
@@ -359,15 +439,11 @@ const getReminders = async () => {
 
   try {
     const response = await getReminder(userInfo.value?.userId as number);
-    console.log('---------------')
-    console.log(response)
-    console.log(response.data)
-      reminders.value = response.data;
+    reminders.value = Array.isArray(response.data) ? response.data : [];
   } catch {
     ElMessage.error("获取通知数据失败");
   }
 };
-
 
 //这个是搜索内容的点击处理
 const handleResultSelect = async (key: string) => {
@@ -438,8 +514,6 @@ const isNearBottom = () => {
 const handleReminderSelect = () => {
   isReminder.value = true;
 };
-
-
 
 //这个是聊天框的点击处理
 const handleSelect = async (sessionId: number) => {
@@ -587,7 +661,10 @@ const fetchMessages = async (sessionId: number) => {
       sessionId,
       userInfo.value?.userId as number
     );
-    messages.value = res.data;
+    console.log('+++++++++++++')
+    console.log(res)
+    console.log('res.data')
+    messages.value = Array.isArray(res.data) ? res.data : [];
   } catch (err) {
     // 拉取失败时提示，避免频繁轮询重复提示
     if (!laodingMessages.value) {
@@ -613,11 +690,11 @@ const updateChatboxPreview = (
   chatBoxes.value = chatBoxes.value.map((item) =>
     item.sessionId === sessionId
       ? {
-        ...item,
-        lastMessage: content ?? item.lastMessage,
-        lastTime: sendTime ?? item.lastTime,
-        unreadCount: isCurrentSession ? 0 : item.unreadCount + 1,
-      }
+          ...item,
+          lastMessage: content ?? item.lastMessage,
+          lastTime: sendTime ?? item.lastTime,
+          unreadCount: isCurrentSession ? 0 : item.unreadCount + 1,
+        }
       : item
   );
 };
@@ -634,7 +711,7 @@ const handleIncomingChatMessage = (payload: any) => {
   }
 
   const data = payload.data;
-  const sessionId = Number(data.sessionId)
+  const sessionId = Number(data.sessionId);
 
   const incomingMessage: message = {
     sessionId,
@@ -697,84 +774,87 @@ const handleSendClick = async () => {
   if (!canSendMessage.value) return;
   const receiverId = getReceiverIdBySession(currentSessionId.value);
   try {
-      await sendMessage(
-    currentSessionId.value,
-    receiverId as number,
-    chatInput.value
+    await sendMessage(
+      currentSessionId.value,
+      receiverId as number,
+      chatInput.value
     );
   } catch {
-    ElMessage.error('消息发送失败')
+    ElMessage.error("消息发送失败");
   }
 
-  scrollToLatest()
+  scrollToLatest();
 };
 
 // 分类相关方法
 const onCategorySelected = (selected: allApi.Category) => {
-  console.log('选中的分类：', selected) 
-  showCategoryDialog.value = false
-  selectedCategoryId.value = selected.id
-  
+  console.log("选中的分类：", selected);
+  showCategoryDialog.value = false;
+  selectedCategoryId.value = selected.id;
+
   if (showUploadModal.value === false) {
     // 如果在搜索场景下选择分类
-    selectedCategoryName.value = selected.name
+    selectedCategoryName.value = selected.name;
   } else {
     // 如果在上传场景下选择分类
-    selectedUploadCategoryName.value = selected.name
+    selectedUploadCategoryName.value = selected.name;
   }
-}
+};
 
 // 重置分类
 const resetCategory = () => {
-  selectedCategoryName.value = null
-  selectedUploadCategoryName.value = null
-  selectedCategoryId.value = null
-}
+  selectedCategoryName.value = null;
+  selectedUploadCategoryName.value = null;
+  selectedCategoryId.value = null;
+};
 
 // 获取所有分类
 const getAllCategories = async () => {
   try {
-    const response = await allApi.getAllCategories()
+    const response = await allApi.getAllCategories();
     if (response.data) {
-      allCategories.value = response.data
+      allCategories.value = response.data;
     } else {
-      allCategories.value = []
-      console.warn('获取分类数据格式不正确')
+      allCategories.value = [];
+      console.warn("获取分类数据格式不正确");
     }
-    return allCategories.value
+    return allCategories.value;
   } catch (error) {
-    console.error('获取所有分类失败:', error)
-    allCategories.value = []
-    throw error
+    console.error("获取所有分类失败:", error);
+    allCategories.value = [];
+    throw error;
   }
-}
+};
 
 // 上传成功处理
 const handleUploadSuccess = () => {
-  console.log('上传成功，可以刷新数据')
-}
+  console.log("上传成功，可以刷新数据");
+};
 
 const handleCategoryAdded = async () => {
-  console.log('分类添加成功，重新加载分类数据');
-  
+  console.log("分类添加成功，重新加载分类数据");
+
   try {
     await getAllCategories();
-    
-    ElMessage.success('分类数据已更新');
+
+    ElMessage.success("分类数据已更新");
   } catch (error) {
-    console.error('刷新分类数据失败:', error);
-    ElMessage.error('刷新数据失败');
+    console.error("刷新分类数据失败:", error);
+    ElMessage.error("刷新数据失败");
   }
 };
-watch(() => showUploadModal.value, (newVal, oldVal) => {
-  console.log('showUploadModal 变化:', oldVal, '->', newVal)
-  
-  if (newVal) {
-    console.log('聊天页上传模态框已打开')
-  } else {
-    console.log('聊天页上传模态框已关闭')
+watch(
+  () => showUploadModal.value,
+  (newVal, oldVal) => {
+    console.log("showUploadModal 变化:", oldVal, "->", newVal);
+
+    if (newVal) {
+      console.log("聊天页上传模态框已打开");
+    } else {
+      console.log("聊天页上传模态框已关闭");
+    }
   }
-})
+);
 
 watch(
   messages,
@@ -798,7 +878,7 @@ watch(currentSessionId, () => {
 });
 
 onMounted(async () => {
-  await fetchUserInfo();//要用await，因为得按顺序执行
+  await fetchUserInfo(); //要用await，因为得按顺序执行
   await getSessions();
   await getReminders();
   initWebSocket();
@@ -1264,9 +1344,11 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 14px;
   scroll-behavior: smooth;
-  background: radial-gradient(1200px 600px at 80% -10%,
+  background: radial-gradient(
+      1200px 600px at 80% -10%,
       #eef2ff 0%,
-      transparent 60%),
+      transparent 60%
+    ),
     #f6f7fb;
 }
 
