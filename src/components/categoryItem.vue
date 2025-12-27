@@ -1,14 +1,16 @@
 <template>
-  <div class="category-item">
+  <div class="category-item" @click="handleClick">
     <span class="category-name">{{ category.name }}</span>
     <hr />
     <div class="category-stats">
       <div class="category-count" data-tooltip="文件量">
-        <img src="@/assets/147_阅读.png" alt="File Icon" data-tooltip="文件量" style="width:25px; height:25px; margin-right:4px;" />
+        <img src="@/assets/147_阅读.png" alt="File Icon" data-tooltip="文件量"
+          style="width:25px; height:25px; margin-right:4px;" />
         {{ category.fileCounts }}
       </div>
       <div class="category-count" data-tooltip="浏览量">
-        <img src="@/assets/Fire (火热).png" alt="Collection Icon" data-tooltip="浏览量" style="width:20px; height:20px; margin-right:4px;" />
+        <img src="@/assets/Fire (火热).png" alt="Collection Icon" data-tooltip="浏览量"
+          style="width:20px; height:20px; margin-right:4px;" />
         {{ category.readCounts }}
       </div>
     </div>
@@ -16,12 +18,26 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import * as allApi from '@/api/all.ts'
 
-// 接收父组件传入的单个分类数据
 const props = defineProps<{
   category: allApi.Category;
 }>();
+
+const emit = defineEmits<{
+  (e: 'click', category: allApi.Category): void
+}>()
+
+const router = useRouter()
+
+const handleClick = () => {
+  emit('click', props.category)
+  const targetId = props.category?.id
+  if (typeof targetId === 'number' && Number.isFinite(targetId)) {
+    router.push({ path: '/categoryInfo', query: { id: targetId } })
+  }
+}
 </script>
 
 <style scoped>
@@ -38,6 +54,7 @@ const props = defineProps<{
   background-color: rgba(185, 148, 254, 0.1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: background-color 0.2s;
+  cursor: pointer;
 }
 
 .category-item:hover {
