@@ -27,6 +27,15 @@
                             <span class="value">{{ category.readCounts ?? 0 }}</span>
                         </div>
                     </div>
+                    <div v-if="isAdminViewer" class="admin-actions">
+                        <button class="admin-btn primary" @click="handleEditCategory" disabled>
+                            修改分类信息（暂未开放）
+                        </button>
+                        <button class="admin-btn danger" :class="{ disabled: deleting }" :disabled="deleting"
+                            @click="handleDeleteCategory">
+                            删除该分类
+                        </button>
+                    </div>
                 </div>
                 <div v-else class="empty-hint">{{ categoryError || '未找到分类信息' }}</div>
             </section>
@@ -74,6 +83,7 @@ import {
     type Document,
     getCategoryById,
     getBookList,
+    deleteCategory,
 } from '@/api/all.ts'
 
 const props = defineProps<{ categoryId?: number }>()
@@ -87,12 +97,28 @@ const documents = ref<Document[]>([])
 const loadingCategory = ref(false)
 const documentsLoading = ref(false)
 const categoryError = ref('')
+const deleting = ref(false)
 
 const resolvedCategoryId = computed<number | null>(() => {
     if (typeof props.categoryId === 'number' && Number.isFinite(props.categoryId)) return props.categoryId
     const parsed = Number(route.query.id)
     return Number.isFinite(parsed) ? parsed : null
 })
+
+const userRole = computed<string | null>(() => {
+    try {
+        const raw = localStorage.getItem('userBrief')
+        if (!raw) return null
+        const parsed = JSON.parse(raw)
+        const role = parsed?.role
+        return typeof role === 'string' ? role : null
+    } catch (error) {
+        console.warn('解析本地用户信息失败', error)
+        return null
+    }
+})
+
+const isAdminViewer = computed(() => (userRole.value ?? '').toLowerCase() === 'admin')
 
 const normalizeCategory = (cat?: Partial<Category>): Category => {
     const safeCat: Partial<Category> = cat ?? {}
@@ -166,6 +192,35 @@ const loadCategory = async (catId: number) => {
     } finally {
         loadingCategory.value = false
     }
+}
+
+const handleDeleteCategory = async () => {
+    if (!category.value) return
+    const hasChildren = Array.isArray(category.value.children) && category.value.children.length > 0
+    const hasFiles = Number(category.value.fileCounts ?? 0) > 0
+    if (hasChildren || hasFiles) {
+        ElMessage.error('存在归属于该分类的项，删除失败')
+        return
+    }
+    if (!category.value.name) {
+        ElMessage.error('未找到分类名称，无法删除')
+        return
+    }
+    if (deleting.value) return
+    deleting.value = true
+    try {
+        await deleteCategory(category.value.name)
+        ElMessage.success('删除成功')
+        router.push('/home')
+    } catch (error: any) {
+        ElMessage.error(error?.message || '删除分类失败')
+    } finally {
+        deleting.value = false
+    }
+}
+
+const handleEditCategory = () => {
+    ElMessage.info('修改分类信息功能暂未开放')
 }
 
 const goDocument = (doc: Document) => {
@@ -280,6 +335,37 @@ watch(resolvedCategoryId, (next) => {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 16px;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-btn {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.admin-btn.primary {
+    background: linear-gradient(135deg, #7c4dff, #5c6bc0);
+    opacity: 0.75;
+}
+
+.admin-btn.danger {
+    background: linear-gradient(135deg, #f0645a, #e53935);
+}
+
+.admin-btn.disabled,
+.admin-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 .info-item {

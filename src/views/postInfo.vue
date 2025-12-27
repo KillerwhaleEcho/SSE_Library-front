@@ -316,8 +316,12 @@ const refreshLikeJudgement = async () => {
 		const response = (await getUserLikeJudgement({
 			userId: currentUserId,
 			postId: sourceId,
-		})) as unknown as ApiResponse<{ judgement: boolean }>
-		likeJudgement.value = Boolean(response?.data?.judgement)
+		})) as unknown as ApiResponse<{ judgement?: boolean; isLiked?: boolean; postId?: number } | boolean>
+		const rawJudgement =
+			typeof response?.data === 'boolean'
+				? response.data
+				: response?.data?.judgement ?? response?.data?.isLiked
+		likeJudgement.value = Boolean(rawJudgement)
 	} catch (error) {
 		likeJudgement.value = false
 		console.error('获取点赞状态失败:', error)
