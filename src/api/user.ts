@@ -1,6 +1,6 @@
 import service from '../utils/service'
 import request from '../utils/request'
-import type { InfoBrief, UserBrief } from './all'
+import type { InfoBrief, Post, UserBrief } from './all'
 
 interface ApiResponse<T = any> {
   code: number
@@ -32,6 +32,11 @@ export interface UpdateUserProfilePayload {
   userName?: string | null
   email?: string | null
   userAvatar?: File | null
+}
+
+export interface UserPostListData {
+  collectPostList: Post[] | null
+  myPostList: Post[] | null
 }
 
 export const loginAPI = (data: LoginParams): Promise<ApiResponse<{
@@ -102,6 +107,10 @@ export const resetPasswordAPI = (data: {
 
 export const getUserAll = (userId: number | string): Promise<ApiResponse<UserAll>> => {
   return service.get(`/user/${userId}`)
+}
+
+export const getUserPostList = (userId: number | string): Promise<ApiResponse<UserPostListData>> => {
+  return service.get(`/user/postList/${userId}`)
 }
 
 // 获取用户上传的文档列表
