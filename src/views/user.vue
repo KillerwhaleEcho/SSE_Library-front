@@ -448,6 +448,7 @@ watch(() => showUploadModal.value, (newVal, oldVal) => {
 onMounted(() => {
     fetchUserAll()
     updateUnderline()
+    getAllCategories();
     window.addEventListener('resize', updateUnderline)
 })
 

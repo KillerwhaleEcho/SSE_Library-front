@@ -122,7 +122,7 @@ const fetchReminders = async () => {
 
 const getUnreadCountOfMessages = async() => {
   try {
-  const res= await allApi.getUnreadMessage('message',userId);
+    const res= await allApi.getUnreadMessage('message',userId);
     unreadMessage.value=res.data
   } catch {
     console.log('获取未读消息数量失败')

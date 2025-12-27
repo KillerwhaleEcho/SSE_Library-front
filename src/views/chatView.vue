@@ -256,7 +256,7 @@ const sending = ref(false);
 const fetchingMessages = ref(false); //避免重复触发消息拉取
 
 const unreadReminderCount = computed(
-  () => reminders.value.filter((item) => !item.isRead).length
+  () => reminders.value?.filter((item) => !item.isRead).length || 0
 );
 const reminderTypeDict: Record<string, string> = {
   comment: '评论',
@@ -359,10 +359,8 @@ const getReminders = async () => {
 
   try {
     const response = await getReminder(userInfo.value?.userId as number);
-    console.log('---------------')
     console.log(response)
-    console.log(response.data)
-      reminders.value = response.data;
+    reminders.value = response.data;
   } catch {
     ElMessage.error("获取通知数据失败");
   }
@@ -737,6 +735,7 @@ const getAllCategories = async () => {
     const response = await allApi.getAllCategories()
     if (response.data) {
       allCategories.value = response.data
+      console.log("获取聊天页所有分类数据：",response.data)
     } else {
       allCategories.value = []
       console.warn('获取分类数据格式不正确')
@@ -801,6 +800,7 @@ onMounted(async () => {
   await fetchUserInfo();//要用await，因为得按顺序执行
   await getSessions();
   await getReminders();
+  getAllCategories();
   initWebSocket();
 });
 
