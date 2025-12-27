@@ -791,6 +791,7 @@ onMounted(async () => {
   await fetchUserInfo(); //要用await，因为得按顺序执行
   await getSessions();
   await getReminders();
+  getAllCategories();
   initWebSocket();
 });
 

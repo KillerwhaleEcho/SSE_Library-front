@@ -104,7 +104,7 @@
 <script setup lang="ts">
 import topbar from '@/layout/topbar.vue'
 import FileLibraryModal from '@/components/FileLibraryModal.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Document } from '@/api/all.ts'
 import * as allApi from '@/api/all.ts'
@@ -271,6 +271,10 @@ const handleCategoryAdded = async () => {
     ElMessage.error('刷新数据失败');
   }
 };
+
+onMounted(async () => {
+  getAllCategories() // 初始化时加载分类数据
+})
 </script>
 
 <style scoped>
