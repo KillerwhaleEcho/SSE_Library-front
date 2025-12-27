@@ -237,9 +237,6 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
   }
 }
 
-const handleLogout = () => {
-  router.push('/login')
-}
 
 const getVerificationCode = async () => {
   if (!passwordForm.newPassword.trim() || !passwordForm.confirmPassword.trim()) {
@@ -361,10 +358,6 @@ onMounted(() => {
   object-fit: cover;
 }
 
-.sidebar-logout {
-  width: 100%;
-  margin-top: auto;
-}
 
 .avatar-upload :deep(.el-button) {
   width: 140px;

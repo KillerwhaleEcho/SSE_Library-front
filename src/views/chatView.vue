@@ -10,7 +10,7 @@
         </figure>
       </div>
       <el-menu class="chat-menu" :default-active="String(currentSessionId != -1 || '')" @select="handleSelect">
-        <el-menu-item v-for="chatbox in appliedChatboxes" :index="chatbox">
+        <el-menu-item v-for="chatbox in appliedChatboxes" :index="chatbox.sessionId">
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="chatbox.avatar2" alt="" />
@@ -211,7 +211,7 @@ const reminderIconUrl = ref(reminderIcon);
 const unreadUrl = ref(unreadIcon);
 const isReminder = ref(false);
 const messageListRef = ref<HTMLElement | null>(null);
-const enableMsgAnim = ref(true);
+const enableMsgAnim = ref(true);//控制回话切换时让上一组消息被替换时不跑入场离厂动画
 const visible = ref(false);
 const searchResults = ref<SearchResultItem[]>([]);
 const isSearchJump = ref(false);
@@ -433,14 +433,16 @@ const handleReminderSelect = () => {
 };
 
 //这个是聊天框的点击处理
-const handleSelect = async (session:chatBox) => {
+const handleSelect = async (sessionId:number) => {
   // 切换会话时先关闭动画
   enableMsgAnim.value = false;
   isReminder.value = false;
-  const sid = Number(session.sessionId);
-  session.unreadCount = 0;
-
+  const sid = Number(sessionId);
   currentSessionId.value = sid;
+const target=chatBoxes.value.find((item) => 
+  sessionId === item.sessionId)
+    if(!target) return 
+  target.unreadCount = 0
   
   if (laodingMessages.value) {
     enableMsgAnim.value = true;
@@ -455,11 +457,12 @@ const handleSelect = async (session:chatBox) => {
     ElMessage.error("获取聊天记录失败");
   } finally {
     laodingMessages.value = false;
-  }
-
   // 同样：DOM 更新完再开动画
   await nextTick();
   enableMsgAnim.value = true;
+  scrollToLatest()
+  }
+
 };
 
 const sendMessage = async (
@@ -544,14 +547,11 @@ const handleSearch = async () => {
       searchResults.value = mapMessagesToResults(response.data ?? []);
     } else {
       const response = await searchUser(undefined, appliedInput);
-      searchResults.value = mapUsersToResults(response.data);
+      searchResults.value = mapUsersToResults(response.data??[]);
     }
     visible.value = true;
   } catch (error) {
     searchResults.value = [];
-    const errorTip =
-      searchType.value === "message" ? "聊天消息搜索失败" : "用户搜索失败";
-    ElMessage.error(errorTip);
   }
 };
 

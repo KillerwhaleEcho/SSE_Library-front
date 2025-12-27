@@ -15,7 +15,8 @@
           </div>
         </div>
 
-        <div class="profile-card__meta">
+        <div class="ptofile-card-right">
+<div class="profile-card__meta">
           <div class="meta-box">
             <p class="meta-label">邮箱</p>
             <p class="meta-value">{{ adminDetail?.email || '暂无邮箱' }}</p>
@@ -26,11 +27,12 @@
           </div>
         </div>
 
-        <!-- <div class="profile-card__actions">
+        <div class="profile-card__actions">
           <el-button class="btn-danger" type="danger" plain @click="handleLogout">
             退出登录
           </el-button>
-        </div> -->
+        </div>
+        </div>
       </section>
 
       <section class="content-shell">
@@ -63,6 +65,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import router from '@/router'
 import topbar from '@/layout/topbar.vue'
 import AdminInfo from '../components/admin/adminInfo.vue'
 import commentList from '../components/admin/commentList.vue'
@@ -100,6 +103,11 @@ const fetchAdminInfo = async () => {
   } finally {
     infoLoading.value = false
   }
+}
+
+
+const handleLogout = () => {
+  router.push('/login')
 }
 
 const handleProfileUpdated = () => {
@@ -187,6 +195,11 @@ onMounted(() => {
   font-size: 12px;
   box-shadow: inset 0 0 0 1px rgba(21, 163, 94, 0.08);
 }
+.ptofile-card-right{
+display: flex;
+flex-direction: column;
+gap: 8px;
+}
 
 .profile-card__meta {
   width: 100%;
@@ -236,6 +249,7 @@ onMounted(() => {
   width: 156px;
   color: #d43b40;
   border-color: rgba(212, 59, 64, 0.28);
+  align-self: flex-end;
 }
 
 .content-shell {
