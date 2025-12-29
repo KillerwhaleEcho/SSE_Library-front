@@ -85,14 +85,6 @@ export const getUserList = (): Promise<ApiResponse<UserBrief[]>> => {
   });
 };
 
-//管理员获取评论列表
-
-export const getAdminComments = (): Promise<ApiResponse<CommentItem[]>> => {
-  return request({
-    url: "/admin/comments",
-    method: "get",
-  });
-};
 
 //管理员删除评论
 export const deleteAdminComment = (documentId: number): Promise<ApiResponse<unknown>> => {

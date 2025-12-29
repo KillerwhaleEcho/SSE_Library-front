@@ -1,7 +1,7 @@
 <template>
   <div class="admin-info">
     <el-card class="admin-card" shadow="never">
-      <div  class="profile-layout">
+      <div class="profile-layout">
         <aside class="profile-sidebar">
           <figure class="profile-avatar">
             <img :src="avatarUrl" alt="管理员头像" />
@@ -26,9 +26,6 @@
               <span class="profile-summary__value">{{ profileForm.createTime }}</span>
             </li>
           </ul>
-          <el-button class="sidebar-logout" type="danger" plain @click="handleLogout">
-            退出登录
-          </el-button>
         </aside>
 
         <section class="profile-main">
@@ -87,8 +84,8 @@
 import { onMounted, reactive, ref, watch } from 'vue'
 import router from '@/router'
 import { type UploadFile, ElMessage } from 'element-plus'
-import { sendEmailCode,resetPasswordAPI } from '../../api/user'
-import {  type UserBrief } from '@/api/all'
+import { sendEmailCode, resetPasswordAPI } from '../../api/user'
+import { type UserBrief } from '@/api/all'
 import {
   getAdminDetail,
   updateAdminProfile,
@@ -132,6 +129,15 @@ const passwordForm = reactive({
   confirmPassword: '',
 })
 
+const formatDateToYMD = (value: string) => {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value || ''
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 watch(
   () => adminInfo.value,
   (info) => {
@@ -140,7 +146,7 @@ watch(
     profileForm.username = info.username ?? ''
     profileForm.role = info.role ?? ''
     profileForm.userId = info.userId?.toString() ?? ''
-    profileForm.createTime = info.createTime ?? ''
+    profileForm.createTime = formatDateToYMD(info.createTime ?? '')
   },
   { immediate: true },
 )
@@ -191,11 +197,11 @@ const handlePasswordSave = async () => {
   try {
     const reponse = await resetPasswordAPI({ email, newPassword: passwordForm.newPassword, Code: verificationCode.value })
     if (reponse.data) {
-        ElMessage.success('密码已更新')
-    passwordForm.newPassword = ''
-    passwordForm.confirmPassword = ''
-    verificationCode.value=''
-   }
+      ElMessage.success('密码已更新')
+      passwordForm.newPassword = ''
+      passwordForm.confirmPassword = ''
+      verificationCode.value = ''
+    }
   } catch (err: any) {
     ElMessage.error(err?.message || '密码更新失败')
   } finally {
@@ -226,7 +232,7 @@ const handleAvatarChange = async (uploadFile: UploadFile) => {
     const updated = response.data
     avatarUrl.value = updated.userAvatar || previousAvatar || DEFAULT_AVATAR
 
-    
+
     ElMessage.success('头像已更新')
     emit('updated')
   } catch (err: any) {
@@ -287,17 +293,17 @@ const getUserId = () => {
 const fetchAdminInfo = async (force = false) => {
   if (adminInfo.value && !force) return adminInfo.value
 
-if (!userId.value) {
-  ElMessage.error('无法获取用户信息，请先登录')
-  router.push('/login')
-}
+  if (!userId.value) {
+    ElMessage.error('无法获取用户信息，请先登录')
+    router.push('/login')
+  }
 
   loading.value = true
   try {
     const response = await getAdminDetail(String(userId.value))
     // 兼容响应结构：若拦截器已返回 data，则直接取；否则取 data.userBrief
     const detail = (response as any).userBrief ? response as any : (response as any).data || response
-    adminInfo.value = detail.userBrief 
+    adminInfo.value = detail.userBrief
   } catch (err: any) {
     ElMessage.error('获取管理员信息失败')
   } finally {

@@ -2,39 +2,70 @@
   <div class="document-list">
     <el-card class="document-card">
       <div class="document-card__header">
-        <el-input placeholder="请按照书名或者作者搜索" clearable v-model="searchInput" class="document-card__search-input"
-          @keyup.enter="handleSearch" @clear="handleClear" size="large">
+        <el-input
+          placeholder="请按照书名或者作者搜索"
+          clearable
+          v-model="searchInput"
+          class="document-card__search-input"
+          @keyup.enter="handleSearch"
+          @clear="handleClear"
+          size="large"
+        >
           <template #append>
             <el-button typr="primary" @click="handleSearch">搜索</el-button>
           </template>
         </el-input>
         <div class="document-card__actions">
-          <el-button class="document-card__filter-btn"
-            :class="{ 'document-card__filter-btn--active': showReviewingOnly }" size="medium"
-            :type="showReviewingOnly ? 'primary' : 'info'" :plain="!showReviewingOnly" @click="toggleReviewingFilter">
+          <el-button
+            class="document-card__filter-btn"
+            :class="{ 'document-card__filter-btn--active': showReviewingOnly }"
+            size="medium"
+            :type="showReviewingOnly ? 'primary' : 'info'"
+            :plain="!showReviewingOnly"
+            @click="toggleReviewingFilter"
+          >
             {{ showReviewingOnly ? "查看全部资料" : "查看审核中资料" }}
           </el-button>
-          <el-button class="document-card__refresh-btn" type="primary" size="medium" :loading="loading"
-            @click="fetchDocuments">
+          <el-button
+            class="document-card__refresh-btn"
+            type="primary"
+            size="medium"
+            :loading="loading"
+            @click="fetchDocuments"
+          >
             刷新
           </el-button>
         </div>
       </div>
 
       <div class="document-card__table">
-        <el-table :data="filteredDocuments" border v-loading="loading" element-loading-text="正在加载资料，请稍候…"
-          empty-text="暂无资料">
+        <el-table
+          :data="filteredDocuments"
+          border
+          v-loading="loading"
+          element-loading-text="正在加载资料，请稍候…"
+          empty-text="暂无资料"
+        >
           <el-table-column label="封面" width="150" align="center">
             <template #default="{ row }">
               <div class="cover">
-                <img v-if="row.infoBrief?.cover" :src="row.infoBrief.cover" alt="封面" class="cover-img" />
+                <img
+                  v-if="row.infoBrief?.cover"
+                  :src="row.infoBrief.cover"
+                  alt="封面"
+                  class="cover-img"
+                />
                 <div v-else class="cover-placeholder">无封面</div>
               </div>
             </template>
           </el-table-column>
           <el-table-column label="资料名称" min-width="180" align="center">
             <template #default="{ row }">
-              <el-link type="primary" :underline="false" @click.prevent="handleGoDetail(row)">
+              <el-link
+                type="primary"
+                :underline="false"
+                @click.prevent="handleGoDetail(row)"
+              >
                 {{ row.infoBrief?.name || "未命名资料" }}
               </el-link>
             </template>
@@ -52,17 +83,29 @@
 
           <el-table-column label="资料状态" width="160" align="center">
             <template #default="{ row }">
-              <el-select v-model="row.infoBrief.status" size="small"
-                @change="(value: any) => handleStatusChange(row, value)">
-                <el-option v-for="option in STATUS_OPTIONS" :key="option.label" :label="option.value"
-                  :value="option.label" />
+              <el-select
+                v-model="row.infoBrief.status"
+                size="small"
+                @change="(value: any) => handleStatusChange(row, value)"
+              >
+                <el-option
+                  v-for="option in STATUS_OPTIONS"
+                  :key="option.label"
+                  :label="option.value"
+                  :value="option.label"
+                />
               </el-select>
             </template>
           </el-table-column>
 
           <el-table-column label="操作" width="120" align="center">
             <template #default="{ row }">
-              <el-button type="primary" link size="small" @click="openEditDialog(row)">
+              <el-button
+                type="primary"
+                link
+                size="small"
+                @click="openEditDialog(row)"
+              >
                 修改资料
               </el-button>
             </template>
@@ -81,21 +124,28 @@
       z-index="1000"
     >
       <el-form label-width="108px" model="editForm" class="document-edit-form">
-        <el-form-item label="资料分类">
-          <el-input @click="handlechoose" :placeholder="selectedCategoryName"></el-input>
+        <el-form-item label="资料分类" required="true">
+          <el-input
+            @click="handlechoose"
+            :placeholder="selectedCategoryName"
+          ></el-input>
         </el-form-item>
-        <el-form-item label="资料类型">
+        <el-form-item label="资料类型" required="true">
           <el-select v-model="editForm.type">
             <el-option aria-label="书籍" value="book"></el-option>
             <el-option aria-label="文件" value="file"></el-option>
             <el-option aria-label="视频" value="video"> </el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="资料名称">
+        <el-form-item label="资料名称" required="true">
           <el-input v-model="editForm.name" clearable />
         </el-form-item>
         <el-form-item label="ISBN">
-          <el-input v-model="editForm.isbn" clearable />
+          <el-input
+            v-model="editForm.isbn"
+            clearable
+            placeholder="仅书籍需要填写"
+          />
         </el-form-item>
         <el-form-item label="作者">
           <el-input v-model="editForm.author" clearable />
@@ -103,42 +153,83 @@
         <el-form-item label="标签">
           <div class="dialog-tags">
             <div class="addtags">
-              <el-input v-model="temp_tags" placeholder="输入标签后按回车或点击添加" clearable @keyup.enter.prevent="handleAddTag" />
-              <el-button type="primary" @click="handleAddTag">添加标签</el-button>
+              <el-input
+                v-model="temp_tags"
+                placeholder="输入标签后按回车或点击添加"
+                clearable
+                @keyup.enter.prevent="handleAddTag"
+              />
+              <el-button type="primary" @click="handleAddTag"
+                >添加标签</el-button
+              >
             </div>
-            <div class="tag-list" v-if="editForm.tags && editForm.tags.length > 0">
-              <el-tag v-for="(tag, index) in editForm.tags" :key="`${tag}-${index}`" closable class="tag-item"
-                @close="handleRemoveTag(index)">
+            <div
+              class="tag-list"
+              v-if="editForm.tags && editForm.tags.length > 0"
+            >
+              <el-tag
+                v-for="(tag, index) in editForm.tags"
+                :key="`${tag}-${index}`"
+                closable
+                class="tag-item"
+                @close="handleRemoveTag(index)"
+              >
                 {{ tag }}
               </el-tag>
             </div>
           </div>
         </el-form-item>
         <el-form-item label="出版年份">
-          <el-date-picker v-model="editForm.createYear" type="year" value-format="YYYY" placeholder="请选择年份" clearable />
+          <el-date-picker
+            v-model="editForm.createYear"
+            type="year"
+            value-format="YYYY"
+            placeholder="请选择年份"
+            clearable
+          />
         </el-form-item>
         <el-form-item v-if="editForm.type === 'video'" label="视频链接">
           <el-input v-model="editForm.videoURL" clearable />
         </el-form-item>
         <el-form-item label="封面">
           <div class="cover-preview">
-            <img v-if="coverPreview" :src="coverPreview" alt="封面预览" class="cover-img" />
+            <img
+              v-if="coverPreview"
+              :src="coverPreview"
+              alt="封面预览"
+              class="cover-img"
+            />
             <span v-else class="cover-placeholder">暂无封面</span>
           </div>
-          <el-upload class="document-edit-form__upload" :auto-upload="false" :show-file-list="false" accept="image/*"
-            :on-change="handleCoverChange">
+          <el-upload
+            class="document-edit-form__upload"
+            :auto-upload="false"
+            :show-file-list="false"
+            accept="image/*"
+            :on-change="handleCoverChange"
+          >
             <el-button type="primary">选择封面</el-button>
           </el-upload>
         </el-form-item>
         <el-form-item v-if="editForm.type != 'video'" label="资料文件">
-          <el-upload class="document-edit-form__upload" :auto-upload="false" :show-file-list="false"
-            :on-change="handleDocumentChange">
+          <el-upload
+            class="document-edit-form__upload"
+            :auto-upload="false"
+            :show-file-list="false"
+            :on-change="handleDocumentChange"
+          >
             <el-button type="primary">选择文件</el-button>
           </el-upload>
         </el-form-item>
         <el-form-item label="简介">
-          <el-input v-model="editForm.introduction" type="textarea" :rows="4" placeholder="请输入资料简介，最多 500 字"
-            maxlength="500" show-word-limit />
+          <el-input
+            v-model="editForm.introduction"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入资料简介，最多 500 字"
+            maxlength="500"
+            show-word-limit
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -151,9 +242,16 @@
       </template>
     </el-dialog>
 
-    <CategoryDialog :visible="categoryVisible" @update:visible="categoryVisible = $event" :all-categories="categories"
-      :selected-category-name="selectedCategoryName" :selected-category-id="selectedCategoryId"
-      @category-selected="onCategorySelected" @reset-category="resetCategory" @category-added="handleCategoryAdded" />
+    <CategoryDialog
+      :visible="categoryVisible"
+      @update:visible="categoryVisible = $event"
+      :all-categories="categories"
+      :selected-category-name="selectedCategoryName"
+      :selected-category-id="selectedCategoryId"
+      @category-selected="onCategorySelected"
+      @reset-category="resetCategory"
+      @category-added="handleCategoryAdded"
+    />
   </div>
 </template>
 
@@ -182,32 +280,10 @@ const documents = ref<Document[]>([]);
 const categories = ref<Category[]>([]);
 const loading = ref(false);
 const editVisible = ref(false);
-const categoryVisible = ref(false)
+const categoryVisible = ref(false);
 const saving = ref(false);
 const coverPreview = ref("");
 const showReviewingOnly = ref(false); //控制是否只展示待审核数据
-
-
-const onCategorySelected = (val: Category) => {
-  selectedCategoryId.value = val.id
-  selectedCategoryName.value = val.name
-  editForm.categoryId = val.id
-  categoryVisible.value = false
-}
-
-const resetCategory = () => {
-  selectedCategoryId.value = null
-  selectedCategoryName.value = ''
-}
-
-const handleCategoryAdded = async () => {
-  try {
-    const res = await getCategoriesAndCourses()
-    categories.value = res.data ?? []
-  } catch {
-ElMessage.error('刷新分类失败')
-  }
-}
 
 const delay = (ms: number) =>
   new Promise<void>((resolve) => {
@@ -236,14 +312,12 @@ const filteredDocuments = computed<Document[]>(() => {
     return baseList.slice(0, 25);
   }
 
-  return baseList
-    .filter((item) => {
-      const name = item.infoBrief.name?.toLowerCase() ?? "";
-      const author = item.author?.toLowerCase() ?? "";
-      return name.includes(keyword) || author.includes(keyword);
-    });
-})
-
+  return baseList.filter((item) => {
+    const name = item.infoBrief.name?.toLowerCase() ?? "";
+    const author = item.author?.toLowerCase() ?? "";
+    return name.includes(keyword) || author.includes(keyword);
+  });
+});
 
 const handleSearch = () => {
   appliedKeyword.value = searchInput.value.trim();
@@ -254,9 +328,9 @@ const handleClear = () => {
   appliedKeyword.value = "";
 };
 
-const selectedCategoryName = ref('')
-const selectedCategoryId = ref<number | null>(null)
-const temp_tags = ref('')
+const selectedCategoryName = ref("");
+const selectedCategoryId = ref<number | null>(null);
+const temp_tags = ref("");
 const editForm = reactive<DocumentEditForm>({
   documentId: null,
   type: "",
@@ -277,19 +351,38 @@ const editForm = reactive<DocumentEditForm>({
 const handleAddTag = () => {
   const value = temp_tags.value.trim();
   if (!value) return;
-  if (editForm.tags.includes(value)) {
+  const current = normalizeTags(editForm.tags);
+  if (current.includes(value)) {
     temp_tags.value = "";
-    ElMessage('文档已经存在此标签')
+    ElMessage("文档已经存在此标签");
     return;
   }
-  editForm.tags.push(value);
+  editForm.tags = current.concat(value);
   temp_tags.value = "";
 };
 
 const handleRemoveTag = (index: number) => {
-  editForm.tags.splice(index, 1);//还有个slice函数
+  const current = normalizeTags(editForm.tags);
+  current.splice(index, 1); //还有个slice函数
+  editForm.tags = current;
 };
 
+const normalizeTags = (val: unknown): string[] => {
+  if (Array.isArray(val))
+    return val.filter((t) => typeof t === "string" && t.trim());
+  if (typeof val === "string") {
+    try {
+      // 如果这个字符串按照规则能解析成数组那就正常解析，如果不能直接走catch返回[]
+      const parsed = JSON.parse(val);
+      return Array.isArray(parsed)
+        ? parsed.filter((t) => typeof t === "string" && t.trim())
+        : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
 
 const normalizeDocument = (doc: Document): Document => {
   const normalizedStatus: DocumentStatusEH =
@@ -297,13 +390,13 @@ const normalizeDocument = (doc: Document): Document => {
       ?.label ?? "pending";
   const normalizedCover = doc.infoBrief?.cover ?? "";
   const normalizedURL = doc.URL ?? "";
-
+  const normalizedTags = normalizeTags(doc.tags);
   return {
     ...doc,
     URL: normalizedURL,
     infoBrief: {
       ...doc.infoBrief,
-      status: normalizedStatus as DocumentStatusEH,
+      status: normalizedStatus,
       uploadTime: doc.infoBrief.uploadTime || "",
       name: doc.infoBrief.name || "",
       category: doc.infoBrief.category || "",
@@ -311,7 +404,7 @@ const normalizeDocument = (doc: Document): Document => {
     },
     introduction: doc.introduction || "",
     bookISBN: doc.bookISBN || "",
-    tags: Array.isArray(doc.tags) ? doc.tags : [],
+    tags: normalizedTags,
   };
 };
 
@@ -334,7 +427,6 @@ const fetchDocuments = async () => {
       ElMessage.info("未获取到资料数据，列表为空");
       return;
     }
-
     documents.value = list.map(normalizeDocument);
   } catch (error) {
     documents.value = [];
@@ -395,15 +487,13 @@ const releaseBlob = (value: string | File | null) => {
 const openEditDialog = async (row: Document) => {
   editVisible.value = true;
 
-  selectedCategoryName.value=row.infoBrief?.category||''
+  selectedCategoryName.value = row.infoBrief?.category || "";
   editForm.documentId = row.infoBrief.documentId || null;
   editForm.categoryId = null;
   editForm.type = row.infoBrief.type || "";
   editForm.name = row.infoBrief.name || "";
   editForm.isbn = row.bookISBN || "";
-  editForm.tags = Array.isArray(row.tags)
-    ? row.tags.filter((item) => typeof item === "string" && item.trim())
-    : [];
+  editForm.tags = normalizeTags(row.tags);
   editForm.author = row.author || "";
   editForm.createYear = row.createYear || "";
   editForm.cover = row.infoBrief.cover || "";
@@ -411,6 +501,8 @@ const openEditDialog = async (row: Document) => {
   editForm.file = (row.infoBrief.type === "file" ? row.URL : "") || "";
   editForm.videoURL = (row.infoBrief.type === "video" ? row.URL : "") || "";
 
+console.log('open')
+  console.log('row.tags', row.tags, typeof row.tags)
   try {
     const res = await getCategoriesAndCourses();
     categories.value = res.data;
@@ -429,7 +521,7 @@ const openEditDialog = async (row: Document) => {
 const resetEditForm = () => {
   releaseBlob(coverPreview.value);
 
-  temp_tags.value = ''
+  temp_tags.value = "";
   editForm.documentId = null;
   editForm.categoryId = null;
   editForm.type = "";
@@ -471,16 +563,23 @@ const buildDocumentEditFormData = (data: DocumentEditForm) => {
   formData.append("name", data.name);
   formData.append("ISBN", data.isbn);
   // tags 为字符串数组，FormData 需序列化
-  formData.append("tags", JSON.stringify(data.tags)??[]);
+  const tags = normalizeTags(data.tags);
+  formData.append("tags", JSON.stringify(tags));
   formData.append("author", data.author);
   formData.append("createYear", data.createYear);
   formData.append("introduction", data.introduction);
+
+console.log('build')
+  console.log('row.tags', data.tags, typeof data.tags)
 
   if (data.cover instanceof File) {
     formData.append("cover", data.cover);
   }
 
-  if ((data.type === "file" || data.type === 'book') && data.file instanceof File) {
+  if (
+    (data.type === "file" || data.type === "book") &&
+    data.file instanceof File
+  ) {
     formData.append("file", data.file);
   }
 
@@ -492,10 +591,9 @@ const buildDocumentEditFormData = (data: DocumentEditForm) => {
 };
 
 const handlechoose = async () => {
-  if (categoryVisible.value) return
-  categoryVisible.value = true
-}
-
+  if (categoryVisible.value) return;
+  categoryVisible.value = true;
+};
 
 const handleSaveEdit = async () => {
   if (saving.value) return;
@@ -517,6 +615,27 @@ const handleSaveEdit = async () => {
     ElMessage.error((error as Error)?.message || "保存失败，请稍后重试");
   } finally {
     saving.value = false;
+  }
+};
+
+const onCategorySelected = (val: Category) => {
+  selectedCategoryId.value = val.id;
+  selectedCategoryName.value = val.name;
+  editForm.categoryId = val.id;
+  categoryVisible.value = false;
+};
+
+const resetCategory = () => {
+  selectedCategoryId.value = null;
+  selectedCategoryName.value = "";
+};
+
+const handleCategoryAdded = async () => {
+  try {
+    const res = await getCategoriesAndCourses();
+    categories.value = res.data ?? [];
+  } catch {
+    ElMessage.error("刷新分类失败");
   }
 };
 
