@@ -152,7 +152,6 @@ service.interceptors.response.use(
   (error: any) => {
     // 如果是取消请求的错误，直接返回
     if (axios.isCancel(error)) {
-      console.log('请求被取消:', error.message)
       pendingRequests-- // 请求取消，计数减 1
       return Promise.reject(error)
     }

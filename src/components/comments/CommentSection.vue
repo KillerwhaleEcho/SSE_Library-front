@@ -159,6 +159,7 @@ CommentSection 组件可以依据 sourceType/sourceId 或 viewer.role 自动选�
 </template>
 
 <script setup lang="ts">
+import axios from 'axios'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
@@ -543,6 +544,7 @@ const loadCommentsForMode = async (mode: CommentFetchMode) => {
         }))
         await ensureParentComments(comments.value)
     } catch (error: any) {
+        if (axios.isCancel(error)) return
         comments.value = []
         ElMessage.error(error?.message || '获取评论失败')
         resetParentCommentState()

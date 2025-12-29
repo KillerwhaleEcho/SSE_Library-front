@@ -191,10 +191,12 @@ export interface UploadPostForm {
 export interface Reminder {
   reminderId: number;
   receiverId: number;
-  type: "评论" | "点赞" | "收藏" | "系统消息";
+  type: "评论" | "点赞" | "收藏" ;
   content: string;
   sendTime: string;
   isRead: boolean;
+  sourceType: string
+  sourceId:number
 }
 
 
@@ -269,6 +271,12 @@ export const getBookList = (is_suggest: boolean, categoryId?: number) => {
     params: { is_suggest, categoryId },
   });
 };
+
+
+//管理员获取文档列表
+export const adminGetDoc = () => {
+  return service.get<ApiResponse<{ documents: Document[] }>>("/admin/docList");
+}
 
 // 修改资料状态
 export const updateFileStatus = (documentId: number, status: string) => { return service.put<ApiResponse<null>>('/admin/document/status', { documentId, status }) }

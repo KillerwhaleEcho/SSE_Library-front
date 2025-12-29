@@ -265,6 +265,7 @@ import {
   updateFileStatus,
   getCategoriesAndCourses,
   type Category,
+  adminGetDoc,
 } from "../../api/all";
 import { type DocumentEditForm } from "../../types/api";
 import { type Document } from "@/api/all.ts";
@@ -419,7 +420,7 @@ const fetchDocuments = async () => {
   }
 
   try {
-    const res = await getBookList(false);
+    const res = await adminGetDoc();
 
     const list = Array.isArray(res.data) ? res.data : [];
     if (list.length === 0) {
@@ -639,7 +640,6 @@ const handleCategoryAdded = async () => {
   }
 };
 
-onMounted(fetchDocuments);
 
 watch(
   () => editForm.cover,
@@ -654,6 +654,8 @@ watch(
   },
   { immediate: true }
 );
+
+onMounted(fetchDocuments);
 </script>
 
 <style scoped lang="css">

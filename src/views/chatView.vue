@@ -14,7 +14,7 @@
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="chatbox.avatar2" alt="" />
-              <img v-if="chatbox.unreadCount>0" :src="unreadUrl" alt="未读消息" class="contact-avatar__badge" />
+              <img v-if="chatbox.unreadCount > 0" :src="unreadUrl" alt="未读消息" class="contact-avatar__badge" />
             </figure>
             <div class="chatbox-content">
               <div class="chatbox-up">
@@ -24,7 +24,7 @@
                 <span class="chatbox-content-time">{{ formatTime(chatbox.lastTime) }}</span>
               </div>
               <div class="chatbox-down">
-                <span v-if="chatbox.unreadCount>0">[{{ chatbox.unreadCount }}条]</span> 
+                <span v-if="chatbox.unreadCount > 0">[{{ chatbox.unreadCount }}条]</span>
                 <span> {{ chatbox.lastMessage }}</span>
               </div>
             </div>
@@ -71,10 +71,13 @@
                   formatTime(item.sendTime)
                 }}</span>
               </div>
-              <p class="reminder-content">{{ item.content }}</p>
-              <button v-if="!item.isRead" class="reminder-button" @click="markReminderRead(item)">
-                标记已读
-              </button>
+              <div class="reminder-content" @click="handleCheck(item)">{{ item.content }}</div>
+              <div class="reminder-buttons">
+                <button class="reminder-check" @click="handleCheck(item)">查看详情</button>
+                <button v-if="!item.isRead" class="reminder-mark" @click.stop="markReminderRead(item)">
+                  标记已读
+                </button>
+              </div>
             </article>
           </div>
           <div v-else class="reminder-empty">暂无通知</div>
@@ -259,7 +262,6 @@ const reminderTypeDict: Record<string, string> = {
   comment: "评论",
   like: "点赞",
   favorite: " 收藏",
-  system: "系统消息",
 };
 
 const sortedReminders = computed(() => {
@@ -284,6 +286,39 @@ const formatTime = (time: string) => {
 };
 
 const getReminderLabel = (type: string) => reminderTypeDict[type] ?? "未知";
+
+
+const handleCheck = async (item: Reminder) => {
+  const { sourceType, sourceId } = item;
+
+  if (sourceType === "document") {
+    router.push({
+      name: "BookInfo",
+      query: {
+        id: String(sourceId),
+      },
+    });
+    if (!item.isRead) {
+      await markReminderRead(item);
+    }
+    return;
+  }
+
+  if (sourceType === "post") {
+    router.push({
+      name: "PostInfo",
+      query: {
+        postId: String(sourceId),
+      },
+    });
+    if (!item.isRead) {
+      await markReminderRead(item);
+    }
+    return;
+  }
+  ElMessage.warning("暂不支持查看该类型");
+};
+
 
 const markReminderRead = async (item: Reminder) => {
   item.isRead = true;
@@ -429,21 +464,21 @@ const isNearBottom = () => {
 const handleReminderSelect = () => {
   isReminder.value = true;
   currentSessionId.value = -1
-  messages.value=[]
+  messages.value = []
 };
 
 //这个是聊天框的点击处理
-const handleSelect = async (sessionId:number) => {
+const handleSelect = async (sessionId: number) => {
   // 切换会话时先关闭动画
   enableMsgAnim.value = false;
   isReminder.value = false;
   const sid = Number(sessionId);
   currentSessionId.value = sid;
-const target=chatBoxes.value.find((item) => 
-  sessionId === item.sessionId)
-    if(!target) return 
+  const target = chatBoxes.value.find((item) =>
+    sessionId === item.sessionId)
+  if (!target) return
   target.unreadCount = 0
-  
+
   if (laodingMessages.value) {
     enableMsgAnim.value = true;
     return;
@@ -457,10 +492,10 @@ const target=chatBoxes.value.find((item) =>
     ElMessage.error("获取聊天记录失败");
   } finally {
     laodingMessages.value = false;
-  // 同样：DOM 更新完再开动画
-  await nextTick();
-  enableMsgAnim.value = true;
-  scrollToLatest()
+    // 同样：DOM 更新完再开动画
+    await nextTick();
+    enableMsgAnim.value = true;
+    scrollToLatest()
   }
 
 };
@@ -547,7 +582,7 @@ const handleSearch = async () => {
       searchResults.value = mapMessagesToResults(response.data ?? []);
     } else {
       const response = await searchUser(undefined, appliedInput);
-      searchResults.value = mapUsersToResults(response.data??[]);
+      searchResults.value = mapUsersToResults(response.data ?? []);
     }
     visible.value = true;
   } catch (error) {
@@ -1010,7 +1045,7 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
-.chatbox-down{
+.chatbox-down {
   display: flex;
 }
 
@@ -1231,22 +1266,40 @@ onUnmounted(() => {
 }
 
 .reminder-content {
-  margin: 0;
-  font-size: 14px;
+  margin-top: 10px;
+  padding: 10px;
+  font-size: 16px;
+  font-weight: 520;
   line-height: 1.6;
   color: #3a3652;
+  border: 2px solid rgb(229, 213, 238);
+  border-radius: 15px;
 }
 
-.reminder-button {
+.reminder-buttons {
   margin-left: auto;
-  padding: 4px;
-  font-size: 15px;
-  line-height: 2;
-  border-radius: 5px;
-  font-weight: 350;
 }
 
-.reminder-button:hover {
+.reminder-check {
+  padding: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  border-radius: 10px;
+  font-weight: 500;
+  background-color: #d8e2f4;
+}
+
+.reminder-mark {
+  margin-left: 20px;
+  padding: 4px;
+  font-size: 14px;
+  line-height: 1.6;
+  border-radius: 10px;
+  font-weight: 500;
+  background-color: #eeeaf7;
+}
+
+.reminder-mark:hover {
   border-color: rgb(164, 211, 242);
 }
 

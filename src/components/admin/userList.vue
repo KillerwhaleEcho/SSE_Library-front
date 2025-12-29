@@ -6,14 +6,14 @@
           v-model="searchInput"
           size="large"
           clearable
-          :placeholder="TEXT.searchPlaceholder"
+          placeholder="请按照姓名搜索"
           @clear="resetSearch"
           @keyup.enter="handleSearch"
           class="user-card__search-input"
         >
           <template #append>
             <el-button type="primary" size="small" @click="handleSearch">
-              {{ TEXT.search }}
+              搜索
             </el-button>
           </template>
         </el-input>
@@ -24,7 +24,7 @@
           @click="fetchUsers"
           class="user-card__refresh"
         >
-          {{ TEXT.refresh }}
+          刷新
         </el-button>
       </div>
 
@@ -32,21 +32,21 @@
         <el-table
           :data="filteredUsers"
           v-loading="loading"
-          :element-loading-text="TEXT.loading"
-          :empty-text="TEXT.empty"
+          element-loading-text="正在加载用户数据..."
+          empty-text="暂无用户数据"
           border
         >
-          <el-table-column prop="id" label="ID" width="80" align="center"/>
-          <el-table-column prop="name" :label="TEXT.name" width="200" align="center"/>
-          <el-table-column prop="email" :label="TEXT.email" min-width="220" align="center"/>
-          <el-table-column :label="TEXT.status" width="200" align="center">
+          <el-table-column prop="id" label="ID" width="80" align="center" />
+          <el-table-column prop="name" label="姓名" width="200" align="center" />
+          <el-table-column prop="email" label="邮箱" min-width="220" align="center" />
+          <el-table-column label="状态" width="200" align="center">
             <template #default="{ row }">
               <el-tag :type="row.status === 'active' ? 'success' : 'info'">
-                {{ row.status === "active" ? TEXT.normal : TEXT.disabled }}
+                {{ row.status === "active" ? "正常" : "停用" }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column :label="TEXT.action" width="200" align="center">
+          <el-table-column label="操作" width="200" align="center">
             <template #default="{ row }">
               <el-button
                 type="primary"
@@ -55,7 +55,7 @@
                 @click="toggleStatus(row)"
               >
                 {{
-                  row.status === "active" ? TEXT.setDisabled : TEXT.setActive
+                  row.status === "active" ? "设为停用" : "设为正常"
                 }}
               </el-button>
             </template>
@@ -71,53 +71,24 @@ import { computed, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import {
   getUserList,
-  updateUserStatus,type UserRow
+  updateUserStatus,
+  type UserRow,
 } from "../../api/admin";
-import { type UserBrief} from "../../api/all";
-import {  DEMO_USERS} from "./mockData";
-
-const TEXT = {
-  title: "用户列表",
-  refresh: "刷新",
-  loading: "正在加载用户数据...",
-  empty: "暂无用户数据",
-  name: "姓名",
-  email: "邮箱",
-  status: "状态",
-  action: "操作",
-  setDisabled: "设为停用",
-  setActive: "设为正常",
-  normal: "正常",
-  disabled: "停用",
-  fetchError: "获取用户数据失败",
-  successActivate: "已启用用户",
-  successDeactivate: "已停用用户",
-  updateError: "更新用户状态失败，请重试",
-  search: "搜索",
-  searchPlaceholder: "请按照姓名搜索",
-  searchSelect: "请选择搜索类型",
-  searchByName: "根据姓名",
-  searchById: "根据 ID",
-  mockFallback: "未连接后端，正在使用示例数据展示",
-} as const;
-
-
+import { type UserBrief } from "../../api/all";
+import { DEMO_USERS } from "./mockData";
 
 const users = ref<UserRow[]>([...DEMO_USERS]);
 const loading = ref(false);
 const searchInput = ref("");
 const appliedKeyword = ref("");
 
-
 const normalizeStatus = (status: string) => {
-  if (status === "active" || status === TEXT.normal) return "active";
-  if (status === "disabled" || status === TEXT.disabled) return "disabled";
+  if (status === "active" || status === "正常") return "active";
+  if (status === "disabled" || status === "停用") return "disabled";
   return status;
 };
 
-
-
-//将获取的用户数据提取关键数据展示
+// 将获取的用户数据提取关键信息展示
 const mapToRows = (list: UserBrief[]): UserRow[] =>
   [...list]
     .sort((a, b) => a.userId - b.userId)
@@ -135,9 +106,9 @@ const fetchUsers = async () => {
     const response = await getUserList();
     users.value = mapToRows(response.data || []);
   } catch (error: any) {
-    console.warn(TEXT.fetchError, error);
+    console.warn("获取用户数据失败", error);
     users.value = [...DEMO_USERS];
-    ElMessage.warning(TEXT.mockFallback);
+    ElMessage.warning("未连接后端，正在使用示例数据展示");
   } finally {
     loading.value = false;
   }
@@ -146,7 +117,6 @@ const fetchUsers = async () => {
 const filteredUsers = computed(() => {
   const keyword = appliedKeyword.value;
   if (!keyword) return users.value;
-
 
   const normalizedKeyword = keyword.trim().toLowerCase();
   if (!normalizedKeyword) return users.value;
@@ -165,7 +135,6 @@ const resetSearch = () => {
 };
 
 const toggleStatus = async (user: UserRow) => {
-  // 切换当前状态
   const previousStatus = user.status;
   const targetStatus = user.status === "active" ? "disabled" : "active";
   user.status = targetStatus;
@@ -179,12 +148,12 @@ const toggleStatus = async (user: UserRow) => {
       user.status = normalizeStatus(data.status);
     }
     const message =
-      user.status === "active" ? TEXT.successActivate : TEXT.successDeactivate;
+      user.status === "active" ? "已启用用户" : "已停用用户";
     ElMessage.success(message);
   } catch (error) {
-    console.error(TEXT.updateError, error);
+    console.error("更新用户状态失败，请重试", error);
     user.status = previousStatus;
-    ElMessage.error(TEXT.updateError);
+    ElMessage.error("更新用户状态失败，请重试");
   }
 };
 
@@ -229,9 +198,8 @@ onMounted(fetchUsers);
     margin-bottom: 16px;
   }
 
-
   .user-card__search-input {
-width: 50%;
+    width: 50%;
   }
 
   .user-card__refresh {

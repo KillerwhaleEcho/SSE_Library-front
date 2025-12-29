@@ -1,7 +1,7 @@
 <template>
   <div class="comment-list">
     <el-card class="comment-card">
-      <section class="comment-card__body" v-loading="loading" element-loading-text="正在全力加载">
+      <section class="comment-card__body"  element-loading-text="正在全力加载">
             <CommentSection :viewer="userInfo" :show-comment-user="true" :show-source-name="true" :show-search-bar="true">
         </CommentSection>
       </section>
@@ -16,7 +16,6 @@ import { type UserBrief, getUserDetail } from '@/api/all'
 import CommentSection from '../comments/CommentSection.vue'
 
 
-const loading = ref(false)
 const userInfo = ref<UserBrief | null>()
 
 
