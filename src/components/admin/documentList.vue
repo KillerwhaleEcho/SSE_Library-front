@@ -159,7 +159,7 @@
                 clearable
                 @keyup.enter.prevent="handleAddTag"
               />
-              <el-button type="primary" @click="handleAddTag"
+              <el-button class="button" @click="handleAddTag"
                 >添加标签</el-button
               >
             </div>
@@ -208,17 +208,17 @@
             accept="image/*"
             :on-change="handleCoverChange"
           >
-            <el-button type="primary">选择封面</el-button>
+            <el-button class="button">选择封面</el-button>
           </el-upload>
         </el-form-item>
-        <el-form-item v-if="editForm.type != 'video'" label="资料文件">
+        <el-form-item v-if="editForm.type != 'video'" :required="editForm.type!='video'" label="资料文件">
           <el-upload
             class="document-edit-form__upload"
             :auto-upload="false"
             :show-file-list="false"
             :on-change="handleDocumentChange"
           >
-            <el-button type="primary">选择文件</el-button>
+            <el-button class="button">选择文件</el-button>
           </el-upload>
         </el-form-item>
         <el-form-item label="简介">
@@ -235,7 +235,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="editVisible = false">取消</el-button>
-          <el-button type="primary" :loading="saving" @click="handleSaveEdit">
+          <el-button class="button" :loading="saving" @click="handleSaveEdit">
             保存修改
           </el-button>
         </span>
@@ -830,6 +830,13 @@ onMounted(fetchDocuments);
   color: #4b5563;
   padding: 2px 10px;
 }
+
+.button{
+  background-color: #b994fe;
+  color: white;
+  border-color: #b994fe;
+}
+
 
 .cover-preview {
   margin: 0px 20px 10px 10px;

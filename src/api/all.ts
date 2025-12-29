@@ -1,6 +1,6 @@
 import { my } from 'element-plus/es/locales.mjs'
 import service from '../utils/service'
-import type { DocumentEditForm } from '@/types/api'
+import type { DocumentEditForm, globalSearchItem } from '@/types/api'
 import { useId } from 'vue'
 
 export interface ApiResponse<T = any> {
@@ -477,9 +477,9 @@ export const getMessageList = (sessionId: number, userId: number) => {
   return service.get<ApiResponse<message[]>>('/chat/messages', config)
 }
 
-//搜索聊天记录
-export const searchMessage = (userId: number, searchKey: string) => {
-  return service.get<ApiResponse<message[]>>('/chat/search', { params: { userId, searchKey } })
+//全局搜索聊天记录
+export const globalSearch = (userId: number, searchKey: string) => {
+  return service.get<ApiResponse<globalSearchItem[]>>('/chat/globalSearch', { params: { userId, searchKey } })
 }
 
 //搜索用户

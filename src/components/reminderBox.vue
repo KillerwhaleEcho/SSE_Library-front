@@ -52,6 +52,7 @@ import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import * as allApi from '@/api/all.ts';
 import { ElPopover } from 'element-plus';
+import ChatView from '@/views/chatView.vue';
 
 // 组件props定义
 const props = defineProps<{
@@ -78,7 +79,12 @@ const filteredReminders = computed(() => {
 // 点击通知项处理
 const handleNotificationClick = (item: allApi.Reminder) => {
   emit('mark-read', item.reminderId);
-  router.push('/chat');
+  router.push({
+    name: 'Chat',
+    query: {
+      reminder:'true'
+    }
+  });
   isPanelVisible.value = false; // 关闭popover
 };
 

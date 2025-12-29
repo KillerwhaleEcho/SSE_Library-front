@@ -43,3 +43,16 @@
   file: File | string | null
   videoURL: string
 }
+
+
+export interface globalSearchItem{
+  sessionId: number
+  userId1: number
+  username1: string
+  userAvatar1: string
+  userId2: number
+  username2: string
+  userAvatar2: string
+  matchedCount: number
+  example:string
+}

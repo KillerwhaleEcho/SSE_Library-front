@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import {  onMounted, ref, watch } from 'vue'
 import { ElMessage} from 'element-plus'
 import { type UserBrief, getUserDetail } from '@/api/all'
 import CommentSection from '../comments/CommentSection.vue'
