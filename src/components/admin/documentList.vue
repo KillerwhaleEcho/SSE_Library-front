@@ -31,7 +31,7 @@
             type="primary"
             size="medium"
             :loading="loading"
-            @click="fetchDocuments"
+            @click="handleRefresh"
           >
             刷新
           </el-button>
@@ -260,7 +260,6 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, type UploadFile } from "element-plus";
 import {
-  getBookList,
   updateFileInfo,
   updateFileStatus,
   getCategoriesAndCourses,
@@ -269,7 +268,6 @@ import {
 } from "../../api/all";
 import { type DocumentEditForm } from "../../types/api";
 import { type Document } from "@/api/all.ts";
-import { MOCK_DOCUMENTS } from "./mockData";
 import CategoryDialog from "../CategoryDialog.vue";
 
 const router = useRouter();
@@ -411,13 +409,6 @@ const normalizeDocument = (doc: Document): Document => {
 
 const fetchDocuments = async () => {
   loading.value = true;
-  if (USE_MOCK) {
-    await delay(300);
-    documents.value = MOCK_DOCUMENTS.map((item) => normalizeDocument(item));
-    ElMessage.info("当前展示为模拟数据");
-    loading.value = false;
-    return;
-  }
 
   try {
     const res = await adminGetDoc();
@@ -455,23 +446,19 @@ const toggleReviewingFilter = () => {
   showReviewingOnly.value = !showReviewingOnly.value;
 };
 
+
+const handleRefresh = () => {
+  handleClear()
+  fetchDocuments()
+}
+
+
 const handleStatusChange = async (row: Document, nextStatus: string) => {
   const previous = row.infoBrief.status;
   row.infoBrief.status = nextStatus as typeof row.infoBrief.status;
 
   try {
-    if (USE_MOCK) {
-      await delay(200);
-      const mockIndex = MOCK_DOCUMENTS.findIndex(
-        (item) => item.infoBrief.documentId === row.infoBrief.documentId
-      ); // find 和 findIndex 的本质区别:一个返回元素本身一个返回下标
-      if (mockIndex !== -1) {
-        MOCK_DOCUMENTS[mockIndex]!.infoBrief.status =
-          nextStatus as (typeof MOCK_DOCUMENTS)[number]["infoBrief"]["status"]; //这里的number代表索引的类型，后面都是在选取属性
-      }
-    } else {
       await updateFileStatus(row.infoBrief.documentId, nextStatus);
-    }
     ElMessage.success("状态更新成功");
   } catch (error) {
     row.infoBrief.status = previous;

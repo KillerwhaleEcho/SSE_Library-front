@@ -399,6 +399,13 @@ export const deleteAdminComment = (commentId: string | number) => {
   });
 };
 
+export const deletePost = (postId: number) => {
+  return service.delete<ApiResponse<null>>("/post", {
+    params: {
+      postId,
+    },
+  });
+};
 
 // 收藏
 export const postUserAddFavor = (payload: FavoriteActionPayload) => {

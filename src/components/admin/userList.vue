@@ -21,7 +21,7 @@
           type="primary"
           size="medium"
           :loading="loading"
-          @click="fetchUsers"
+          @click="handleRefresh"
           class="user-card__refresh"
         >
           刷新
@@ -134,6 +134,11 @@ const resetSearch = () => {
   appliedKeyword.value = "";
 };
 
+const handleRefresh = () => {
+  resetSearch()
+  getUserList()
+}
+
 const toggleStatus = async (user: UserRow) => {
   const previousStatus = user.status;
   const targetStatus = user.status === "active" ? "disabled" : "active";
@@ -209,15 +214,11 @@ onMounted(fetchUsers);
   .user-card__table {
     flex: 1;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
   }
 
   .user-card__table :deep(.el-table) {
-    flex: 1;
     --el-table-border-color: rgba(185, 148, 254, 0.2);
     background-color: #fff;
-    border-radius: 0;
   }
 
   .user-card__table :deep(.el-table__body-wrapper) {
@@ -232,9 +233,7 @@ onMounted(fetchUsers);
     font-weight: 600;
   }
 
-  /* :deep(.el-table tr:hover > td) {
-    background-color: rgba(185, 148, 254, 0.18);
-  } */
+
 
   :deep(.el-tag) {
     border: none;

@@ -53,9 +53,9 @@
           <commentList v-else-if="activeTab === 'comments'" />
           <documentList v-else-if="activeTab === 'files'" />
           <userList v-else-if="activeTab === 'users'" />
+          <postList v-else-if="activeTab==='posts'"/>
           <div v-else class="empty-panel">
             <h4>暂无内容</h4>
-            <p>暂无记录</p>
           </div>
         </div>
       </section>
@@ -71,16 +71,18 @@ import AdminInfo from '../components/admin/adminInfo.vue'
 import commentList from '../components/admin/commentList.vue'
 import documentList from '../components/admin/documentList.vue'
 import userList from '../components/admin/userList.vue'
+import postList from '@/components/admin/postList.vue'
 import { type UserBrief } from '@/api/all'
 import { getAdminDetail } from '@/api/admin'
 
-type TabKey = 'info' | 'comments' | 'files' | 'users'
+type TabKey = 'info' | 'comments' | 'files' | 'users'|'posts'
 
 const tabs = [
   { key: 'info' as TabKey, label: '修改信息' },
   { key: 'comments' as TabKey, label: '评论列表' },
   { key: 'files' as TabKey, label: '文件列表' },
   { key: 'users' as TabKey, label: '用户列表' },
+  {key:'posts' as TabKey,label:'帖子列表'}
 ]
 
 const activeTab = ref<TabKey>('info')
