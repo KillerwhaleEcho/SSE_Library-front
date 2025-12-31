@@ -13,7 +13,7 @@
       <div class="panel-header">
         <h3 class="panel-title">
           通知
-          <span class="badge tab-badge" v-if="unreadCount > 0">{{ unreadCount }}</span>
+          <span class="badge tab-badge" v-if="unreadReminder > 0">{{ unreadReminder }}</span>
         </h3>
         <button class="clear-btn" @click="handleClearAll" :disabled="!reminders?.length">
           清空全部
@@ -41,7 +41,7 @@
     <template #reference>
       <div class="icon-container" data-tooltip="通知">
         <img src="@/assets/147_通知.png" alt="通知">
-        <div class="badge" v-if="unreadCount > 0">{{ unreadCount }}</div>
+        <div class="badge" v-if="unreadReminder > 0">{{ unreadReminder }}</div>
       </div>
     </template>
   </el-popover>
@@ -56,7 +56,8 @@ import ChatView from '@/views/chatView.vue';
 
 // 组件props定义
 const props = defineProps<{
-  reminders: allApi.Reminder[];   // 通知列表数据（父传子）
+  reminders: allApi.Reminder[]; 
+  unreadReminder: number; 
 }>();
 
 const emit = defineEmits<{
@@ -66,10 +67,6 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const isPanelVisible = ref(false); // 控制popover显示状态
-
-const unreadCount = computed(() => {
-  return props.reminders?.filter(item => !item.isRead).length || 0;
-});
 
 const filteredReminders = computed(() => {
   // 只返回未读的提醒（isRead 为 false）

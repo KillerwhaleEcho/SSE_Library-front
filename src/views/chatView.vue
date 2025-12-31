@@ -10,26 +10,13 @@
         </figure>
       </div>
       <!-- 传给default-active一个index，那个item就会高亮，这个高亮样式就是is-active -->
-      <el-menu
-        class="chat-menu"
-        :default-active="
-          currentSessionId === -1 ? '' : String(currentSessionId)
-        "
-        @select="handleSelect"
-      >
-        <el-menu-item
-          v-for="chatbox in appliedChatboxes"
-          :index="chatbox.sessionId"
-        >
+      <el-menu class="chat-menu" :default-active="currentSessionId === -1 ? '' : String(currentSessionId)
+        " @select="handleSelect">
+        <el-menu-item v-for="chatbox in appliedChatboxes" :index="chatbox.sessionId">
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="chatbox.avatar2" alt="" />
-              <img
-                v-if="chatbox.unreadCount > 0"
-                :src="unreadUrl"
-                alt="未读消息"
-                class="contact-avatar__badge"
-              />
+              <img v-if="chatbox.unreadCount > 0" :src="unreadUrl" alt="未读消息" class="contact-avatar__badge" />
             </figure>
             <div class="chatbox-content">
               <div class="chatbox-up">
@@ -41,9 +28,7 @@
                 }}</span>
               </div>
               <div class="chatbox-down">
-                <span v-if="chatbox.unreadCount > 0"
-                  >[{{ chatbox.unreadCount }}条]</span
-                >
+                <span v-if="chatbox.unreadCount > 0" class="matchedCount">[{{ chatbox.unreadCount }}条]</span>
                 <span> {{ chatbox.lastMessage }}</span>
               </div>
             </div>
@@ -55,54 +40,24 @@
     <section class="chatview-content">
       <div class="chatview-top">
         <div class="chatview-search">
-          <el-select
-            v-model="searchType"
-            class="chatview-select"
-            :teleported="false"
-            placeholder="选择类型"
-          >
+          <el-select v-model="searchType" class="chatview-select" :teleported="false" placeholder="选择类型">
             <el-option label="用户" value="user" />
             <el-option label="聊天记录" value="message" />
           </el-select>
-          <el-input
-            v-model="searchInput"
-            class="chatview-input"
-            size="samll"
-            @keyup.enter="handleSearch"
-            :placeholder="searchPlaceholder"
-            clearable
-          >
+          <el-input v-model="searchInput" class="chatview-input" size="samll" @keyup.enter="handleSearch"
+            :placeholder="searchPlaceholder" clearable>
             <template #append>
-              <el-button
-                size="samll"
-                class="chatview-button"
-                @click="handleSearch"
-                >搜索</el-button
-              >
+              <el-button size="samll" class="chatview-button" @click="handleSearch">搜索</el-button>
             </template>
           </el-input>
         </div>
-        <div
-          v-if="currentSessionId !== -1"
-          class="session-search"
-          :class="{ 'is-open': localSearchExpanded }"
-        >
-          <button
-            class="session-search__icon"
-            @click="toggleLocalSearch"
-            title="本会话搜索"
-          >
+        <div v-if="currentSessionId !== -1" class="session-search" :class="{ 'is-open': localSearchExpanded }">
+          <button class="session-search__icon" @click="toggleLocalSearch" title="本会话搜索">
             <img :src="localSearchIconUrl" alt="本会话搜索" />
           </button>
           <transition name="session-search-expand">
-            <input
-              v-show="localSearchExpanded"
-              ref="localSearchInputRef"
-              v-model="localSearchKeyword"
-              class="session-search__input"
-              placeholder="搜索当前会话的聊天记录"
-              @keyup.enter="handleLocalSearch"
-            />
+            <input v-show="localSearchExpanded" ref="localSearchInputRef" v-model="localSearchKeyword"
+              class="session-search__input" placeholder="搜索当前会话的聊天记录" @keyup.enter="handleLocalSearch" />
           </transition>
         </div>
       </div>
@@ -114,21 +69,13 @@
               <p class="reminder-title">通知中心</p>
             </div>
             <div class="reminder-stats">
-              <span class="reminder-chip reminder-chip__primary"
-                >未读 {{ unreadReminderCount }}</span
-              >
-              <span class="reminder-chip reminder-chip__ghost"
-                >全部 {{ reminders.length }}</span
-              >
+              <span class="reminder-chip reminder-chip__primary">未读 {{ unreadReminderCount }}</span>
+              <span class="reminder-chip reminder-chip__ghost">全部 {{ reminders.length }}</span>
             </div>
           </div>
           <div v-if="sortedReminders.length" class="reminder-list">
-            <article
-              v-for="item in sortedReminders"
-              :key="item.reminderId"
-              class="reminder-card"
-              :class="{ 'is-unread': !item.isRead }"
-            >
+            <article v-for="item in sortedReminders" :key="item.reminderId" class="reminder-card"
+              :class="{ 'is-unread': !item.isRead }">
               <div class="reminder-card__meta">
                 <span class="reminder-type" :class="`type-${item.type}`">
                   {{ getReminderLabel(item.type) }}
@@ -144,11 +91,7 @@
                 <button class="reminder-check" @click="handleCheck(item)">
                   查看详情
                 </button>
-                <button
-                  v-if="!item.isRead"
-                  class="reminder-mark"
-                  @click.stop="markReminderRead(item)"
-                >
+                <button v-if="!item.isRead" class="reminder-mark" @click.stop="markReminderRead(item)">
                   标记已读
                 </button>
               </div>
@@ -157,32 +100,14 @@
           <div v-else class="reminder-empty">暂无通知</div>
         </div>
       </div>
-      <div
-        v-else-if="!isReminder && currentSessionId != -1"
-        class="chat-content-main"
-      >
+      <div v-else-if="!isReminder && currentSessionId != -1" class="chat-content-main">
         <div class="chat-panel">
           <div class="chat-messages" ref="messageListRef">
             <div v-if="!messages.length" class="chat-content__empty"></div>
-            <transition-group
-              v-else
-              name="msg-fade"
-              :css="enableMsgAnim"
-              tag="div"
-              class="chat-messages__inner"
-            >
-              <div
-                v-for="(msg, index) in messages"
-                :key="`${msg.sessionId}-${msg.senderId}-${index}`"
-                :id="`${msg.sessionId}-${msg.sendTime}`"
-                class="message-row"
-                :class="{ 'is-self': isSelfMessage(msg) }"
-              >
-                <img
-                  class="message-avatar"
-                  :src="msg.senderAvatar"
-                  alt="avatar"
-                />
+            <transition-group v-else name="msg-fade" :css="enableMsgAnim" tag="div" class="chat-messages__inner">
+              <div v-for="(msg, index) in messages" :key="`${msg.sessionId}-${msg.senderId}-${index}`"
+                :id="`${msg.sessionId}-${msg.sendTime}`" class="message-row" :class="{ 'is-self': isSelfMessage(msg) }">
+                <img class="message-avatar" :src="msg.senderAvatar" alt="avatar" />
                 <div class="message-body">
                   <div class="message-bubble">
                     {{ msg.content }}
@@ -196,19 +121,10 @@
             <!-- 一组可以带过渡 / 动画效果的列表元素容器 -->
           </div>
           <div class="chat-input-area">
-            <textarea
-              v-model="chatInput"
-              class="chat-input"
-              rows="3"
-              placeholder="输入消息，Enter发送 / Shift+Enter换行"
-              @keydown.enter.exact.prevent="handleSendClick"
-            >
-            </textarea>
-            <button
-              class="send-button"
-              :disabled="!canSendMessage"
-              @click="handleSendClick"
-            >
+            <textarea v-model="chatInput" class="chat-input" rows="3" placeholder="输入消息，Enter发送 / Shift+Enter换行"
+              @keydown.enter.exact.prevent="handleSendClick">
+      </textarea>
+            <button class="send-button" :disabled="!canSendMessage" @click="handleSendClick">
               发送
             </button>
           </div>
@@ -219,19 +135,9 @@
       </div>
     </section>
 
-    <el-dialog
-      v-model="visible"
-      title="搜索结果"
-      width="560px"
-      destroy-on-close
-      class="chat-record-dialog"
-    >
+    <el-dialog v-model="visible" title="搜索结果" width="560px" destroy-on-close class="chat-record-dialog">
       <el-menu v-if="searchResults.length" @select="handleResultSelect">
-        <el-menu-item
-          v-for="item in searchResults"
-          :key="item.id"
-          :index="item.id"
-        >
+        <el-menu-item v-for="item in searchResults" :key="item.id" :index="item.id">
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="item.avatar" />
@@ -242,17 +148,11 @@
                 <span class="chatbox-tag" :class="`result-type-${item.type}`">{{
                   item.type === "message" ? "聊天记录" : "用户"
                 }}</span>
-                <span
-                  v-if="item.type === 'message'"
-                  class="chatbox-content-time"
-                >
-                  {{ item.sendTime }}</span
-                >
+                <span v-if="item.type === 'message'" class="chatbox-content-time">
+                  {{ item.sendTime }}</span>
               </div>
-              <div class="chatbox-content-down">
-                <span v-if="item.type === 'session'"
-                  >[{{ item.matchedCount }}]</span
-                >
+              <div class="chatbox-down">
+                <span v-if="item.type === 'session'" class="matchedCount">[{{ item.matchedCount }}条]</span>
                 <span>{{ item.content }}</span>
               </div>
             </div>
@@ -264,24 +164,14 @@
   </div>
 
   <!-- 使用分离的组件 -->
-  <CategoryDialog
-    :visible="showCategoryDialog"
-    @update:visible="showCategoryDialog = $event"
-    :all-categories="allCategories"
-    :selected-category-name="selectedCategoryName"
-    :selected-category-id="selectedCategoryId"
-    @category-selected="onCategorySelected"
-    @reset-category="resetCategory"
-    @category-added="handleCategoryAdded"
-  />
+  <CategoryDialog :visible="showCategoryDialog" @update:visible="showCategoryDialog = $event"
+    :all-categories="allCategories" :selected-category-name="selectedCategoryName"
+    :selected-category-id="selectedCategoryId" @category-selected="onCategorySelected" @reset-category="resetCategory"
+    @category-added="handleCategoryAdded" />
 
-  <UploadModal
-    v-model:visible="showUploadModal"
-    :selected-category-name="selectedUploadCategoryName"
-    :selected-category-id="selectedCategoryId"
-    @open-category-dialog="showCategoryDialog = true"
-    @upload-success="handleUploadSuccess"
-  />
+  <UploadModal v-model:visible="showUploadModal" :selected-category-name="selectedUploadCategoryName"
+    :selected-category-id="selectedCategoryId" @open-category-dialog="showCategoryDialog = true"
+    @upload-success="handleUploadSuccess" />
 </template>
 
 <script setup lang="ts">
@@ -376,6 +266,8 @@ const searchPlaceholder = computed(() =>
     ? "请输入聊天记录的搜索关键词"
     : "请输入要搜索的用户名,点击可以直接与他聊天"
 );
+const unreadReminderCount = ref<Number|null>(null)
+
 //状态控制变量
 const useMockData = ref(false);
 const loadingSession = ref(false);
@@ -405,9 +297,6 @@ const appliedChatboxes = computed(() => {
   });
 });
 
-const unreadReminderCount = computed(
-  () => (reminders.value ?? []).filter((item) => !item.isRead).length
-);
 
 const reminderTypeDict: Record<string, string> = {
   comment: "评论",
@@ -674,11 +563,11 @@ const handleSelect = async (sessionId: number) => {
 //将后端返回结果映射成要呈现的会话数据
 const mapSessionsToResults = (list: globalSearchItem[]): SearchResultItem[] => {
   return list.map((item) => {
-    const shouldSwap = item.username2 === userInfo.value?.username;
+    const shouldSwap = item.userId2 === userInfo.value?.userId;
 
     return {
       id: `${item.sessionId}`,
-      type: "message",
+      type: "session",
       name: shouldSwap ? item.username1 : item.username2,
       avatar: shouldSwap ? item.userAvatar1 : item.userAvatar2,
       content: item.example,
@@ -690,7 +579,7 @@ const mapSessionsToResults = (list: globalSearchItem[]): SearchResultItem[] => {
 
 // 将后端返回结果映射成要呈现的会聊天数据
 const mapMesasgesToResults = (list: message[]): SearchResultItem[] =>
-  list.map((item) => ({
+  [...list].reverse().map((item) => ({
     id: `${item.sessionId}-${item.sendTime}`,
     type: "message",
     name: item.senderName,
@@ -794,9 +683,6 @@ const fetchMessages = async (sessionId: number) => {
       sessionId,
       userInfo.value?.userId as number
     );
-    console.log("+++++++++++++");
-    console.log(res);
-    console.log("res.data");
     messages.value = Array.isArray(res.data) ? res.data : [];
   } catch (err) {
     // 拉取失败时提示，避免频繁轮询重复提示
@@ -823,17 +709,18 @@ const updateChatboxPreview = (
   chatBoxes.value = chatBoxes.value.map((item) =>
     item.sessionId === sessionId
       ? {
-          ...item,
-          lastMessage: content ?? item.lastMessage,
-          lastTime: sendTime ?? item.lastTime,
-          unreadCount: isCurrentSession ? 0 : item.unreadCount + 1,
-        }
+        ...item,
+        lastMessage: content ?? item.lastMessage,
+        lastTime: sendTime ?? item.lastTime,
+        unreadCount: isCurrentSession ? 0 : item.unreadCount + 1,
+      }
       : item
   );
 };
 
 const handleIncomingChatMessage = (payload: any) => {
   if (!payload || payload.type !== "chat_message" || !payload.data) return;
+  //如果和userId不匹配直接返回
   const receiverId = Number(payload.receiverId);
   if (
     receiverId &&
@@ -870,6 +757,24 @@ const handleIncomingChatMessage = (payload: any) => {
   );
 };
 
+
+const handleIncomingReminder = (payload :any) => {
+  if (!payload || payload.type !== "reminder" || !payload.data) return;
+  //如果和userId不匹配直接返回
+  const receiverId = Number(payload.receiverId);
+  if (
+    receiverId &&
+    userInfo.value?.userId &&
+    receiverId !== Number(userInfo.value.userId)
+  ) {
+    return;
+  }
+
+  getUnreadCountOfReminder()
+  getReminders()
+  
+}
+
 const initWebSocket = () => {
   const token = localStorage.getItem("token");
   if (!token) return;
@@ -884,7 +789,11 @@ const initWebSocket = () => {
   ws.onmessage = (event: MessageEvent) => {
     try {
       const payload = JSON.parse(event.data);
-      handleIncomingChatMessage(payload);
+      if (payload.type = 'chat_message') {
+         handleIncomingChatMessage(payload);
+      } else {
+        handleIncomingReminder(payload)
+      }
     } catch (error) {
       console.error("解析 WebSocket 消息失败", error);
     }
@@ -918,6 +827,15 @@ const handleSendClick = async () => {
 
   scrollToLatest();
 };
+
+const getUnreadCountOfReminder =async () => {
+  try {
+    const res = allApi.getUnreadMessage('reminder', userInfo.value?.userId as number)
+    unreadReminderCount.value = res.data
+  } catch {
+    ElMessage.error('获取未读通知数失败')
+  }
+}
 
 // 分类相关方法
 const onCategorySelected = (selected: allApi.Category) => {
@@ -1023,6 +941,7 @@ onMounted(async () => {
   await fetchUserInfo(); //要用await，因为得按顺序执行
   await getSessions();
   await getReminders();
+  getUnreadCountOfReminder()
   getAllCategories();
   initWebSocket();
   const reminderFlag = route.query.reminder;
@@ -1245,8 +1164,13 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
+
 .chatbox-down {
   display: flex;
+}
+
+.matchedCount {
+  color: #ac82f4;
 }
 
 .chatbox-content-header {
@@ -1263,10 +1187,6 @@ onUnmounted(() => {
   background: #eef2ff;
 }
 
-.chatbox-content-down {
-  display: flex;
-  gap: 8px;
-}
 
 .result-type-user {
   color: #1d4ed8;
@@ -1331,7 +1251,7 @@ onUnmounted(() => {
 .session-search__icon img {
   width: 20px;
   height: 20px;
-  object-fit:contain;
+  object-fit: contain;
 }
 
 .session-search__input {
@@ -1360,7 +1280,7 @@ onUnmounted(() => {
   padding: 6px 0;
   border-color: transparent;
   transform: translateX(-6px);
-/* 视觉效果是从稍微往左的位置淡入/滑入，或者在淡出时稍微往左滑一下。不会影响其他元素的排版，占位保持不变 */
+  /* 视觉效果是从稍微往左的位置淡入/滑入，或者在淡出时稍微往左滑一下。不会影响其他元素的排版，占位保持不变 */
 }
 
 .chatview-search {
@@ -1614,11 +1534,9 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 14px;
   scroll-behavior: smooth;
-  background: radial-gradient(
-      1200px 600px at 80% -10%,
+  background: radial-gradient(1200px 600px at 80% -10%,
       #eef2ff 0%,
-      transparent 60%
-    ),
+      transparent 60%),
     #f6f7fb;
 }
 

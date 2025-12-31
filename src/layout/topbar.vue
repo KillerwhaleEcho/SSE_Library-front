@@ -18,6 +18,7 @@
 
       <ReminderBox 
         :reminders="reminders"
+        :unread-reminder="unreadReminder"
         @clear-all="handleClearAll"
         @mark-read="handleMarkRead"
       />
@@ -129,6 +130,15 @@ const getUnreadCountOfMessages = async() => {
   }
 }
 
+const getUnreadCountOfReminder = async () => {
+  try {
+    const res= await allApi.getUnreadMessage('reminder',userId);
+    unreadReminder.value=res.data
+  } catch {
+    console.log('获取未读聊天数量失败')
+  }
+}
+
 const initWebSocket = () => {
   const token = localStorage.getItem("token");
   if (!token) return;
@@ -143,7 +153,7 @@ const initWebSocket = () => {
   ws.onmessage = (event: MessageEvent) => {
     try {
       const payload = JSON.parse(event.data);
-      if (payload.type === 'chat-message') {
+      if (payload.type === 'chat_message') {
         unreadChatMessage.value++
       } else {
         unreadReminder.value++
@@ -168,6 +178,7 @@ const initWebSocket = () => {
 onMounted(() => {
   fetchReminders();
   getUnreadCountOfMessages()
+  getUnreadCountOfReminder()
   initWebSocket()
 })
 
