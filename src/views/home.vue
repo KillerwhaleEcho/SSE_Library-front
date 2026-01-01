@@ -88,6 +88,13 @@
         >
           文件列表
         </div>
+        <div
+          class="tab-nav-item"
+          :class="{ active: activeTab === 'allCategories' }"
+          @click="activeTab = 'allCategories'"
+        >
+          全部分类
+        </div>
       </div>
 
       <!-- 标签页内容区 -->
@@ -139,6 +146,184 @@
             </div>
           </div>
         </div>
+
+        <!-- 全部分类标签页 -->
+        <div class="tab-pane" v-if="activeTab === 'allCategories'">
+          <div class="all-categories-container">
+            <div class="category-search-section">
+              <el-input
+                v-model="allCategoriesSearchKeyword"
+                placeholder="搜索分类"
+                class="search-input"
+                @keyup.enter="handleAllCategoriesSearch"
+              >
+                <template #prefix>
+                  <el-icon><Search /></el-icon>
+                </template>
+                <template #append>
+                  <el-button
+                    @click="handleAllCategoriesSearch"
+                    :icon="Search"
+                  />
+                </template>
+              </el-input>
+
+              <div class="add-category-btn">
+                <el-popover
+                  placement="right-start"
+                  width="350"
+                  trigger="click"
+                  v-model:visible="addCategoryPopoverVisible"
+                >
+                  <!-- 添加分类表单内容 -->
+                  <el-form
+                    ref="addCategoryFormRef"
+                    :model="addCategoryFormData"
+                    label-width="50px"
+                    size="small"
+                    class="add-form"
+                  >
+                    <!-- 1. 类型选择（分类/课程） -->
+                    <el-form-item
+                      label="类型"
+                      prop="isCourse"
+                      :rules="[
+                        {
+                          required: true,
+                          message: '请选择类型',
+                          trigger: 'change',
+                        },
+                      ]"
+                    >
+                      <el-radio-group
+                        v-model="addCategoryFormData.isCourse"
+                        @change="handleAddTypeChange"
+                      >
+                        <el-radio :label="false">添加分类</el-radio>
+                        <el-radio :label="true">添加课程</el-radio>
+                      </el-radio-group>
+                    </el-form-item>
+
+                    <!-- 2. 动态内容（根据类型显示） -->
+                    <el-form-item
+                      label="名称"
+                      prop="name"
+                      :rules="[
+                        {
+                          required: true,
+                          message: '请输入名称',
+                          trigger: 'blur',
+                        },
+                      ]"
+                    >
+                      <el-input
+                        v-model="addCategoryFormData.name"
+                        placeholder="请输入名称"
+                        maxlength="50"
+                      />
+                    </el-form-item>
+
+                    <!-- 2.2 所属分类（选择"课程"时显示） -->
+                    <el-form-item
+                      v-if="addCategoryFormData.isCourse === true"
+                      label="所属分类"
+                      prop="parentCatId"
+                      :rules="[
+                        {
+                          required: true,
+                          message: '请选择所属分类',
+                          trigger: 'change',
+                        },
+                      ]"
+                    >
+                      <el-select
+                        v-model="addCategoryFormData.parentCatId"
+                        placeholder="请选择分类"
+                        clearable
+                        :teleported="false"
+                        :popper-append-to-body="false"
+                      >
+                        <el-option
+                          v-for="category in parentCategories"
+                          :key="category.id"
+                          :label="category.name"
+                          :value="category.id"
+                        />
+                      </el-select>
+                    </el-form-item>
+
+                    <!-- 3. 描述信息（通用项） -->
+                    <el-form-item label="描述" prop="description">
+                      <el-input
+                        v-model="addCategoryFormData.description"
+                        placeholder="请输入描述信息（可选）"
+                        type="textarea"
+                        rows="3"
+                        maxlength="200"
+                      />
+                    </el-form-item>
+
+                    <!-- 操作按钮 -->
+                    <el-form-item style="margin-bottom: 0">
+                      <div
+                        style="
+                          display: flex;
+                          justify-content: flex-end;
+                          gap: 10px;
+                        "
+                      >
+                        <el-button
+                          class="cancel-button"
+                          size="small"
+                          @click="resetAddCategoryForm"
+                        >
+                          取消
+                        </el-button>
+                        <el-button
+                          class="reset-button"
+                          size="small"
+                          type="primary"
+                          @click="submitAddCategoryForm"
+                        >
+                          确认添加
+                        </el-button>
+                      </div>
+                    </el-form-item>
+                  </el-form>
+
+                  <!-- 触发按钮 -->
+                  <template #reference>
+                    <el-button class="add-category-button"
+                      >添加分类或课程</el-button
+                    >
+                  </template>
+                </el-popover>
+              </div>
+            </div>
+
+            <div class="category-guide">
+              <div class="parent-word">分类</div>
+              <div class="child-word">课程</div>
+            </div>
+
+            <div class="all-categories-list">
+              <div
+                v-if="allCategoriesDisplayList.length === 0"
+                class="no-categories"
+              >
+                暂无分类数据
+              </div>
+              <div v-else class="categories-grid">
+                <ParentCategoryJumpItem
+                  v-for="category in allCategoriesDisplayList"
+                  :key="category.id"
+                  :category="category"
+                  @category-selected="handleAllCategoriesSelected"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -167,15 +352,17 @@
 <script setup lang="ts">
 import topbar from "@/layout/topbar.vue";
 import { useRouter } from "vue-router";
-import { ref, onMounted, nextTick, reactive, watch } from "vue";
+import { ref, onMounted, nextTick, reactive, watch, computed } from "vue";
 import * as allApi from "@/api/all.ts";
 import CategoryClickToJump from "@/components/category/categoryClickToJump.vue";
 import BookItem from "@/components/bookItem.vue";
 import BookListItem from "@/components/bookListItem.vue";
 import CategoryDialog from "@/components/CategoryDialog.vue";
 import UploadModal from "@/components/UploadModal.vue";
+import ParentCategoryJumpItem from "@/components/parentCategoryJumpItem.vue";
 import { ElMention } from "element-plus";
 import { ElMessage } from "element-plus";
+import { Search } from "@element-plus/icons-vue";
 
 // 状态管理
 const router = useRouter();
@@ -289,8 +476,6 @@ const switchToFileList = () => {
 
 // 方法
 const loadRecommendData = () => {
-  // 实际项目中这里会调用API获取推荐数据
-  console.log("加载推荐数据");
   getHotCategories();
   getHotDocuments();
   getAllCategories();
@@ -327,15 +512,21 @@ const getAllCategories = async () => {
     // 假设接口返回的数据结构中，data包含categories数组
     if (response.data) {
       allCategories.value = response.data;
+      allCategoriesDisplayList.value = response.data;
+      console.log(
+        "allCategoriesDisplayList.value =",
+        allCategoriesDisplayList.value
+      );
     } else {
       allCategories.value = [];
-      console.warn("获取分类数据格式不正确");
+      allCategoriesDisplayList.value = response.data;
     }
 
     return allCategories.value;
   } catch (error) {
     console.error("获取所有分类失败:", error);
     allCategories.value = [];
+    allCategoriesDisplayList.value = [];
     throw error; // 允许调用方捕获错误
   }
 };
@@ -445,11 +636,181 @@ const handleUploadSuccess = () => {
   loadRecommendData();
 };
 
+// const handleCategoryAdded = async () => {
+//   console.log("分类添加成功，重新加载分类数据");
+
+//   try {
+//     await getAllCategories();
+
+//     // 如果是当前在文件列表标签页，也重新获取资料列表
+//     if (activeTab.value === "fileList" && selectedCategoryId.value) {
+//       await confirmCategory();
+//     }
+
+//     ElMessage.success("分类数据已更新");
+//   } catch (error) {
+//     console.error("刷新分类数据失败:", error);
+//     ElMessage.error("刷新数据失败");
+//   }
+// };
+
+// 全部分类标签页相关数据
+const allCategoriesSearchKeyword = ref("");
+const allCategoriesDisplayList = ref<allApi.Category[]>([]);
+const addCategoryPopoverVisible = ref(false);
+const addCategoryFormRef = ref();
+const addCategoryFormData = reactive({
+  isCourse: false,
+  name: "",
+  parentCatId: undefined as number | undefined,
+  description: undefined as string | undefined,
+});
+
+// 计算属性：只获取父分类（用于添加课程的所属分类选择）
+const parentCategories = computed(() => {
+  if (!allCategories.value || allCategories.value.length === 0) return [];
+
+  // 过滤出父分类（假设父分类没有 parentId 或 parentId 为 null）
+  return allCategories.value.filter(
+    (category) =>
+      !category.parentId ||
+      category.parentId === 0 ||
+      category.parentId === null
+  );
+});
+
+// 监听 allCategories 变化，初始化显示列表
+watch(
+  () => allCategories.value,
+  (newCategories) => {
+    if (newCategories && newCategories.length > 0) {
+      allCategoriesDisplayList.value = [...newCategories];
+    } else {
+      allCategoriesDisplayList.value = [];
+    }
+  },
+  { immediate: true, deep: true }
+);
+
+// 全部分类搜索方法
+const handleAllCategoriesSearch = async () => {
+  // if (!allCategoriesSearchKeyword.value.trim()) {
+  //   // 如果搜索关键词为空，显示所有分类
+  //   allCategoriesDisplayList.value = allCategories.value || [];
+  //   return;
+  // }
+
+  try {
+    const response = await allApi.searchCategoriesAndCourses(
+      allCategoriesSearchKeyword.value.trim()
+    );
+
+    if (response.data) {
+      allCategoriesDisplayList.value = response.data;
+      ElMessage.success(`找到 ${response.data.length} 个相关分类`);
+    } else {
+      allCategoriesDisplayList.value = [];
+      ElMessage.warning("未找到相关分类");
+    }
+  } catch (error) {
+    console.error("搜索分类失败:", error);
+    ElMessage.error("搜索分类失败，请稍后重试");
+  }
+};
+
+// 全部分类标签页中点击分类的处理
+const handleAllCategoriesSelected = (category: allApi.Category) => {
+  console.log("在全部分类页选中的分类：", category);
+
+  // 更新首页搜索表单中的分类选择
+  selectedCategoryId.value = category.id;
+  selectedCategoryName.value = category.name;
+
+  // 切换到文件列表标签页，并显示该分类下的文件
+  activeTab.value = "fileList";
+  confirmCategory();
+};
+
+// 添加分类相关方法
+const handleAddTypeChange = () => {
+  addCategoryFormData.name = "";
+  if (!addCategoryFormData.isCourse) {
+    addCategoryFormData.parentCatId = undefined;
+  }
+};
+
+const resetAddCategoryForm = () => {
+  addCategoryFormRef.value?.resetFields();
+  addCategoryPopoverVisible.value = false;
+  addCategoryFormData.isCourse = false;
+  addCategoryFormData.name = "";
+  addCategoryFormData.parentCatId = undefined;
+  addCategoryFormData.description = undefined;
+};
+
+const submitAddCategoryForm = async () => {
+  try {
+    const isValid = await addCategoryFormRef.value.validate();
+    if (!isValid) {
+      console.warn("表单验证失败");
+      return;
+    }
+
+    const submitData = {
+      isCourse: addCategoryFormData.isCourse,
+      name: addCategoryFormData.name,
+      description: addCategoryFormData.description,
+      ...(addCategoryFormData.isCourse && {
+        parentCatId: addCategoryFormData.parentCatId,
+      }),
+    };
+
+    if (ElMessage?.closeAll) {
+      ElMessage.closeAll();
+    }
+
+    const res = await allApi.addCategoryOrCourse(submitData);
+    console.log("提交结果：", res);
+
+    if (res) {
+      const successMessage = !addCategoryFormData.isCourse
+        ? "分类添加成功"
+        : "课程添加成功";
+
+      ElMessage.success(`${successMessage}！`);
+
+      resetAddCategoryForm();
+      addCategoryPopoverVisible.value = false;
+
+      // 刷新分类数据
+      await handleCategoryAdded();
+
+      // 搜索框重置为空，显示全部分类
+      allCategoriesSearchKeyword.value = "";
+      allCategoriesDisplayList.value = allCategories.value || [];
+    } else {
+      ElMessage.error("提交失败，请稍后重试");
+    }
+  } catch (error) {
+    console.error("提交过程出错:", error);
+    if (ElMessage?.closeAll) {
+      ElMessage.closeAll();
+    }
+    ElMessage.error("提交失败，请检查网络或稍后重试");
+  }
+};
+
+// 修改原有的 handleCategoryAdded 方法，确保也能刷新全部分类标签页
 const handleCategoryAdded = async () => {
   console.log("分类添加成功，重新加载分类数据");
 
   try {
     await getAllCategories();
+
+    // 如果是当前在全部分类标签页，更新显示列表
+    if (activeTab.value === "allCategories") {
+      allCategoriesDisplayList.value = allCategories.value || [];
+    }
 
     // 如果是当前在文件列表标签页，也重新获取资料列表
     if (activeTab.value === "fileList" && selectedCategoryId.value) {
@@ -680,5 +1041,164 @@ const handleCategoryAdded = async () => {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+/* 全部分类标签页样式 */
+.all-categories-container {
+  width: 100%;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.category-search-section {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  align-items: center;
+}
+
+.category-search-section .search-input {
+  flex: 1;
+}
+
+.add-category-btn {
+  flex-shrink: 0;
+}
+
+.add-category-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+}
+
+.add-category-button:hover {
+  background-color: rgb(167, 129, 236);
+}
+
+.category-guide {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eee;
+}
+
+.parent-word {
+  width: 130px;
+  margin-left: 15px;
+  font-size: 16px;
+  color: #888;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  border-bottom-color: #b994fe;
+  color: #b994fe;
+  font-weight: 500;
+  margin-right: 16px;
+}
+
+.child-word {
+  width: 80%;
+  font-size: 16px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  padding-left: 30px;
+  border-bottom: 2px solid transparent;
+  border-bottom-color: #b994fe;
+  color: #b994fe;
+  font-weight: 500;
+}
+
+.all-categories-list {
+  width: 100%;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.all-categories-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.all-categories-list::-webkit-scrollbar-thumb {
+  background-color: #b994fe;
+  border-radius: 4px;
+}
+
+.all-categories-list::-webkit-scrollbar-track {
+  background-color: #f5f5f5;
+}
+
+.no-categories {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 16px;
+}
+
+.categories-grid {
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.categories-grid::-webkit-scrollbar {
+  display: none;
+}
+
+/* 添加分类表单样式 */
+.add-form {
+  padding: 10px 0;
+}
+
+.el-radio-group {
+  display: flex;
+  gap: 15px;
+}
+
+.el-textarea__inner {
+  resize: none;
+}
+
+.reset-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
+}
+
+.reset-button:hover {
+  background-color: rgb(167, 129, 236);
+}
+
+.cancel-button {
+  color: #b994fe;
+  border-color: #b994fe;
+  border-width: 1.5px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .category-search-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-category-btn {
+    width: 100%;
+  }
+
+  .add-category-button {
+    width: 100%;
+  }
+
+  .categories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
 </style>
