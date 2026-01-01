@@ -84,13 +84,19 @@
                     </div>
 
                     <div v-if="activeDocTab === 'collection'">
-                        <BookListItem v-for="doc in collectionDocs" :key="doc.infoBrief.documentId" :document="doc" />
-                        <p v-if="!collectionDocs.length" class="placeholder">暂无收藏记录</p>
+                        <div v-if="collectionDocs.length" class="book-list">
+                            <BookListItem v-for="doc in collectionDocs" :key="doc.infoBrief.documentId"
+                                :document="doc" @click="goDocument(doc)" />
+                        </div>
+                        <p v-else class="placeholder">暂无收藏记录</p>
                     </div>
 
                     <div v-else>
-                        <BookListItem v-for="doc in historyDocs" :key="doc.infoBrief.documentId" :document="doc" />
-                        <p v-if="!historyDocs.length" class="placeholder">暂无浏览历史</p>
+                        <div v-if="historyDocs.length" class="book-list">
+                            <BookListItem v-for="doc in historyDocs" :key="doc.infoBrief.documentId" :document="doc"
+                                @click="goDocument(doc)" />
+                        </div>
+                        <p v-else class="placeholder">暂无浏览历史</p>
                     </div>
                 </template>
 
@@ -100,8 +106,11 @@
                 </template>
 
                 <template v-else-if="activeTab === 'uploads'">
-                    <BookListItem v-for="doc in uploadsDocs" :key="doc.infoBrief.documentId" :document="doc" />
-                    <p v-if="!uploadsDocs.length" class="placeholder">暂无上传记录</p>
+                    <div v-if="uploadsDocs.length" class="book-list">
+                        <BookListItem v-for="doc in uploadsDocs" :key="doc.infoBrief.documentId" :document="doc"
+                            @click="goDocument(doc)" />
+                    </div>
+                    <p v-else class="placeholder">暂无上传记录</p>
                 </template>
 
                 <template v-else-if="activeTab === 'posts'">
@@ -246,9 +255,9 @@ const displayAvatar = computed(() => avatarPreview.value || userBrief.value?.use
 
 const mapBriefToDoc = (item: InfoBrief): Document => ({
     infoBrief: item,
-    author: '',
-    introduction: '',
-    createYear: '',
+    author: (item as any)?.author ?? '',
+    introduction: (item as any)?.introduction ?? '',
+    createYear: (item as any)?.createYear ?? '',
 })
 
 const collectionDocs = computed(() => collectionList.value?.map(mapBriefToDoc) ?? [])
@@ -328,6 +337,12 @@ const fetchUserPosts = async () => {
         console.error('获取帖子列表失败', error)
         errorMessage.value = '网络异常，请稍后重试'
     }
+}
+
+const goDocument = (doc: Document) => {
+    const docId = doc?.infoBrief?.documentId
+    if (!docId) return
+    router.push({ path: '/bookInfo', query: { id: docId } })
 }
 
 const handleEditProfile = () => {
@@ -900,6 +915,12 @@ watch(activeTab, (tab) => {
     background: #ffecec;
     border-radius: 8px;
     border: 1px solid #ffd2d2;
+}
+
+.book-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
 }
 
 @media (max-width: 1120px) {
