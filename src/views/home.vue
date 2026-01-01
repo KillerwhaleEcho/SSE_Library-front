@@ -4,47 +4,88 @@
 
     <!-- 搜索表单 -->
     <div class="searchForm">
-      <div class="search-guide">请选择资料类型、分类、年份、关键词类型以搜索资料</div>
+      <div class="search-guide">
+        请选择资料类型、分类、年份、关键词类型以搜索资料
+      </div>
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="grid-content ep-bg-purple" />
-          <el-select v-model="type" placeholder="书籍or文件" style="width: 100%" placement="top-start"
-            class="purple-border-select">
-            <el-option v-for="item in type_options" :key="item.value" :label="item.label" :value="item.value" />
+          <el-select
+            v-model="type"
+            placeholder="书籍or文件"
+            style="width: 100%"
+            placement="top-start"
+            class="purple-border-select"
+          >
+            <el-option
+              v-for="item in type_options"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
           </el-select>
         </el-col>
         <el-col :span="6">
           <div class="grid-content ep-bg-purple" />
-          <button class="category-select-btn" @click="showCategoryDialog = true">{{ selectedCategoryName || 'category'
-          }}</button>
+          <button
+            class="category-select-btn"
+            @click="showCategoryDialog = true"
+          >
+            {{ selectedCategoryName || "category" }}
+          </button>
         </el-col>
         <el-col :span="6">
           <div class="grid-content ep-bg-purple" />
-          <el-mention v-model="year" :options="year_options" style="width: 100%" placeholder="选择xx年以后" trigger=""
-            ref="mentionRef" @focus="handleFocus" />
+          <el-mention
+            v-model="year"
+            :options="year_options"
+            style="width: 100%"
+            placeholder="选择xx年以后"
+            trigger=""
+            ref="mentionRef"
+            @focus="handleFocus"
+          />
         </el-col>
         <el-col :span="6">
           <div class="grid-content ep-bg-purple" />
-          <el-select v-model="typeOfKey" placeholder="关键词类型" style="width: 100%" placement="top-start"
-            class="purple-border-select">
-            <el-option v-for="item in key_type_options" :key="item.value" :label="item.label" :value="item.value" />
+          <el-select
+            v-model="typeOfKey"
+            placeholder="关键词类型"
+            style="width: 100%"
+            placement="top-start"
+            class="purple-border-select"
+          >
+            <el-option
+              v-for="item in key_type_options"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
           </el-select>
         </el-col>
       </el-row>
       <div class="input">
-        <input v-model="key" type="text" placeholder="请输入文件名字、关键字">
+        <input v-model="key" type="text" placeholder="请输入文件名字、关键字" />
         <div class="search-button" @click="handleSearch">搜索</div>
       </div>
     </div>
 
     <!-- 标签页容器 -->
-    <div class="tabs-container" :class="{ 'active': activeTab }">
+    <div class="tabs-container" :class="{ active: activeTab }">
       <!-- 标签页导航 -->
       <div class="tabs-nav">
-        <div class="tab-nav-item" :class="{ 'active': activeTab === 'recommend' }" @click="activeTab = 'recommend'">
+        <div
+          class="tab-nav-item"
+          :class="{ active: activeTab === 'recommend' }"
+          @click="activeTab = 'recommend'"
+        >
           推荐
         </div>
-        <div class="tab-nav-item" :class="{ 'active': activeTab === 'fileList' }" @click="switchToFileList">
+        <div
+          class="tab-nav-item"
+          :class="{ active: activeTab === 'fileList' }"
+          @click="switchToFileList"
+        >
           文件列表
         </div>
       </div>
@@ -59,8 +100,12 @@
               <h3>热门分类</h3>
               <div class="category-list">
                 <!-- 循环渲染分类组件 -->
-                <CategoryClickToJump v-for="category in hotCategories" :key="category.id" :category="category"
-                  @click="onCategorySelected(category)" />
+                <CategoryClickToJump
+                  v-for="category in hotCategories"
+                  :key="category.id"
+                  :category="category"
+                  @click="onCategorySelected(category)"
+                />
               </div>
             </div>
 
@@ -69,8 +114,12 @@
               <h3>热门书籍</h3>
               <div class="book-list">
                 <!-- 循环渲染图书组件 -->
-                <BookItem v-for="book in hotBooks" :key="book.infoBrief.documentId" :document="book"
-                  @click="onBookSelected(book)" />
+                <BookItem
+                  v-for="book in hotBooks"
+                  :key="book.infoBrief.documentId"
+                  :document="book"
+                  @click="onBookSelected(book)"
+                />
               </div>
             </div>
           </div>
@@ -81,8 +130,12 @@
           <div class="file-list-container">
             <div class="book-list">
               <!-- 循环渲染图书组件 -->
-              <BookItem v-for="book in fileList" :key="book.infoBrief.documentId" :document="book"
-                @click="onBookSelected(book)" />
+              <BookListItem
+                v-for="book in fileList"
+                :key="book.infoBrief.documentId"
+                :document="book"
+                @click="onBookSelected(book)"
+              />
             </div>
           </div>
         </div>
@@ -90,254 +143,270 @@
     </div>
 
     <!-- 使用分离的组件 -->
-    <CategoryDialog :visible="showCategoryDialog" @update:visible="showCategoryDialog = $event"
-      :all-categories="allCategories" :selected-category-name="selectedCategoryName"
-      :selected-category-id="selectedCategoryId" @category-selected="onCategorySelected" @reset-category="resetCategory"
-      @category-added="handleCategoryAdded" />
+    <CategoryDialog
+      :visible="showCategoryDialog"
+      @update:visible="showCategoryDialog = $event"
+      :all-categories="allCategories"
+      :selected-category-name="selectedCategoryName"
+      :selected-category-id="selectedCategoryId"
+      @category-selected="onCategorySelected"
+      @reset-category="resetCategory"
+      @category-added="handleCategoryAdded"
+    />
 
-    <UploadModal v-model:visible="showUploadModal" :selected-category-name="selectedUploadCategoryName"
-      :selected-category-id="selectedCategoryId" @open-category-dialog="showCategoryDialog = true"
-      @upload-success="handleUploadSuccess" />
+    <UploadModal
+      v-model:visible="showUploadModal"
+      :selected-category-name="selectedUploadCategoryName"
+      :selected-category-id="selectedCategoryId"
+      @open-category-dialog="showCategoryDialog = true"
+      @upload-success="handleUploadSuccess"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import topbar from '@/layout/topbar.vue'
-import { useRouter } from 'vue-router'
-import { ref, onMounted, nextTick, reactive, watch } from 'vue'
-import * as allApi from '@/api/all.ts'
-import CategoryClickToJump from '@/components/category/categoryClickToJump.vue'
-import BookItem from '@/components/bookItem.vue'
-import CategoryDialog from '@/components/CategoryDialog.vue'
-import UploadModal from '@/components/UploadModal.vue'
-import { ElMention } from 'element-plus'
-import { ElMessage } from 'element-plus'
+import topbar from "@/layout/topbar.vue";
+import { useRouter } from "vue-router";
+import { ref, onMounted, nextTick, reactive, watch } from "vue";
+import * as allApi from "@/api/all.ts";
+import CategoryClickToJump from "@/components/category/categoryClickToJump.vue";
+import BookItem from "@/components/bookItem.vue";
+import BookListItem from "@/components/bookListItem.vue";
+import CategoryDialog from "@/components/CategoryDialog.vue";
+import UploadModal from "@/components/UploadModal.vue";
+import { ElMention } from "element-plus";
+import { ElMessage } from "element-plus";
 
 // 状态管理
-const router = useRouter()
-const activeTab = ref('recommend') // 默认显示推荐标签页
-const showCategoryDialog = ref(false)
-const showUploadModal = ref(false)
-const selectedCategory = ref<allApi.Category | null>(null)
-const selectedCategoryName = ref<string | null>(null)
-const selectedCategoryId = ref<number | null>(null)
-const selectedUploadCategoryName = ref<string | null>(null)
-const selectedDocument = ref<allApi.Document | null>(null)
-const year = ref('')
+const router = useRouter();
+const activeTab = ref("recommend"); // 默认显示推荐标签页
+const showCategoryDialog = ref(false);
+const showUploadModal = ref(false);
+const selectedCategory = ref<allApi.Category | null>(null);
+const selectedCategoryName = ref<string | null>(null);
+const selectedCategoryId = ref<number | null>(null);
+const selectedUploadCategoryName = ref<string | null>(null);
+const selectedDocument = ref<allApi.Document | null>(null);
+const year = ref("");
 const year_options = ref([
   {
-    label: '2025',
+    label: "2025",
     value: 2025,
   },
   {
-    label: '2024',
+    label: "2024",
     value: 2024,
   },
   {
-    label: '2020',
+    label: "2020",
     value: 2020,
   },
   {
-    label: '2010',
+    label: "2010",
     value: 2010,
   },
-])
+]);
 // 获取el-mention组件实例
-const mentionRef = ref<InstanceType<typeof ElMention> | null>(null)
+const mentionRef = ref<InstanceType<typeof ElMention> | null>(null);
 // 聚焦时手动显示选项列表
 const handleFocus = async (): Promise<void> => {
-  await nextTick()
+  await nextTick();
   if (mentionRef.value && (mentionRef.value as any).showPicker) {
-    (mentionRef.value as any).showPicker()
+    (mentionRef.value as any).showPicker();
   }
-}
+};
 
-const type = ref<'book' | 'file' | 'video' | 'null'>('null')
+const type = ref<"book" | "file" | "video" | "null">("null");
 const type_options = [
   {
-    value: 'book',
-    label: '书籍',
+    value: "book",
+    label: "书籍",
   },
   {
-    value: 'file',
-    label: '文件',
+    value: "file",
+    label: "文件",
   },
   {
-    value: 'video',
-    label: '视频',
+    value: "video",
+    label: "视频",
   },
   {
-    value: 'null',
-    label: '不限',
+    value: "null",
+    label: "不限",
   },
-]
+];
 
-const typeOfKey = ref<'name' | 'author' | 'bookISBN' | 'introduction' | 'tag' | 'null'>('null')
+const typeOfKey = ref<
+  "name" | "author" | "bookISBN" | "introduction" | "tag" | "null"
+>("null");
 const key_type_options = [
   {
-    value: 'name',
-    label: '资料名',
+    value: "name",
+    label: "资料名",
   },
   {
-    value: 'author',
-    label: '作者',
+    value: "author",
+    label: "作者",
   },
   {
-    value: 'tag',
-    label: '标签',
+    value: "tag",
+    label: "标签",
   },
   {
-    value: 'bookISBN',
-    label: 'ISBN',
+    value: "bookISBN",
+    label: "ISBN",
   },
   {
-    value: 'introduction',
-    label: '简介信息',
+    value: "introduction",
+    label: "简介信息",
   },
   {
-    value: 'null',
-    label: '不限',
+    value: "null",
+    label: "不限",
   },
-]
-const key = ref('')
+];
+const key = ref("");
 
 // 分类数据
-const hotCategories = ref<allApi.Category[]>([])
-const allCategories = ref<allApi.Category[]>([])
+const hotCategories = ref<allApi.Category[]>([]);
+const allCategories = ref<allApi.Category[]>([]);
 
 // 书籍数据
-const hotBooks = ref<allApi.Document[]>([])
-const fileList = ref<allApi.Document[]>([])
+const hotBooks = ref<allApi.Document[]>([]);
+const fileList = ref<allApi.Document[]>([]);
 
 // 生命周期
 onMounted(() => {
-  document.title = 'SSE-Library - 首页'
+  document.title = "SSE-Library - 首页";
   // 初始加载推荐数据
-  loadRecommendData()
-})
+  loadRecommendData();
+});
 
 const switchToFileList = () => {
-  activeTab.value = 'fileList'
-  handleSearch()
-}
+  activeTab.value = "fileList";
+  handleSearch();
+};
 
 // 方法
 const loadRecommendData = () => {
   // 实际项目中这里会调用API获取推荐数据
-  console.log('加载推荐数据')
-  getHotCategories()
-  getHotDocuments()
-  getAllCategories()
-}
+  console.log("加载推荐数据");
+  getHotCategories();
+  getHotDocuments();
+  getAllCategories();
+};
 
 // 获取热门分类的函数
 const getHotCategories = async () => {
   try {
     // 调用接口，传入is_suggest参数（根据实际需求决定是否需要）
-    const response = await allApi.getHotCategories(10)
-    console.log('热门分类响应:', response)
+    const response = await allApi.getHotCategories(10);
+    console.log("热门分类响应:", response);
     // 假设接口返回的数据结构中，data包含categories数组
     if (response.data) {
-      hotCategories.value = response.data
+      hotCategories.value = response.data;
     } else {
-      hotCategories.value = []
-      console.warn('获取分类数据格式不正确')
+      hotCategories.value = [];
+      console.warn("获取分类数据格式不正确");
     }
 
-    return hotCategories.value
+    return hotCategories.value;
   } catch (error) {
-    console.error('获取热门分类失败:', error)
-    hotCategories.value = []
-    throw error // 允许调用方捕获错误
+    console.error("获取热门分类失败:", error);
+    hotCategories.value = [];
+    throw error; // 允许调用方捕获错误
   }
-}
+};
 
 // 获取所有分类的函数
 const getAllCategories = async () => {
   try {
     // 调用接口，传入is_suggest参数（根据实际需求决定是否需要）
-    const response = await allApi.getAllCategories()
+    const response = await allApi.getAllCategories();
 
     // 假设接口返回的数据结构中，data包含categories数组
     if (response.data) {
-      allCategories.value = response.data
+      allCategories.value = response.data;
     } else {
-      allCategories.value = []
-      console.warn('获取分类数据格式不正确')
+      allCategories.value = [];
+      console.warn("获取分类数据格式不正确");
     }
 
-    return allCategories.value
+    return allCategories.value;
   } catch (error) {
-    console.error('获取所有分类失败:', error)
-    allCategories.value = []
-    throw error // 允许调用方捕获错误
+    console.error("获取所有分类失败:", error);
+    allCategories.value = [];
+    throw error; // 允许调用方捕获错误
   }
-}
+};
 
 // 获取热门资料的函数
 const getHotDocuments = async () => {
   try {
-    const response = await allApi.getHotDocuments()
+    const response = await allApi.getHotDocuments();
     if (response.data) {
-      hotBooks.value = response.data
+      hotBooks.value = response.data;
     } else {
-      hotBooks.value = []
-      console.warn('获取热门资料数据格式不正确')
+      hotBooks.value = [];
+      console.warn("获取热门资料数据格式不正确");
     }
-    return hotBooks.value
+    return hotBooks.value;
   } catch (error) {
-    console.error('获取热门资料失败:', error)
-    hotBooks.value = []
-    throw error
+    console.error("获取热门资料失败:", error);
+    hotBooks.value = [];
+    throw error;
   }
-}
+};
 
 const onBookSelected = (selected: allApi.Document) => {
-  console.log('选中的资料：', selected)
-  selectedDocument.value = selected
+  console.log("选中的资料：", selected);
+  selectedDocument.value = selected;
   router.push({
-    path: '/bookInfo',
+    path: "/bookInfo",
     query: {
-      id: selected.infoBrief.documentId
-    }
-  })
-}
+      id: selected.infoBrief.documentId,
+    },
+  });
+};
 
 // 处理选中的分类数据
 const onCategorySelected = (selected: allApi.Category) => {
-  console.log('选中的分类：', selected)
-  showCategoryDialog.value = false
-  selectedCategoryId.value = selected.id
-  selectedCategory.value = selected
+  console.log("选中的分类：", selected);
+  showCategoryDialog.value = false;
+  selectedCategoryId.value = selected.id;
+  selectedCategory.value = selected;
   if (showUploadModal.value === false) {
-    selectedCategoryName.value = selected.name
-    confirmCategory()
+    selectedCategoryName.value = selected.name;
+    confirmCategory();
   } else {
-    selectedUploadCategoryName.value = selected.name
+    selectedUploadCategoryName.value = selected.name;
   }
-}
+};
 
 // 确认分类后获取对应资料列表
 const confirmCategory = async () => {
-  activeTab.value = 'fileList'
+  activeTab.value = "fileList";
   if (selectedCategoryId.value) {
     try {
-      const response = await allApi.getBookList(false, selectedCategoryId.value)
-      console.log('资料响应:', response)
+      const response = await allApi.getBookList(
+        false,
+        selectedCategoryId.value
+      );
+      console.log("资料响应:", response);
       if (response.data) {
-        fileList.value = response.data
+        fileList.value = response.data;
       } else {
-        fileList.value = []
-        console.warn('获取资料数据格式不正确')
+        fileList.value = [];
+        console.warn("获取资料数据格式不正确");
       }
-      return fileList.value
+      return fileList.value;
     } catch (error) {
-      console.error('获取资料失败:', error)
-      fileList.value = []
-      throw error
+      console.error("获取资料失败:", error);
+      fileList.value = [];
+      throw error;
     }
   }
-}
+};
 
 const handleSearch = async () => {
   try {
@@ -347,50 +416,50 @@ const handleSearch = async () => {
       year.value,
       typeOfKey.value,
       key.value.trim()
-    )
-    activeTab.value = 'fileList'
-    console.log('搜索资料响应:', response)
+    );
+    activeTab.value = "fileList";
+    console.log("搜索资料响应:", response);
     if (response.data) {
-      fileList.value = response.data
+      fileList.value = response.data;
     } else {
-      fileList.value = []
-      console.warn('获取搜索资料数据格式不正确')
+      fileList.value = [];
+      console.warn("获取搜索资料数据格式不正确");
     }
-    return fileList.value
+    return fileList.value;
   } catch (error) {
-    console.error('获取搜索资料失败:', error)
-    fileList.value = []
-    throw error
+    console.error("获取搜索资料失败:", error);
+    fileList.value = [];
+    throw error;
   }
-}
+};
 
 // 修改分类重置方法
 const resetCategory = () => {
-  selectedCategoryName.value = ''
-  selectedUploadCategoryName.value = ''
-  selectedCategoryId.value = null
-}
+  selectedCategoryName.value = "";
+  selectedUploadCategoryName.value = "";
+  selectedCategoryId.value = null;
+};
 
 const handleUploadSuccess = () => {
-  console.log('上传成功，可以刷新数据')
-  loadRecommendData()
-}
+  console.log("上传成功，可以刷新数据");
+  loadRecommendData();
+};
 
 const handleCategoryAdded = async () => {
-  console.log('分类添加成功，重新加载分类数据');
+  console.log("分类添加成功，重新加载分类数据");
 
   try {
     await getAllCategories();
 
     // 如果是当前在文件列表标签页，也重新获取资料列表
-    if (activeTab.value === 'fileList' && selectedCategoryId.value) {
+    if (activeTab.value === "fileList" && selectedCategoryId.value) {
       await confirmCategory();
     }
 
-    ElMessage.success('分类数据已更新');
+    ElMessage.success("分类数据已更新");
   } catch (error) {
-    console.error('刷新分类数据失败:', error);
-    ElMessage.error('刷新数据失败');
+    console.error("刷新分类数据失败:", error);
+    ElMessage.error("刷新数据失败");
   }
 };
 </script>

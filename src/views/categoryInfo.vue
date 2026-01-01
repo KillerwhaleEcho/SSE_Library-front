@@ -88,7 +88,7 @@
         </div>
         <div v-if="documentsLoading" class="loading-hint">加载文档...</div>
         <div v-else-if="documents.length" class="book-list">
-          <BookItem
+          <BookListItem
             v-for="doc in documents"
             :key="doc.infoBrief.documentId"
             :document="doc"
@@ -126,6 +126,7 @@ import { useRoute, useRouter } from "vue-router";
 import topbar from "@/layout/topbar.vue";
 import CategoryClickToJump from "@/components/category/categoryClickToJump.vue";
 import BookItem from "@/components/bookItem.vue";
+import BookListItem from "@/components/bookListItem.vue";
 import { ElMessage } from "element-plus";
 import {
   type Category,
@@ -553,9 +554,9 @@ watch(resolvedCategoryId, (next) => {
 }
 
 .book-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .loading-hint,
