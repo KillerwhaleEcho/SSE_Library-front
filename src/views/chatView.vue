@@ -1,5 +1,11 @@
 <template>
-  <topbar class="topbar" @open-upload-modal="showUploadModal = true"></topbar>
+  <topbar
+    ref="topbarRef"
+    class="topbar"
+    @open-upload-modal="showUploadModal = true"
+    @ws-message="handleTopbarWsMessage"
+    @reminder-sync="handleTopbarReminderSync"
+  ></topbar>
   <div class="chat-view">
     <aside class="chat-list">
       <div class="reminder" @click="handleReminderSelect">
@@ -175,15 +181,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  onMounted,
-  onUnmounted,
-  computed,
-  watch,
-  nextTick,
-  useId,
-} from "vue";
+import { ref, onMounted, computed, watch, nextTick, useId } from "vue";
 import { useRoute } from "vue-router";
 import {
   sendMessageInterface,
@@ -259,7 +257,7 @@ const isSearchJump = ref(false);
 const localSearchExpanded = ref(false);
 const localSearchKeyword = ref("");
 const localSearchInputRef = ref<HTMLInputElement | null>(null);
-const socket = ref<WebSocket | null>(null);
+const topbarRef = ref<InstanceType<typeof topbar> | null>(null);
 const route = useRoute();
 const searchPlaceholder = computed(() =>
   searchType.value === "message"
@@ -363,6 +361,8 @@ const markReminderRead = async (item: Reminder) => {
   try {
     const reponse = await markReminderAsRead(item.reminderId);
     if (reponse.code === 200) {
+      await getUnreadCountOfReminder();
+      await topbarRef.value?.refreshUnreadReminder();
       return;
     }
   } catch {
@@ -536,10 +536,10 @@ const handleSelect = async (sessionId: number) => {
   const sid = Number(sessionId);
   currentSessionId.value = sid;
   resetLocalSearch();
+
   const target = chatBoxes.value.find((item) => sessionId === item.sessionId);
   if (!target) return;
   target.unreadCount = 0;
-
   if (laodingMessages.value) {
     enableMsgAnim.value = true;
     return;
@@ -557,6 +557,8 @@ const handleSelect = async (sessionId: number) => {
     await nextTick();
     enableMsgAnim.value = true;
     scrollToLatest();
+    //后端应该是在拉取回话消息之后将未读数置为0，所以得放到最后调用刷新函数
+    await await topbarRef.value?.refreshUnreadMessages?.();
   }
 };
 
@@ -758,6 +760,7 @@ const handleIncomingChatMessage = (payload: any) => {
 };
 
 
+
 const handleIncomingReminder = (payload :any) => {
   if (!payload || payload.type !== "reminder" || !payload.data) return;
   //如果和userId不匹配直接返回
@@ -772,45 +775,29 @@ const handleIncomingReminder = (payload :any) => {
 
   getUnreadCountOfReminder()
   getReminders()
-  
 }
 
-const initWebSocket = () => {
-  const token = localStorage.getItem("token");
-  if (!token) return;
-
-  if (socket.value) {
-    socket.value.close();
-  }
-
-  const ws = new WebSocket(`ws://localhost:8080/api/ws?token=${token}`);
-  socket.value = ws;
-
-  ws.onmessage = (event: MessageEvent) => {
-    try {
-      const payload = JSON.parse(event.data);
-      if (payload.type = 'chat_message') {
-         handleIncomingChatMessage(payload);
-      } else {
-        handleIncomingReminder(payload)
-      }
-    } catch (error) {
-      console.error("解析 WebSocket 消息失败", error);
-    }
-  };
-
-  ws.onopen = () => {
-    console.log("WebSocket 连接成功");
-  };
-
-  ws.onerror = (event) => {
-    console.error("WebSocket 发生错误", event);
-  };
-
-  ws.onclose = () => {
-    socket.value = null;
-  };
+const handleTopbarReminderSync = async () => {
+  await getReminders();
+  await getUnreadCountOfReminder();
 };
+
+const handleTopbarWsMessage = async (payload: any) => {
+  if (!payload || !payload.type) return;
+  if (payload.type === "chat_message") {
+    handleIncomingChatMessage(payload);
+    //如果是当前会话收到消息，不能让topbar的unreadCount增加，需要刷新纠正
+    const sessionId = Number(payload.data?.sessionId);
+    if (sessionId && sessionId === currentSessionId.value) {
+      await topbarRef.value?.refreshUnreadMessages?.();
+    }
+    return;
+  }
+  if (payload.type === "reminder") {
+    handleIncomingReminder(payload);
+  }
+};
+
 
 const handleSendClick = async () => {
   if (!canSendMessage.value) return;
@@ -830,7 +817,10 @@ const handleSendClick = async () => {
 
 const getUnreadCountOfReminder =async () => {
   try {
-    const res = allApi.getUnreadMessage('reminder', userInfo.value?.userId as number)
+    const res = await allApi.getUnreadMessage(
+      'reminder',
+      userInfo.value?.userId as number
+    )
     unreadReminderCount.value = res.data
   } catch {
     ElMessage.error('获取未读通知数失败')
@@ -943,17 +933,9 @@ onMounted(async () => {
   await getReminders();
   getUnreadCountOfReminder()
   getAllCategories();
-  initWebSocket();
   const reminderFlag = route.query.reminder;
   if (reminderFlag === "true" || reminderFlag === "1") {
     handleReminderSelect();
-  }
-});
-
-onUnmounted(() => {
-  if (socket.value) {
-    socket.value.close();
-    socket.value = null;
   }
 });
 </script>

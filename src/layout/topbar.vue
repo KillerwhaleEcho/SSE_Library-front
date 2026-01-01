@@ -75,7 +75,7 @@ const unreadReminder=ref(0)
 const socket=ref<WebSocket|null>(null)
 
 // 定义事件发射器，用于向父组件发送事件
-const emit = defineEmits(['open-upload-modal']);
+const emit = defineEmits(['open-upload-modal', 'ws-message', 'reminder-sync']);
 
 const handleUploadClick = () => {
   emit('open-upload-modal'); // 触发事件，通知父组件打开弹窗
@@ -93,21 +93,33 @@ watch(showCategoryDialog, (newVal, oldVal) => {
   });
 });
 
-const handleClearAll = () => {
-  // 先标记所有未读通知为已读
-  reminders.value
-    .filter(item => !item.isRead) // 筛选未读通知
-    .forEach(item => handleMarkRead(item.reminderId)); // 逐个标记
-    
-  // 清空本地通知列表
+const handleClearAll = async () => {
+  const unreadIds = reminders.value
+    .filter(item => !item.isRead)
+    .map(item => item.reminderId);
+
+  if (unreadIds.length) {
+    await Promise.all(
+      unreadIds.map(id => allApi.markReminderAsRead(id).catch(() => null))
+    );
+  }
+
   reminders.value = [];
+  await getUnreadCountOfReminder();
+  emit('reminder-sync');
 };
 
-const handleMarkRead = (reminderId: number) => {
+const handleMarkRead = async (reminderId: number) => {
   reminders.value = reminders.value.map(item => 
     item.reminderId === reminderId ? { ...item, isRead: true } : item
   );
-  allApi.markReminderAsRead(reminderId).then(() => console.log('通知已标记为已读'));
+  try {
+    await allApi.markReminderAsRead(reminderId);
+    console.log('通知已标记为已读');
+  } finally {
+    await getUnreadCountOfReminder();
+    emit('reminder-sync');
+  }
 };
 
 const fetchReminders = async () => {
@@ -132,12 +144,23 @@ const getUnreadCountOfMessages = async() => {
 
 const getUnreadCountOfReminder = async () => {
   try {
-    const res= await allApi.getUnreadMessage('reminder',userId);
+    const res = await allApi.getUnreadMessage('reminder', userId);
     unreadReminder.value=res.data
   } catch {
     console.log('获取未读聊天数量失败')
   }
 }
+
+const refreshUnreadMessages = async () => {
+  await getUnreadCountOfMessages()
+}
+
+const refreshUnreadReminder = async () => {
+  await fetchReminders()
+  await getUnreadCountOfReminder();
+};
+
+
 
 const initWebSocket = () => {
   const token = localStorage.getItem("token");
@@ -158,6 +181,7 @@ const initWebSocket = () => {
       } else {
         unreadReminder.value++
       }
+      emit('ws-message', payload);
     } catch (error) {
       console.error("解析 WebSocket 消息失败", error);
     }
@@ -188,6 +212,8 @@ onUnmounted(() => {
     socket.value=null
   }
 })
+
+defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
 </script>
 
 <style scoped>
