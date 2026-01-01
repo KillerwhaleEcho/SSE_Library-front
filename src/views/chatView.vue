@@ -2,6 +2,7 @@
   <topbar
     ref="topbarRef"
     class="topbar"
+    :active-session-id="currentSessionId"
     @open-upload-modal="showUploadModal = true"
     @ws-message="handleTopbarWsMessage"
     @reminder-sync="handleTopbarReminderSync"

@@ -62,6 +62,11 @@ import 'element-plus/dist/index.css';
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import * as allApi from '@/api/all.ts'
 import router from '@/router';
+import { ElMessage } from 'element-plus';
+
+const props = defineProps<{
+  activeSessionId?: number | null;
+}>();
 
 const userId = Number(localStorage.getItem('userId') || '0'); 
 const role = localStorage.getItem('role') ||'user'
@@ -160,7 +165,13 @@ const refreshUnreadReminder = async () => {
   await getUnreadCountOfReminder();
 };
 
-
+const markSessionRead = async (sessionId:number) => {
+  try {
+   await allApi.markSessionAsRead(sessionId);
+  } catch {
+    console.log('标记会话已读失败')
+  }
+}
 
 const initWebSocket = () => {
   const token = localStorage.getItem("token");
@@ -177,7 +188,17 @@ const initWebSocket = () => {
     try {
       const payload = JSON.parse(event.data);
       if (payload.type === 'chat_message') {
-        unreadChatMessage.value++
+        const sessionId = Number(payload.data?.sessionId);
+        const senderId = Number(payload.data?.senderId);
+        const activeSessionId = Number(props.activeSessionId ?? -1);
+        if (senderId !== Number(userId))
+        {
+          if (sessionId === activeSessionId) {
+          markSessionRead(sessionId)
+          return;
+        }
+          unreadChatMessage.value++
+        }
       } else {
         unreadReminder.value++
       }
