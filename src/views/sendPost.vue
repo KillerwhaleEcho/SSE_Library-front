@@ -14,15 +14,26 @@
         <!-- 标题输入 -->
         <div class="form-group">
           <label class="form-label">帖子标题</label>
-          <input v-model="postTitle" type="text" class="title-input" placeholder="请输入帖子标题..." maxlength="100">
+          <input
+            v-model="postTitle"
+            type="text"
+            class="title-input"
+            placeholder="请输入帖子标题..."
+            maxlength="100"
+          />
           <div class="char-count">{{ postTitle.length }}/100</div>
         </div>
 
         <!-- 正文内容 -->
         <div class="form-group">
           <label class="form-label">正文内容</label>
-          <textarea v-model="postContent" class="content-textarea" placeholder="请输入帖子内容..." rows="12"
-            maxlength="5000"></textarea>
+          <textarea
+            v-model="postContent"
+            class="content-textarea"
+            placeholder="请输入帖子内容..."
+            rows="12"
+            maxlength="5000"
+          ></textarea>
           <div class="char-count">{{ postContent.length }}/5000</div>
         </div>
 
@@ -39,10 +50,18 @@
           <div class="selected-files" v-if="selectedFiles.length > 0">
             <h4>已选文件 ({{ selectedFiles.length }})</h4>
             <div class="file-grid">
-              <div v-for="file in selectedFiles" :key="file.infoBrief.documentId" class="file-card">
+              <div
+                v-for="file in selectedFiles"
+                :key="file.infoBrief.documentId"
+                class="file-card"
+              >
                 <div class="file-cover">
-                  <img v-if="file.infoBrief.cover" :src="file.infoBrief.cover" :alt="file.infoBrief.name"
-                    class="cover-image">
+                  <img
+                    v-if="file.infoBrief.cover"
+                    :src="file.infoBrief.cover"
+                    :alt="file.infoBrief.name"
+                    class="cover-image"
+                  />
                   <div v-else class="cover-placeholder">
                     {{ file.infoBrief.name.substring(0, 2) }}
                   </div>
@@ -54,9 +73,7 @@
                     <span class="file-type">{{ file.infoBrief.type }}</span>
                   </div>
                 </div>
-                <button class="remove-btn" @click="removeFile(file)">
-                  ×
-                </button>
+                <button class="remove-btn" @click="removeFile(file)">×</button>
               </div>
             </div>
           </div>
@@ -69,7 +86,11 @@
         <!-- 操作按钮 -->
         <div class="form-actions">
           <button class="cancel-btn" @click="handleCancel">取消</button>
-          <button class="submit-btn" @click="handleSubmit" :disabled="!canSubmit">
+          <button
+            class="submit-btn"
+            @click="handleSubmit"
+            :disabled="!canSubmit"
+          >
             发布帖子
           </button>
         </div>
@@ -77,11 +98,16 @@
     </div>
 
     <!-- 文件库选择弹窗 -->
-    <FileLibraryModal :visible="showFileLibrary" @update:visible="showFileLibrary = $event"
-      :selected-files="selectedFiles" @files-selected="handleFilesSelected" />
+    <FileLibraryModal
+      :visible="showFileLibrary"
+      @update:visible="showFileLibrary = $event"
+      :selected-files="selectedFiles"
+      @files-selected="handleFilesSelected"
+      :all-categories="allCategories"
+    />
   </div>
   <!-- 使用分离的组件 -->
-  <CategoryDialog 
+  <CategoryDialog
     :visible="showCategoryDialog"
     @update:visible="showCategoryDialog = $event"
     :all-categories="allCategories"
@@ -92,7 +118,7 @@
     @category-added="handleCategoryAdded"
   />
 
-  <UploadModal 
+  <UploadModal
     v-model:visible="showUploadModal"
     :selected-category-name="selectedUploadCategoryName"
     :selected-category-id="selectedCategoryId"
@@ -102,62 +128,63 @@
 </template>
 
 <script setup lang="ts">
-import topbar from '@/layout/topbar.vue'
-import FileLibraryModal from '@/components/FileLibraryModal.vue'
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import type { Document } from '@/api/all.ts'
-import * as allApi from '@/api/all.ts'
-import { ElMessage } from 'element-plus'
-import CategoryDialog from '@/components/CategoryDialog.vue'
-import UploadModal from '@/components/UploadModal.vue'
+import topbar from "@/layout/topbar.vue";
+import FileLibraryModal from "@/components/FileLibraryModal.vue";
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import type { Document } from "@/api/all.ts";
+import * as allApi from "@/api/all.ts";
+import { ElMessage } from "element-plus";
+import CategoryDialog from "@/components/CategoryDialog.vue";
+import UploadModal from "@/components/UploadModal.vue";
 
-const router = useRouter()
+const router = useRouter();
 
-const showCategoryDialog = ref(false)
-const showUploadModal = ref(false)
+const showCategoryDialog = ref(false);
+const showUploadModal = ref(false);
 // 分类相关数据
-const allCategories = ref<allApi.Category[]>([])
-const selectedCategoryName = ref<string | null>(null)
-const selectedCategoryId = ref<number | null>(null)
-const selectedUploadCategoryName = ref<string | null>(null)
+const allCategories = ref<allApi.Category[]>([]);
+const selectedCategoryName = ref<string | null>(null);
+const selectedCategoryId = ref<number | null>(null);
+const selectedUploadCategoryName = ref<string | null>(null);
 
 // 表单数据
-const postTitle = ref('')
-const postContent = ref('')
-const selectedFiles = ref<Document[]>([])
-const showFileLibrary = ref(false)
+const postTitle = ref("");
+const postContent = ref("");
+const selectedFiles = ref<Document[]>([]);
+const showFileLibrary = ref(false);
 
 // 计算属性：是否可以提交
 const canSubmit = computed(() => {
-  return postTitle.value.trim().length > 0 &&
-    postContent.value.trim().length > 0
-})
+  return (
+    postTitle.value.trim().length > 0 && postContent.value.trim().length > 0
+  );
+});
 
 // 处理文件选择
 const handleFilesSelected = (files: Document[]) => {
-  selectedFiles.value = files
-  showFileLibrary.value = false
-}
+  selectedFiles.value = files;
+  showFileLibrary.value = false;
+};
 
 // 移除文件
 const removeFile = (fileToRemove: Document) => {
   selectedFiles.value = selectedFiles.value.filter(
-    file => file.infoBrief.documentId !== fileToRemove.infoBrief.documentId
-  )
-}
+    (file) => file.infoBrief.documentId !== fileToRemove.infoBrief.documentId
+  );
+};
 
 // 提交帖子
 const handleSubmit = async () => {
-  if (!canSubmit.value) return
+  if (!canSubmit.value) return;
 
   try {
     // 获取当前用户ID（假设从本地存储获取）
-    const userId = Number(localStorage.getItem('userId') || '0')
+    const userId = Number(localStorage.getItem("userId") || "0");
 
     if (!userId) {
-      ElMessage.error('请先登录')
-      return
+      ElMessage.error("请先登录");
+      return;
     }
 
     // 构造提交数据
@@ -165,116 +192,115 @@ const handleSubmit = async () => {
       senderId: userId,
       title: postTitle.value.trim(),
       content: postContent.value.trim(),
-    }
+    };
 
     // 添加可选字段
     // 如果有选中的文件，添加到 documents 字段
     if (selectedFiles.value.length > 0) {
-      postData.documents = selectedFiles.value.map(file => 
-        Number(file.infoBrief.documentId) || file.infoBrief.documentId
+      postData.documents = selectedFiles.value.map(
+        (file) => Number(file.infoBrief.documentId) || file.infoBrief.documentId
       );
     }
 
-    console.log('提交帖子数据:', postData)
+    console.log("提交帖子数据:", postData);
 
     // 调用发帖API
-    const response = await allApi.uploadPost(postData)
+    const response = await allApi.uploadPost(postData);
 
-    console.log('帖子发布成功:', response)
-    ElMessage.success('帖子发布成功！')
+    console.log("帖子发布成功:", response);
+    ElMessage.success("帖子发布成功！");
 
     // 跳转到帖子列表页或帖子详情页
     // 如果接口返回了帖子ID，可以跳转到帖子详情页
     if (response) {
       router.push({
-        path: '/postInfo',
+        path: "/postInfo",
         query: {
-          postId: (response.data as any).postId
-        }
-      })
+          postId: (response.data as any).postId,
+        },
+      });
     } else {
-      router.push('/posts')
+      router.push("/posts");
     }
-
   } catch (error: any) {
-    console.error('发布帖子失败:', error)
-    ElMessage.error(error.message || '发布失败，请重试')
+    console.error("发布帖子失败:", error);
+    ElMessage.error(error.message || "发布失败，请重试");
   }
-}
+};
 
 // 取消发布
 const handleCancel = () => {
   if (postTitle.value || postContent.value || selectedFiles.value.length > 0) {
     // 如果有内容，确认是否放弃
-    if (confirm('确定要放弃当前编辑的内容吗？')) {
-      router.push('/posts')
+    if (confirm("确定要放弃当前编辑的内容吗？")) {
+      router.push("/posts");
     }
   } else {
-    router.push('/posts')
+    router.push("/posts");
   }
-}
+};
 
 // 分类相关方法
 const onCategorySelected = (selected: allApi.Category) => {
-  console.log('选中的分类：', selected) 
-  showCategoryDialog.value = false
-  selectedCategoryId.value = selected.id
-  
+  console.log("选中的分类：", selected);
+  showCategoryDialog.value = false;
+  selectedCategoryId.value = selected.id;
+
   if (showUploadModal.value === false) {
     // 如果在搜索场景下选择分类
-    selectedCategoryName.value = selected.name
+    selectedCategoryName.value = selected.name;
   } else {
     // 如果在上传场景下选择分类
-    selectedUploadCategoryName.value = selected.name
+    selectedUploadCategoryName.value = selected.name;
   }
-}
+};
 
 // 重置分类
 const resetCategory = () => {
-  selectedCategoryName.value = null
-  selectedUploadCategoryName.value = null
-  selectedCategoryId.value = null
-}
+  selectedCategoryName.value = null;
+  selectedUploadCategoryName.value = null;
+  selectedCategoryId.value = null;
+};
 
 // 获取所有分类
 const getAllCategories = async () => {
   try {
-    const response = await allApi.getAllCategories()
+    const response = await allApi.getAllCategories();
     if (response.data) {
-      allCategories.value = response.data
+      allCategories.value = response.data;
     } else {
-      allCategories.value = []
-      console.warn('获取分类数据格式不正确')
+      allCategories.value = [];
+      console.warn("获取分类数据格式不正确");
     }
-    return allCategories.value
+    return allCategories.value;
   } catch (error) {
-    console.error('获取所有分类失败:', error)
-    allCategories.value = []
-    throw error
+    console.error("获取所有分类失败:", error);
+    allCategories.value = [];
+    throw error;
   }
-}
+};
 
 // 上传成功处理
 const handleUploadSuccess = () => {
-  console.log('上传成功，可以刷新数据')
-}
+  console.log("上传成功，可以刷新数据");
+};
 
 const handleCategoryAdded = async () => {
-  console.log('分类添加成功，重新加载分类数据');
-  
+  console.log("分类添加成功，重新加载分类数据");
+
   try {
     await getAllCategories();
-    
-    ElMessage.success('分类数据已更新');
+
+    ElMessage.success("分类数据已更新");
   } catch (error) {
-    console.error('刷新分类数据失败:', error);
-    ElMessage.error('刷新数据失败');
+    console.error("刷新分类数据失败:", error);
+    ElMessage.error("刷新数据失败");
   }
 };
 
 onMounted(async () => {
-  getAllCategories() // 初始化时加载分类数据
-})
+  getAllCategories(); // 初始化时加载分类数据
+});
 </script>
 
 <style scoped>

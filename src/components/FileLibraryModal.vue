@@ -1,25 +1,53 @@
 <template>
-  <el-dialog :model-value="visible" @update:model-value="$emit('update:visible', $event)" title="选择关联文件" width="900px"
-    class="file-library-modal" :modal="false" append-to-body :z-index="1000">
+  <el-dialog
+    :model-value="visible"
+    @update:model-value="$emit('update:visible', $event)"
+    title="选择关联文件"
+    width="900px"
+    class="file-library-modal"
+    :modal="false"
+    append-to-body
+    :z-index="1000"
+  >
     <!-- 搜索和筛选区域 -->
     <div class="modal-controls">
       <div class="search-box">
-        <input v-model="searchKeyword" type="text" placeholder="搜索文件名称、作者、关键词..." class="search-input"
-          @keyup.enter="handleSearch">
+        <input
+          v-model="searchKeyword"
+          type="text"
+          placeholder="搜索文件名称、作者、关键词..."
+          class="search-input"
+          @keyup.enter="handleSearch"
+        />
         <button class="search-btn" @click="handleSearch">搜索</button>
       </div>
 
       <div class="filter-controls">
-        <el-select v-model="filterType" placeholder="文件类型" class="filter-select" size="large">
+        <el-select
+          v-model="filterType"
+          placeholder="文件类型"
+          class="filter-select"
+          size="large"
+        >
           <el-option label="全部" value=""></el-option>
           <el-option label="书籍" value="book"></el-option>
           <el-option label="文件" value="file"></el-option>
           <el-option label="视频" value="video"></el-option>
         </el-select>
 
-        <el-select v-model="filterCategoryId" placeholder="分类" class="filter-select" size="large">
+        <el-select
+          v-model="filterCategoryId"
+          placeholder="分类"
+          class="filter-select"
+          size="large"
+        >
           <el-option label="全部" value=""></el-option>
-          <el-option v-for="category in categories" :key="category.id" :label="category.name" :value="category.id" />
+          <el-option
+            v-for="category in categories"
+            :key="category.id"
+            :label="category.name"
+            :value="category.id"
+          />
         </el-select>
       </div>
     </div>
@@ -27,17 +55,26 @@
     <!-- 文件列表 -->
     <div class="file-list-container">
       <div class="file-list">
-        <div v-for="file in fileList" :key="getFileKey(file)" class="file-item"
-          :class="{ 'selected': isFileSelected(file) }" @click="toggleFileSelection(file)">
+        <div
+          v-for="file in fileList"
+          :key="getFileKey(file)"
+          class="file-item"
+          :class="{ selected: isFileSelected(file) }"
+          @click="toggleFileSelection(file)"
+        >
           <div class="file-checkbox">
-            <div class="checkbox" :class="{ 'checked': isFileSelected(file) }">
+            <div class="checkbox" :class="{ checked: isFileSelected(file) }">
               ✓
             </div>
           </div>
 
           <div class="file-cover">
-            <img v-if="file?.infoBrief?.cover" :src="file.infoBrief.cover" :alt="getFileTitle(file)"
-              class="cover-image">
+            <img
+              v-if="file?.infoBrief?.cover"
+              :src="file.infoBrief.cover"
+              :alt="getFileTitle(file)"
+              class="cover-image"
+            />
             <div v-else class="cover-placeholder">
               {{ getFileInitials(file) }}
             </div>
@@ -75,8 +112,17 @@
         已选择 {{ tempSelectedFiles.length }} 个文件
       </div>
       <div class="selected-preview">
-        <div v-for="file in tempSelectedFiles.slice(0, 3)" :key="getFileKey(file)" class="preview-item">
-          <img v-if="file.infoBrief?.cover" :src="file.infoBrief.cover" :alt="getFileTitle(file)" class="preview-cover">
+        <div
+          v-for="file in tempSelectedFiles.slice(0, 3)"
+          :key="getFileKey(file)"
+          class="preview-item"
+        >
+          <img
+            v-if="file.infoBrief?.cover"
+            :src="file.infoBrief.cover"
+            :alt="getFileTitle(file)"
+            class="preview-cover"
+          />
           <div v-else class="preview-placeholder">
             {{ getFileInitials(file) }}
           </div>
@@ -90,7 +136,11 @@
     <template #footer>
       <div class="modal-footer">
         <button class="cancel-btn" @click="handleCancel">取消</button>
-        <button class="confirm-btn" @click="handleConfirm" :disabled="tempSelectedFiles.length === 0">
+        <button
+          class="confirm-btn"
+          @click="handleConfirm"
+          :disabled="tempSelectedFiles.length === 0"
+        >
           确认选择 ({{ tempSelectedFiles.length }})
         </button>
       </div>
@@ -99,169 +149,206 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import * as allApi from '@/api/all.ts'
-import type { Document, Category } from '@/api/all.ts'
+import { ref, computed, onMounted, watch } from "vue";
+import * as allApi from "@/api/all.ts";
+import type { Document, Category } from "@/api/all.ts";
 
 interface Props {
-  visible: boolean
-  selectedFiles: Document[]
+  visible: boolean;
+  selectedFiles: Document[];
+  allCategories: any[];
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
-  'files-selected': [files: Document[]]
-}>()
+  "update:visible": [value: boolean];
+  "files-selected": [files: Document[]];
+}>();
 
 // 数据
-const fileList = ref<Document[]>([])
-const categories = ref<Category[]>([])
-const searchKeyword = ref('')
-const filterType = ref<'book' | 'file' | 'video' | 'null'>('null')
-const filterCategoryId = ref<number | null>(null)
-const tempSelectedFiles = ref<Document[]>([])
+const fileList = ref<Document[]>([]);
+const categories = ref<Category[]>([]);
+const searchKeyword = ref("");
+const filterType = ref<"book" | "file" | "video" | "null">("null");
+const filterCategoryId = ref<number | null>(null);
+const tempSelectedFiles = ref<Document[]>([]);
 
 // 初始化临时选择
-watch(() => props.visible, (newVal) => {
-  if (newVal) {
-    tempSelectedFiles.value = [...props.selectedFiles]
+watch(
+  () => props.visible,
+  (newVal) => {
+    if (newVal) {
+      tempSelectedFiles.value = [...props.selectedFiles];
+    }
   }
-})
+);
 
 // 安全的文件操作方法
 const getFileKey = (file: Document) => {
-  return file?.infoBrief?.documentId || Math.random().toString()
-}
+  return file?.infoBrief?.documentId || Math.random().toString();
+};
 
 const getFileTitle = (file: Document) => {
-  return file?.infoBrief?.name || '未知文件'
-}
+  return file?.infoBrief?.name || "未知文件";
+};
 
 const getFileAuthor = (file: Document) => {
-  return file.author || '未知作者'
-}
+  return file.author || "未知作者";
+};
 
 const getFileType = (file: Document) => {
-  const type = file?.infoBrief?.type
-  if (!type) return '未知类型' // 处理 null 或 undefined
+  const type = file?.infoBrief?.type;
+  if (!type) return "未知类型"; // 处理 null 或 undefined
   const typeMap: { [key: string]: string } = {
-    'book': '书籍',
-    'file': '文件',
-    'video': '视频'
-  }
-  return typeMap[type] ||  '未知类型'
-}
+    book: "书籍",
+    file: "文件",
+    video: "视频",
+  };
+  return typeMap[type] || "未知类型";
+};
 
 const getFileInitials = (file: Document) => {
-  const title = getFileTitle(file)
-  return title.substring(0, 2) || '文'
-}
+  const title = getFileTitle(file);
+  return title.substring(0, 2) || "文";
+};
 
 const getFileTags = (file: Document) => {
-  const tags = file?.tags
-  if (!tags) return []
+  const tags = file?.tags;
+  if (!tags) return [];
 
   // 如果 tags 已经是数组，确保每项是 string 并去除空项
   if (Array.isArray(tags)) {
     return tags
-      .map(t => (typeof t === 'string' ? t.trim() : String(t)))
-      .filter(t => t)
+      .map((t) => (typeof t === "string" ? t.trim() : String(t)))
+      .filter((t) => t);
   }
 
   // 兜底返回空数组
-  return []
-}
+  return [];
+};
 
 // 文件选择相关方法
 const isFileSelected = (file: Document) => {
-  if (!file?.infoBrief?.documentId) return false
+  if (!file?.infoBrief?.documentId) return false;
   return tempSelectedFiles.value.some(
-    selectedFile => selectedFile?.infoBrief?.documentId === file.infoBrief.documentId
-  )
-}
+    (selectedFile) =>
+      selectedFile?.infoBrief?.documentId === file.infoBrief.documentId
+  );
+};
 
 const toggleFileSelection = (file: Document) => {
-  if (!file?.infoBrief?.documentId) return
+  if (!file?.infoBrief?.documentId) return;
 
-  const isSelected = isFileSelected(file)
+  const isSelected = isFileSelected(file);
   if (isSelected) {
     tempSelectedFiles.value = tempSelectedFiles.value.filter(
-      selectedFile => selectedFile?.infoBrief?.documentId !== file.infoBrief.documentId
-    )
+      (selectedFile) =>
+        selectedFile?.infoBrief?.documentId !== file.infoBrief.documentId
+    );
   } else {
-    tempSelectedFiles.value.push(file)
+    tempSelectedFiles.value.push(file);
   }
-}
+};
 
 const handleSearch = async () => {
-  console.log('搜索关键词:', searchKeyword.value)
+  console.log("搜索关键词:", searchKeyword.value);
   try {
     const response = await allApi.searchBooksOrFiles(
       filterType.value,
       filterCategoryId.value,
-      '',
-      'null',
+      "",
+      "null",
       searchKeyword.value.trim()
-    )
-    console.log('搜索关联资料响应:', response)
+    );
+    console.log("搜索关联资料响应:", response);
     if (response.data) {
-      fileList.value = response.data
+      fileList.value = response.data;
     } else {
-      fileList.value = []
-      console.warn('获取关联搜索资料数据格式不正确')
+      fileList.value = [];
+      console.warn("获取关联搜索资料数据格式不正确");
     }
-    return fileList.value
+    return fileList.value;
   } catch (error) {
-    console.error('获取关联搜索资料失败:', error)
-    fileList.value = []
-    throw error
+    console.error("获取关联搜索资料失败:", error);
+    fileList.value = [];
+    throw error;
   }
-}
+};
 
 const handleCancel = () => {
-  emit('update:visible', false)
-}
+  emit("update:visible", false);
+};
 
 const handleConfirm = () => {
   // 过滤掉无效的文件
-  const validFiles = tempSelectedFiles.value.filter(file => file?.infoBrief?.documentId)
-  emit('files-selected', validFiles)
-  emit('update:visible', false)
-}
+  const validFiles = tempSelectedFiles.value.filter(
+    (file) => file?.infoBrief?.documentId
+  );
+  emit("files-selected", validFiles);
+  emit("update:visible", false);
+};
 
 // 加载数据
 const loadFiles = async () => {
   try {
-    const response = await allApi.getHotDocuments()
+    const response = await allApi.getHotDocuments();
     if (response.data) {
-      console.log('获取关联文件数据成功', response.data)
-      fileList.value = response.data;  //filter(file => file?.infoBrief) // 过滤掉没有 infoBrief 的文件
+      console.log("获取关联文件数据成功", response.data);
+      fileList.value = response.data; //filter(file => file?.infoBrief) // 过滤掉没有 infoBrief 的文件
     }
   } catch (error) {
-    console.error('加载文件失败:', error)
-    fileList.value = []
+    console.error("加载文件失败:", error);
+    fileList.value = [];
   }
-}
+};
 
-const loadCategories = async () => {
-  try {
-    const response = await allApi.getAllCategories()
-    if (response.data) {
-      console.log('获取关联分类数据成功', response.data)
-      categories.value = response.data
+onMounted(async () => {
+  loadFiles();
+});
+
+// 递归提取所有分类（包括子分类）
+const extractAllCategories = (categoryList: any[]): Category[] => {
+  const allCategories: Category[] = [];
+
+  const extract = (category: any) => {
+    // 添加当前分类
+    allCategories.push({
+      id: category.id,
+      name: category.name,
+      // 保留其他属性，但不包含 children
+      ...Object.keys(category)
+        .filter((key) => key !== "children")
+        .reduce((obj, key) => {
+          obj[key] = category[key];
+          return obj;
+        }, {} as any),
+    });
+
+    // 如果有子分类，递归提取
+    if (category.children && category.children.length > 0) {
+      category.children.forEach(extract);
     }
-  } catch (error) {
-    console.error('加载分类失败:', error)
-    categories.value = []
-  }
-}
+  };
 
-onMounted(() => {
-  loadFiles()
-  loadCategories()
-})
+  // 遍历所有父分类
+  categoryList.forEach(extract);
+
+  return allCategories;
+};
+
+// 监听父组件传入的 allCategories 变化
+watch(
+  () => props.allCategories,
+  (newCategories) => {
+    if (newCategories && newCategories.length > 0) {
+      categories.value = extractAllCategories(newCategories);
+    } else {
+      categories.value = [];
+    }
+  },
+  { immediate: true, deep: true } // 立即执行一次，深度监听
+);
 </script>
 
 <style scoped>
