@@ -60,7 +60,7 @@
                                     <span>{{ favoriteLabel }}</span>
                                 </button>
                                 <button class="doc-action-button" :class="{ disabled: !canPreview || previewLoading }"
-                                    :disabled="!canPreview || previewLoading" @click="handlePreview">
+                                    :disabled="!canPreview || previewLoading" v-show="false" @click="handlePreview">
                                     <img :src="previewIcon" alt="预览" class="action-icon" />
                                     <span>{{ previewButtonText }}</span>
                                 </button>
