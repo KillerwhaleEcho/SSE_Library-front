@@ -1,8 +1,8 @@
 <template>
   <div class="comment-list">
-    <el-card class="comment-card">
-      <section class="comment-card__body"  element-loading-text="正在全力加载">
-            <CommentSection :viewer="userInfo" :show-comment-user="true" :show-source-name="true" :show-search-bar="true">
+    <el-card class="comment-card-shell">
+      <section class="comment-card__body" element-loading-text="正在全力加载">
+        <CommentSection :viewer="userInfo" :show-comment-user="true" :show-source-name="true" :show-search-bar="true">
         </CommentSection>
       </section>
     </el-card>
@@ -10,8 +10,8 @@
 </template>
 
 <script setup lang="ts">
-import {  onMounted, ref, watch } from 'vue'
-import { ElMessage} from 'element-plus'
+import { onMounted, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { type UserBrief, getUserDetail } from '@/api/all'
 import CommentSection from '../comments/CommentSection.vue'
 
@@ -48,7 +48,7 @@ onMounted(() => {
   align-content: center;
 }
 
-.comment-card {
+.comment-card-shell {
   border-radius: 12px;
   background: #fff;
   display: flex;
@@ -57,12 +57,12 @@ onMounted(() => {
   min-height: 0;
 }
 
-:deep(.el-card.comment-card) {
+:deep(.el-card.comment-card-shell) {
   border: none;
   box-shadow: none;
 }
 
-.comment-card :deep(.el-card__body) {
+.comment-card-shell :deep(.el-card__body) {
   flex: 1;
   min-height: 0;
   border: none;
@@ -76,9 +76,4 @@ onMounted(() => {
   min-height: 0;
   position: relative;
 }
-
-
-
-
-
 </style>
