@@ -50,7 +50,7 @@
                             <button class="admin-btn primary solid" @click="handleSaveEdit">
                                 保存修改
                             </button>
-                            <button class="admin-btn" @click="cancelEdit">
+                            <button class="admin-btn secondary" @click="cancelEdit">
                                 取消修改
                             </button>
                         </template>
@@ -629,6 +629,12 @@ watch(resolvedCategoryId, (next) => {
     opacity: 0.75;
 }
 
+.admin-btn.secondary {
+    background: #4b5563;
+    color: #fff;
+    opacity: 0.9;
+}
+
 .admin-btn.danger {
     background: linear-gradient(135deg, #f0645a, #e53935);
 }
@@ -691,6 +697,10 @@ watch(resolvedCategoryId, (next) => {
     color: #fff;
     cursor: pointer;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .add-parent-btn {
