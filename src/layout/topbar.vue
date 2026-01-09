@@ -201,7 +201,7 @@ const initWebSocket = () => {
             emit("ws-message", payload);
             return;
           }
-          unreadChatMessage.value++;
+          unreadChatMessage.value++;6
         }
       } else {
         unreadReminder.value++;

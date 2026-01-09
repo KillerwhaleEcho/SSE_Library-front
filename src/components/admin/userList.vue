@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import {
   getUserList,
   updateUserStatus,
@@ -140,8 +140,27 @@ const handleRefresh = () => {
 }
 
 const toggleStatus = async (user: UserRow) => {
+  const currentUserId = Number(localStorage.getItem("userId") || "0");
+  if (currentUserId && user.id === currentUserId) {
+    ElMessage.warning("不能修改自己的状态");
+    return;
+  }
   const previousStatus = user.status;
   const targetStatus = user.status === "active" ? "disabled" : "active";
+  const actionLabel = targetStatus === "active" ? "启用" : "停用";
+  try {
+    await ElMessageBox.confirm(
+      `确认要${actionLabel}该用户吗？`,
+      "确认修改用户状态",
+      {
+        confirmButtonText: "确认",
+        cancelButtonText: "取消",
+        type: "warning",
+      }
+    );
+  } catch {
+    return;
+  }
   user.status = targetStatus;
 
   try {

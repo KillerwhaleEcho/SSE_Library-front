@@ -45,7 +45,6 @@
 <script setup lang="ts">
 import { deletePost, getPosts, type Post } from '@/api/all';
 import router from '@/router';
-import SendPost from '@/views/sendPost.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { onMounted, ref, computed } from 'vue';
 

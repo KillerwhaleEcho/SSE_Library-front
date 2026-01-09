@@ -902,11 +902,6 @@ const handleTopbarWsMessage = async (payload: any) => {
   if (!payload || !payload.type) return;
   if (payload.type === "chat_message") {
     handleIncomingChatMessage(payload);
-    //如果是当前会话收到消息，不能让topbar的unreadCount增加，需要刷新纠正
-    const sessionId = Number(payload.data?.sessionId);
-    if (sessionId && sessionId === currentSessionId.value) {
-      await topbarRef.value?.refreshUnreadMessages?.();
-    }
     return;
   }
   if (payload.type === "reminder") {
