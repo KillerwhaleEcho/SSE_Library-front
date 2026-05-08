@@ -7,6 +7,8 @@
     @ws-message="handleTopbarWsMessage"
     @reminder-sync="handleTopbarReminderSync"
   ></topbar>
+<!-- open-upload-modal这个事件后面直接接的赋值语句，实际上是一个简单到不需要单独表示的函数 -->
+<!-- 这里给topbar一个ref的原因是后面要await这个组件中的一些函数 -->
   <div class="chat-view">
     <aside class="chat-list">
       <div class="reminder" @click="handleReminderSelect">
@@ -16,7 +18,6 @@
           <span>{{ unreadReminderCount }}</span>
         </figure>
       </div>
-      <!-- 传给default-active一个index，那个item就会高亮，这个高亮样式就是is-active -->
       <el-menu
         class="chat-menu"
         :default-active="
@@ -24,6 +25,7 @@
         "
         @select="handleSelect"
       >
+        <!-- 传给default-active一个index，那个item就会高亮，这个高亮样式就是is-active -->
         <el-menu-item
           v-for="chatbox in appliedChatboxes"
           :index="chatbox.sessionId"
@@ -68,6 +70,7 @@
             :teleported="false"
             placeholder="选择类型"
           >
+<!-- 当 teleported 为默认的 true 时，el-select 的下拉选项面板会被 Vue 的 <Teleport> 组件「转移挂载」到整个页面的 <body> 根节点下，脱离当前 <el-select> 所在的组件 DOM 层级。 -->
             <el-option label="用户" value="user" />
             <el-option label="聊天记录" value="message" />
           </el-select>
@@ -99,6 +102,7 @@
             @click="toggleLocalSearch"
             title="本会话搜索"
           >
+          <!-- title 是原生全局属性（并非 Vue/Element Plus 专属，所有 HTML 元素均可使用）,作用是给元素添加鼠标悬停文本提示 -->
             <img :src="localSearchIconUrl" alt="本会话搜索" />
           </button>
           <transition name="session-search-expand">
@@ -170,7 +174,7 @@
       >
         <div class="chat-panel">
           <div class="chat-messages" ref="messageListRef">
-            <div v-if="!messages.length" class="chat-content__empty"></div>
+            <div v-if="!messages.length" ></div>
             <transition-group
               v-else
               name="msg-fade"
@@ -178,6 +182,10 @@
               tag="div"
               class="chat-messages__inner"
             >
+<!-- name：专属属性，Vue 会自动生成以该前缀开头的 6 个标准过渡类名（替代默认v-xxx） -->
+<!-- css：控制是否启用 CSS 过渡/动画  -->
+<!-- tag：选择容器外层包裹的标签，默认是span，只能做行内的布局调整 -->
+<!-- class绑定的是tag指定的div -->
               <div
                 v-for="(msg, index) in messages"
                 :key="`${msg.sessionId}-${msg.senderId}-${index}`"
@@ -210,6 +218,8 @@
               placeholder="输入消息，Enter发送 / Shift+Enter换行"
               @keydown.enter.exact.prevent="handleSendClick"
             >
+            <!-- exact：排除shift+enter和ctrl+enter等组合键，不然由于包含enter也会触发发送 -->
+             <!-- prevent:阻止默认原生行为，对于textarea来说就是阻止文本换行，不然发送消息之后立马会在输入区添加一个换行 -->
             </textarea>
             <button
               class="send-button"
@@ -360,7 +370,7 @@ const reminderIconUrl = ref(reminderIcon);
 const unreadUrl = ref(unreadIcon);
 const isReminder = ref(false);
 const messageListRef = ref<HTMLElement | null>(null);
-const enableMsgAnim = ref(true); //控制回话切换时让上一组消息被替换时不跑入场离厂动画
+const enableMsgAnim = ref(true); //控制回话切换时让上一组消息被替换时不跑入场离场动画
 const visible = ref(false);
 const searchResults = ref<SearchResultItem[]>([]);
 const isSearchJump = ref(false);
@@ -673,7 +683,7 @@ const handleSelect = async (sessionId: number) => {
     enableMsgAnim.value = true;
     scrollToLatest();
     //后端应该是在拉取回话消息之后将未读数置为0，所以得放到最后调用刷新函数
-    await await topbarRef.value?.refreshUnreadMessages?.();
+    await topbarRef.value?.refreshUnreadMessages?.();
   }
 };
 
@@ -1149,6 +1159,7 @@ onMounted(async () => {
   font-size: 16px;
 }
 
+/* 这个纯属ai乱写 */
 .chat-content__empty {
   display: flex;
   justify-content: center;
@@ -1638,16 +1649,6 @@ onMounted(async () => {
   gap: 14px;
 }
 
-/* .chat-messages::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-} */
-
-/* .chat-messages {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-} */
-
 .message-row {
   display: flex;
   gap: 10px;
@@ -1655,9 +1656,6 @@ onMounted(async () => {
   width: 100%;
 }
 
-.message-row.is-self {
-  flex-direction: row-reverse;
-}
 
 .is-self {
   width: 80%;
