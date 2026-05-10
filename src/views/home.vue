@@ -709,23 +709,23 @@ const collapseAIBooks = () => {
 .ai-glow-btn::after {
     content: "";
     position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
     background: linear-gradient(125deg, #ff99e6, #c542f5, #ff80cc, #e066ff);
     background-size: 200% 200%;
     border-radius: 60px;
     z-index: -1;
-    opacity: 0.5;
-    filter: blur(12px);
+    opacity: 0.25;
+    filter: blur(6px);
     animation: borderGlowShift 4s linear infinite;
 }
 
 @keyframes borderGlowShift {
-    0% { background-position: 0% 0%; opacity: 0.5; }
-    50% { background-position: 100% 100%; opacity: 0.85; }
-    100% { background-position: 0% 0%; opacity: 0.5; }
+    0% { background-position: 0% 0%; opacity: 0.25; }
+    50% { background-position: 100% 100%; opacity: 0.4; }
+    100% { background-position: 0% 0%; opacity: 0.25; }
 }
 
 .collapse-btn {
