@@ -272,6 +272,11 @@ export const getBookList = (is_suggest: boolean, categoryId?: number) => {
   });
 };
 
+//获取AI推荐书籍
+export const getAIRecommendBooks = (userId: number) => {
+  return service.get<ApiResponse<{ documents: Document[] }>>(`/ai/${userId}/book-recommendations`);
+};
+
 
 //管理员获取文档列表
 export const adminGetDoc = () => {

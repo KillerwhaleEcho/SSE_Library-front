@@ -54,6 +54,19 @@
         <!-- 推荐标签页 -->
         <div class="tab-pane" v-if="activeTab === 'recommend'">
           <div class="recommend-container">
+            <!-- AI推荐按钮 -->
+            <button class="ai-glow-btn" @click="handleGetAIRecommendation">获取AI推荐</button>
+            <!-- AI推荐书籍列表 -->
+            <div class="hot-books" v-if="showAIBooks">
+              <h3>AI推荐书籍</h3>
+              <div class="book-list">
+                <!-- 循环渲染图书组件 -->
+                <BookItem v-for="book in AIBooks" :key="book.infoBrief.documentId" :document="book"
+                  @click="onBookSelected(book)" />
+              </div>
+              <button class="collapse-btn" @click="collapseAIBooks">收起 ▲</button>
+            </div>
+
             <!-- 热门分类列表 -->
             <div class="hot-categories">
               <h3>热门分类</h3>
@@ -208,6 +221,9 @@ const allCategories = ref<allApi.Category[]>([])
 // 书籍数据
 const hotBooks = ref<allApi.Document[]>([])
 const fileList = ref<allApi.Document[]>([])
+const AIBooks = ref<allApi.Document[]>([])
+const showAIBooks = ref(false)
+const userId = Number(localStorage.getItem('userId') || '0')
 
 // 生命周期
 onMounted(() => {
@@ -393,6 +409,44 @@ const handleCategoryAdded = async () => {
     ElMessage.error('刷新数据失败');
   }
 };
+
+// 新增：加载AI推荐书籍的方法
+const loadAIRecommendBooks = async () => {
+  try {
+    // 显示加载状态（可选）
+    ElMessage.info('AI正在为您推荐书籍...')
+    
+    const response = await allApi.getAIRecommendBooks(userId)
+    
+    if (response.data) {
+      AIBooks.value = response.data
+      ElMessage.success('AI推荐已更新')
+    } else {
+      AIBooks.value = []
+      ElMessage.warning('暂无AI推荐书籍')
+    }
+    return AIBooks.value
+  } catch (error) {
+    console.error('获取AI推荐书籍失败:', error)
+    AIBooks.value = []
+    ElMessage.error('获取AI推荐失败，请稍后重试')
+    throw error
+  }
+}
+
+// 新增：点击获取AI推荐按钮的处理函数
+const handleGetAIRecommendation = async () => {
+  // 显示列表
+  showAIBooks.value = true
+  
+  // 发送请求获取推荐书籍
+  await loadAIRecommendBooks()
+}
+
+// 新增：收起AI推荐列表
+const collapseAIBooks = () => {
+  showAIBooks.value = false
+}
 </script>
 
 <style scoped>
@@ -611,5 +665,83 @@ const handleCategoryAdded = async () => {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+/* 紫粉炫彩按钮样式 - 可直接应用于您的按钮元素 */
+.ai-glow-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff4d9e, #c43ad6, #a83ef0, #ff66cc);
+    background-size: 300% 300%;
+    background-position: left top;
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+    padding: 0.75rem 1.8rem;
+    border: none;
+    border-radius: 56px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(199, 36, 177, 0.4), 0 0 10px rgba(255, 105, 180, 0.5);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: background-position 0.3s ease;
+}
+
+.ai-glow-btn:hover {
+    background-position: right top;
+}
+
+.ai-glow-btn:is(:focus, :focus-visible, :active) {
+    outline: none;
+    box-shadow: 0 0 0 3px #ff4d9e, 0 0 0 6px #c43ad6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-glow-btn {
+        transition: linear;
+    }
+}
+
+/* 外圈光晕（保留炫彩感） */
+.ai-glow-btn {
+    position: relative;
+}
+
+.ai-glow-btn::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    background: linear-gradient(125deg, #ff99e6, #c542f5, #ff80cc, #e066ff);
+    background-size: 200% 200%;
+    border-radius: 60px;
+    z-index: -1;
+    opacity: 0.5;
+    filter: blur(12px);
+    animation: borderGlowShift 4s linear infinite;
+}
+
+@keyframes borderGlowShift {
+    0% { background-position: 0% 0%; opacity: 0.5; }
+    50% { background-position: 100% 100%; opacity: 0.85; }
+    100% { background-position: 0% 0%; opacity: 0.5; }
+}
+
+.collapse-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 4px 12px;
+  cursor: pointer;
+  color: #666;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.collapse-btn:hover {
+  border-color: #b994fe;
+  color: #b994fe;
+  background: #f9f5ff;
 }
 </style>
