@@ -2,9 +2,19 @@
   <!-- 顶栏容器 -->
   <header class="app-header">
     <!-- 左侧标题 -->
-    <router-link to="/home" class="header-title" data-tooltip="首页">
-      <h1>SSE-Library</h1>
-    </router-link>
+    <div class="header-left">
+      <router-link to="/home" class="header-title" data-tooltip="首页">
+        <h1>SSE-Library</h1>
+      </router-link>
+      <button
+        class="icon-container icon-button-reset ai-entry"
+        type="button"
+        data-tooltip="AI 助手"
+        @click="showAIChat = true"
+      >
+        <img :src="aiRobotIcon" alt="AI 助手" />
+      </button>
+    </div>
 
     <!-- 右侧用户区域 -->
     <div class="header-user">
@@ -17,7 +27,6 @@
           {{ unreadChatMessage }}
         </div>
       </router-link>
-
       <ReminderBox
         :reminders="reminders"
         :unread-reminder="unreadReminder"
@@ -59,16 +68,18 @@
         <img src="@/assets/147_联系人.png" alt="个人主页" />
       </router-link>
     </div>
+    <AIChatPanel v-model="showAIChat" />
   </header>
 </template>
 
 <script setup lang="ts">
 import ReminderBox from "@/components/reminderBox.vue";
+import AIChatPanel from "@/views/AIChatPanel.vue";
+import aiRobotIcon from "@/assets/聊天机器人L.png";
 import "element-plus/dist/index.css";
-import { ref, computed, onMounted, watch, onUnmounted } from "vue";
+import { ref, onMounted, watch, onUnmounted } from "vue";
 import * as allApi from "@/api/all.ts";
 import router from "@/router";
-import { ElMessage } from "element-plus";
 
 const props = defineProps<{
   activeSessionId?: number | null;
@@ -78,12 +89,19 @@ const userId = Number(localStorage.getItem("userId") || "0");
 const role = localStorage.getItem("role") || "user";
 const reminders = ref<allApi.Reminder[]>([]);
 const showCategoryDialog = ref(false);
-const allCategories = ref<any[]>([]);
-const selectedCategoryName = ref<string | null>(null);
-const selectedCategoryId = ref<number | null>(null);
 const unreadChatMessage = ref(0);
 const unreadReminder = ref(0);
 const socket = ref<WebSocket | null>(null);
+const showAIChat = ref(false);
+
+const unwrapApiData = <T,>(response: unknown): T => {
+  const maybeResponse = response as { data?: unknown };
+  const data = maybeResponse.data;
+  if (data && typeof data === "object" && "data" in data) {
+    return (data as { data: T }).data;
+  }
+  return data as T;
+};
 
 // 定义事件发射器，用于向父组件发送事件
 const emit = defineEmits(["open-upload-modal", "ws-message", "reminder-sync"]);
@@ -136,7 +154,7 @@ const fetchReminders = async () => {
   try {
     const response = await allApi.getReminders(userId);
     console.log("获取提醒成功", response);
-    reminders.value = response.data;
+    reminders.value = unwrapApiData<{ reminders: allApi.Reminder[] }>(response).reminders || [];
   } catch (error) {
     console.error("获取通知失败：", error);
   }
@@ -145,7 +163,7 @@ const fetchReminders = async () => {
 const getUnreadCountOfMessages = async () => {
   try {
     const res = await allApi.getUnreadMessage("message", userId);
-    unreadChatMessage.value = res.data;
+    unreadChatMessage.value = unwrapApiData<number>(res);
   } catch {
     console.log("获取未读聊天数量失败");
   }
@@ -154,7 +172,7 @@ const getUnreadCountOfMessages = async () => {
 const getUnreadCountOfReminder = async () => {
   try {
     const res = await allApi.getUnreadMessage("reminder", userId);
-    unreadReminder.value = res.data;
+    unreadReminder.value = unwrapApiData<number>(res);
   } catch {
     console.log("获取未读聊天数量失败");
   }
@@ -256,7 +274,7 @@ defineExpose({ refreshUnreadReminder, refreshUnreadMessages });
 }
 
 .header-title h1 {
-  margin-left: 20px;
+  margin-left: 0;
   font-size: 1.5rem;
   font-weight: 600;
   color: #b994fe;
@@ -345,7 +363,7 @@ defineExpose({ refreshUnreadReminder, refreshUnreadMessages });
 }
 
 .header-title h1 {
-  margin-left: 20px;
+  margin-left: 0;
   font-size: 1.5rem;
   font-weight: 600;
   color: #b994fe;
@@ -367,6 +385,30 @@ defineExpose({ refreshUnreadReminder, refreshUnreadMessages });
 .icon-container {
   position: relative;
   margin: 0 8px; /* 图标间距优化 */
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 20px;
+}
+
+.icon-button-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ai-entry {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f1ecff;
+  box-shadow: 0 6px 16px rgba(145, 106, 217, 0.18);
 }
 
 /* 图标提示 tooltip 样式（原有逻辑保留） */
@@ -403,6 +445,13 @@ defineExpose({ refreshUnreadReminder, refreshUnreadMessages });
 
 .icon-container img:hover {
   transform: scale(1.1); /*  hover放大效果 */
+}
+
+.icon-container.ai-entry img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 0;
 }
 
 .upload-post-popover {

@@ -1,7 +1,4 @@
 import service from "../utils/service";
-import request from "../utils/request";
-
-
 
 export interface ApiResponse<T = any> {
     code: number;
@@ -42,7 +39,7 @@ export const getAIMessages = (sessionId: number) => {
 };
 
 export const getAISessions = (userId:number) => {
-    return service.get<ApiResponse<AISession>>("/ai/chat/sessions", {
+    return service.get<ApiResponse<AISession[]>>("/ai/chat/sessions", {
         params: {
             userId
     }});
@@ -72,12 +69,12 @@ export const pauseAI = (sessionId: number)=>{
     return service.post<ApiResponse<{sessionId:number,messageId:number,status:string}>>(`/ai/chat/sessions/${sessionId}/stop`)
 }
 
-export const modifyAITitle = (sessionId: number, newTitle:string,userId:number) => {
-    return service.post<ApiResponse<any>>(`/ai/chat/sessions/${sessionId}/modify`, { newTitle,userId })
+export const modifyAITitle = ( newTitle:string,userId:number) => {
+    return service.put<ApiResponse<any>>(`/ai/chat/sessions`, { newTitle,userId })
 }
 
 export const deleteAISession = (sessionId:number,userId:number) => {
-    return service.delete<ApiResponse<any>>(`/ai/chat/sessions/${sessionId}/delete`, {
+    return service.delete<ApiResponse<any>>(`/ai/chat/sessions/${sessionId}`, {
         params: {
         userId
     }})
