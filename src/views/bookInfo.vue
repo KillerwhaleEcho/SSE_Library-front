@@ -107,6 +107,9 @@
                   />
                   <span>{{ downloadButtonLabel }}</span>
                 </button>
+                <button class="doc-action-button" @click="handleShowAiSummary">
+                  <span>✨ 查看AI总结</span>
+                </button>
               </div>
               <div
                 v-if="isAdminViewer && !isUploaderViewer"
@@ -222,6 +225,12 @@
     @open-category-dialog="showCategoryDialog = true"
     @upload-success="handleUploadSuccess"
   />
+
+  <AiSummaryModal
+    v-model:visible="showAiSummaryModal"
+    content-type="document"
+    :content-id="documentId"
+  />
 </template>
 
 <script setup lang="ts">
@@ -257,6 +266,7 @@ import { useAuthStore } from "@/stores/auth";
 import * as allApi from "@/api/all.ts";
 import CategoryDialog from "@/components/CategoryDialog.vue";
 import UploadModal from "@/components/UploadModal.vue";
+import AiSummaryModal from "@/components/AiSummaryModal.vue";
 
 const showCategoryDialog = ref(false);
 const showUploadModal = ref(false);
@@ -305,6 +315,13 @@ const previewButtonText = computed(() =>
   previewLoading.value ? "加载中..." : "预览"
 );
 const isAdminViewer = computed(() => userInfo.value?.role === "admin");
+
+const showAiSummaryModal = ref(false);
+
+const handleShowAiSummary = () => {
+  showAiSummaryModal.value = true;
+};
+
 const localUserIdFromStorage = computed<number | null>(() => {
   try {
     const raw = localStorage.getItem("userBrief");
