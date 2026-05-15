@@ -1,35 +1,35 @@
 import service from "../utils/service";
 
 export interface ApiResponse<T = any> {
-    code: number;
-    message?: string;
-    data: T;
+  code: number;
+  message?: string;
+  data: T;
 }
 
-export interface AISession{
-    sessionId: number
-    userId: number
-    sessionName: string
-    lasttime:string
+export interface AISession {
+  sessionId: number
+  userId: number
+  sessionName: string
+  lasttime: string
 }
 
-export interface AIMessage{
-    aiSessionId: number
-    aiMessageId: number
-    isUserSend: boolean
-    chainOfThought:string
-    content: string
-    state:string
+export interface AIMessage {
+  aiSessionId: number
+  aiMessageId: number
+  isUserSend: boolean
+  chainOfThought: string
+  content: string
+  state: string
 }
 
 
 export const createAIchat = (userId: number) => {
-    return service.post<
-      ApiResponse<{
-        aiSessionId: number;
-        createTime: string;
-      }>
-    >("/ai/chat/sessions",userId);
+  return service.post<
+    ApiResponse<{
+      aiSessionId: number;
+      createTime: string;
+    }>
+  >("/ai/chat/sessions", userId);
 }
 
 export const getAIMessages = (sessionId: number) => {
@@ -65,17 +65,30 @@ export const sendAndReceive = (
 
 
 
-export const pauseAI = (sessionId: number)=>{
-    return service.post<ApiResponse<{sessionId:number,messageId:number,status:string}>>(`/ai/chat/sessions/${sessionId}/stop`)
+export const pauseAI = (sessionId: number) => {
+  return service.post<ApiResponse<{ sessionId: number, messageId: number, status: string }>>(`/ai/chat/sessions/${sessionId}/stop`)
 }
 
 export const modifyAITitle = ( newTitle:string,userId:number) => {
     return service.put<ApiResponse<any>>(`/ai/chat/sessions`, { newTitle,userId })
 }
 
-export const deleteAISession = (sessionId:number,userId:number) => {
-    return service.delete<ApiResponse<any>>(`/ai/chat/sessions/${sessionId}`, {
-        params: {
-        userId
-    }})
+export const deleteAISession = (sessionId: number, userId: number) => {
+  return service.delete<ApiResponse<any>>(`/ai/chat/sessions/${sessionId}`, {
+    params: {
+      userId
+    }
+  })
 }
+
+// Get AI summary
+export const getAIsummary = (contentType: string, contentId: string, regenerate: boolean = false) => {
+  return service.post<ApiResponse<{
+    fromcache: boolean;
+    contentType: string;
+    contentId: number;
+    summaryId: number;
+    summary: string;
+  }>>(`/ai/${contentType}/${contentId}/summary`, { regenerate });
+}
+

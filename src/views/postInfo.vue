@@ -66,6 +66,13 @@
                   />
                   <span>{{ favoriteLabel }}</span>
                 </button>
+                <button
+                  class="action-button"
+                  type="button"
+                  @click="handleShowAiSummary"
+                >
+                  <span>✨ 查看AI总结</span>
+                </button>
               </div>
 
               <div class="post-content">
@@ -132,6 +139,12 @@
     @open-category-dialog="showCategoryDialog = true"
     @upload-success="handleUploadSuccess"
   />
+
+  <AiSummaryModal
+    v-model:visible="showAiSummaryModal"
+    content-type="post"
+    :content-id="postNumericId ?? ''"
+  />
 </template>
 
 <script setup lang="ts">
@@ -164,6 +177,7 @@ import { useAuthStore } from "@/stores/auth";
 import * as allApi from "@/api/all.ts";
 import CategoryDialog from "@/components/CategoryDialog.vue";
 import UploadModal from "@/components/UploadModal.vue";
+import AiSummaryModal from "@/components/AiSummaryModal.vue";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -469,6 +483,12 @@ const handleCategoryAdded = async () => {
     console.error("刷新分类数据失败:", error);
     ElMessage.error("刷新数据失败");
   }
+};
+
+const showAiSummaryModal = ref(false);
+
+const handleShowAiSummary = () => {
+  showAiSummaryModal.value = true;
 };
 
 onMounted(async () => {
