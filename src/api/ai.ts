@@ -22,6 +22,15 @@ export interface AIMessage {
   state: string
 }
 
+// AI总结的结构体
+export interface AISummaryData {
+  fromcache: boolean;
+  contentType: string;
+  contentId: number;
+  summaryId: number;
+  summary: string;
+}
+
 
 export const createAIchat = (userId: number) => {
   return service.post<
@@ -81,14 +90,12 @@ export const deleteAISession = (sessionId: number, userId: number) => {
   })
 }
 
-// Get AI summary
+// 获取AI总结
 export const getAIsummary = (contentType: string, contentId: string, regenerate: boolean = false) => {
-  return service.post<ApiResponse<{
-    fromcache: boolean;
-    contentType: string;
-    contentId: number;
-    summaryId: number;
-    summary: string;
-  }>>(`/ai/${contentType}/${contentId}/summary`, { regenerate });
+  return service.post<ApiResponse<AISummaryData>>(
+    `/ai/${contentType}/${contentId}/summary`,
+    { regenerate },
+    { timeout: 120000 },  // 等待12,000ms，防止AI还在生成时，就过早地截断
+  );
 }
 

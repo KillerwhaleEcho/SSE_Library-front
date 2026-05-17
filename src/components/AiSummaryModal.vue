@@ -20,7 +20,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { getAIsummary } from '@/api/ai';
+import { getAIsummary, type AISummaryData } from '@/api/ai';
 
 const props = defineProps<{
     visible: boolean;
@@ -35,18 +35,33 @@ const emit = defineEmits<{
 const loading = ref(false);
 const summaryText = ref("");
 
+type SummaryApiEnvelope = {
+    code?: number;
+    message?: string;
+    data?: AISummaryData;
+};
+
+const unwrapSummaryResponse = (response: unknown): SummaryApiEnvelope => {
+    if (!response || typeof response !== 'object') return {};
+    const direct = response as SummaryApiEnvelope;
+    if (typeof direct.code === 'number') return direct;
+    const wrapped = (response as { data?: SummaryApiEnvelope }).data;
+    if (wrapped && typeof wrapped === 'object') return wrapped;
+    return {};
+};
+
 const loadSummary = async (regenerate = false) => {
     if (!props.contentId) return;
-    if (!regenerate && summaryText.value) return; // 使用前端缓存
 
     loading.value = true;
     summaryText.value = "";
     try {
         const res = await getAIsummary(props.contentType, String(props.contentId), regenerate);
-        if (res.data?.code === 0 && res.data?.data) {
-            summaryText.value = res.data.data.summary;
+        const payload = unwrapSummaryResponse(res);
+        if ((payload.code === 0 || payload.code === 200) && payload.data) {
+            summaryText.value = payload.data.summary || "总结生成中。";
         } else {
-            summaryText.value = "获取总结失败: " + (res.data?.message || "未知错误");
+            summaryText.value = "获取总结失败: " + (payload.message || "未知错误");
         }
     } catch (error) {
         summaryText.value = "请求失败，请稍后再试。";
@@ -57,6 +72,13 @@ const loadSummary = async (regenerate = false) => {
 
 watch(() => props.visible, (newVal) => {
     if (newVal) {
+        loadSummary();
+    }
+});
+
+watch(() => [props.contentType, props.contentId], () => {
+    summaryText.value = "";
+    if (props.visible) {
         loadSummary();
     }
 });
