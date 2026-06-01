@@ -38,7 +38,7 @@
                   type="button"
                   @click="handleSelectSession(getSessionId(session))"
                 >
-                  <span>{{ session.title || "新对话" }} </span>
+                  <span>{{ session.aiSessionName || "新对话" }} </span>
                   <time>{{ formatSessionTime(session.lasttime) }}</time>
                 </button>
               </div>
@@ -197,6 +197,7 @@ const isThink = ref(false);
 const isStreaming = ref(false);
 const showHistory = ref(true);
 const messageListRef = ref<HTMLElement | null>(null);
+const pendingTitleRefreshSessionId = ref<number | null>(null);
 const sessionMenu = ref<{
   visible: boolean;
   x: number;
@@ -340,6 +341,7 @@ const handleCreateSession = async () => {
       res,
     );
     activeSessionId.value = created.aiSessionId;
+    pendingTitleRefreshSessionId.value = created.aiSessionId;
     displayMessages.value = [];
     await loadSessions();
   } catch {
@@ -362,7 +364,7 @@ const handleRenameSession = async (session: aiApi.AISession) => {
         ...aiChatMessageBoxOptions,
         confirmButtonText: "确认",
         cancelButtonText: "取消",
-        inputValue: session.title || `AI 对话 ${sessionId}`,
+        inputValue: session.aiSessionName || `AI 对话 ${sessionId}`,
         inputPattern: /\S+/,
         inputErrorMessage: "标题不能为空",
       },
@@ -376,7 +378,7 @@ const handleRenameSession = async (session: aiApi.AISession) => {
       (item) => getSessionId(item) === sessionId,
     );
     if (target) {
-      target.title = newTitle;
+      target.aiSessionName = newTitle;
     }
     ElMessage.success("会话标题已修改");
   } catch (error) {
@@ -500,6 +502,9 @@ const handleSend = async () => {
   const sessionId = activeSessionId.value;
   const content = question.value.trim();
   if (!sessionId || !content || isStreaming.value) return;
+  const shouldRefreshSessionTitle =
+    pendingTitleRefreshSessionId.value === sessionId &&
+    displayMessages.value.length === 0;
 
   displayMessages.value.push({
     id: `local-${Date.now()}`,
@@ -518,12 +523,14 @@ const handleSend = async () => {
     appendAssistantChunk,
     () => {
       closeStream();
-      loadSessions();
     },
     () => {
       streamController = null;
       isStreaming.value = false;
-      loadSessions();
+      if (shouldRefreshSessionTitle) {
+        pendingTitleRefreshSessionId.value = null;
+        loadSessions();
+      }
     },
   );
 };

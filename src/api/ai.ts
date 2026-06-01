@@ -9,7 +9,7 @@ export interface ApiResponse<T = any> {
 export interface AISession {
   aiSessionId: number;
   userId: number;
-  title: string;
+  aiSessionName: string;
   lasttime: string;
 }
 
