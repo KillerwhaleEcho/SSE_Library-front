@@ -19,7 +19,7 @@
 
         <el-select v-model="filterCategoryId" placeholder="分类" class="filter-select" size="large">
           <el-option label="全部" value=""></el-option>
-          <el-option v-for="category in categories" :key="category.id" :label="category.name" :value="category.id" />
+          <el-option v-for="category in allCategories" :key="category.id" :label="category.name" :value="category.id" />
         </el-select>
       </div>
     </div>
@@ -106,6 +106,7 @@ import type { Document, Category } from '@/api/all.ts'
 interface Props {
   visible: boolean
   selectedFiles: Document[]
+  allCategories: Category[]
 }
 
 const props = defineProps<Props>()
@@ -117,7 +118,6 @@ const emit = defineEmits<{
 
 // 数据
 const fileList = ref<Document[]>([])
-const categories = ref<Category[]>([])
 const searchKeyword = ref('')
 const filterType = ref<'book' | 'file' | 'video' | 'null'>('null')
 const filterCategoryId = ref<number | null>(null)
@@ -245,22 +245,8 @@ const loadFiles = async () => {
   }
 }
 
-const loadCategories = async () => {
-  try {
-    const response = await allApi.getAllCategories()
-    if (response.data) {
-      console.log('获取关联分类数据成功', response.data)
-      categories.value = response.data
-    }
-  } catch (error) {
-    console.error('加载分类失败:', error)
-    categories.value = []
-  }
-}
-
-onMounted(() => {
+onMounted(async () => {
   loadFiles()
-  loadCategories()
 })
 </script>
 

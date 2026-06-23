@@ -77,8 +77,14 @@
     </div>
 
     <!-- 文件库选择弹窗 -->
-    <FileLibraryModal :visible="showFileLibrary" @update:visible="showFileLibrary = $event"
-      :selected-files="selectedFiles" @files-selected="handleFilesSelected" />
+    <FileLibraryModal 
+      :visible="showFileLibrary" 
+      @update:visible="showFileLibrary = $event"
+      :selected-files="selectedFiles" 
+      @files-selected="handleFilesSelected" 
+      :all-categories="allCategories"
+    />
+
   </div>
   <!-- 使用分离的组件 -->
   <CategoryDialog 
