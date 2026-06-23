@@ -981,7 +981,7 @@ const collapseAIBooks = () => {
   position: absolute;
   margin-top: 15px;
   width: 100%;
-  height: 30%;
+  height: 25%;
   border: 2px solid #ddd;
   /* 容器边框 */
   display: flex;
@@ -1048,6 +1048,7 @@ const collapseAIBooks = () => {
   position: relative;
   top: 40%;
   width: 80%;
+  margin-top: 30px;
 }
 
 /* 标签导航样式 */
@@ -1226,5 +1227,94 @@ const collapseAIBooks = () => {
 
 .collapse-btn:active {
     transform: scale(0.96);
+}
+
+.category-search-section {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.category-search-section .el-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
+}
+.category-search-section .el-button:hover {
+  background-color: rgb(167, 129, 236);
+}
+
+.category-guide {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 10px;
+}
+
+.parent-word {
+  width: 125px;
+  font-size: 16px;
+  color: #888;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  border-bottom-color: #b994fe;
+  color: #b994fe;
+  font-weight: 500;
+  margin-right: 16px;
+}
+
+.child-word {
+  width: 80%;
+  font-size: 16px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  padding-left: 30px;
+  border-bottom: 2px solid transparent;
+  border-bottom-color: #b994fe;
+  color: #b994fe;
+  font-weight: 500;
+}
+
+.category-dialog {
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.category-dialog::-webkit-scrollbar {
+  display: none;
+}
+
+.add-form {
+  padding: 10px 0;
+}
+
+.el-radio-group {
+  display: flex;
+  gap: 15px;
+}
+
+.el-textarea__inner {
+  resize: none;
+}
+
+.reset-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
+}
+
+.reset-button:hover {
+  background-color: rgb(167, 129, 236);
+}
+
+.cancel-button {
+  color: #b994fe;
+  border-color: #b994fe;
+  border-width: 1.5px;
 }
 </style>
