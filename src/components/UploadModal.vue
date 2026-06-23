@@ -1,9 +1,9 @@
 <!-- UploadModal.vue -->
 <template>
-  <el-dialog 
-    :model-value="visible" 
+  <el-dialog
+    :model-value="visible"
     @update:model-value="$emit('update:visible', $event)"
-    title="上传文件" 
+    title="上传文件"
     width="600px"
     class="upload-dialog"
     @close="resetForm"
@@ -11,14 +11,19 @@
     append-to-body
     :z-index="1000"
   >
-    <el-form 
-      ref="uploadFormRef" 
-      :model="uploadForm" 
+    <el-form
+      ref="uploadFormRef"
+      :model="uploadForm"
       label-width="100px"
-      :rules="formRules"
+      :rules="dynamicFormRules"
     >
-      <!-- 文件上传 -->
-      <el-form-item label="要上传的文件" prop="file">
+      <!-- 文件上传 - 根据类型动态显示 -->
+      <el-form-item
+        v-if="uploadForm.type !== 'video'"
+        label="要上传的文件"
+        prop="file"
+        :required="uploadForm.type !== 'video'"
+      >
         <el-upload
           action="#"
           :on-change="handleFileChange"
@@ -33,10 +38,15 @@
         </div>
       </el-form-item>
 
-      <!-- 封面图片上传（带预览功能） -->
-      <el-form-item label="封面图片" prop="cover">
+      <!-- 封面图片上传（带预览功能）- 根据类型动态显示 -->
+      <el-form-item
+        v-if="uploadForm.type !== 'video'"
+        label="封面图片"
+        prop="cover"
+        :required="uploadForm.type !== 'video'"
+      >
         <el-upload
-          action="#" 
+          action="#"
           :on-change="handleCoverChange"
           :auto-upload="false"
           accept="image/*"
@@ -47,21 +57,19 @@
 
         <!-- 上传后显示文件名和图片预览 -->
         <div v-if="uploadForm.cover" class="cover-preview">
-          <!-- 文件名 -->
           <div class="uploaded-file">{{ uploadForm.cover.name }}</div>
-          <!-- 图片预览（使用 FileReader 读取本地文件） -->
-          <img 
-            :src="coverPreviewUrl" 
-            alt="封面预览" 
-            class="preview-img"
-          >
+          <img :src="coverPreviewUrl" alt="封面预览" class="preview-img" />
         </div>
       </el-form-item>
 
       <!-- 分类 -->
       <el-form-item label="分类" prop="categoryId" required>
-        <button type="button" class="category-select-btn" @click="$emit('open-category-dialog')">
-          {{ selectedCategoryName || '请选择分类' }}
+        <button
+          type="button"
+          class="category-select-btn"
+          @click="$emit('open-category-dialog')"
+        >
+          {{ selectedCategoryName || "请选择分类" }}
         </button>
         <div v-if="selectedCategoryId" class="selected-category-id">
           分类ID: {{ selectedCategoryId }}
@@ -104,7 +112,7 @@
           v-model="inputTag"
           @keyup.enter="addTag"
           placeholder="输入关键词，按回车添加"
-          style="width: 200px; margin-top: 5px;"
+          class="tag-input"
         />
       </el-form-item>
 
@@ -115,24 +123,28 @@
 
       <!-- 出版年份 -->
       <el-form-item label="出版年份" prop="createYear" required>
-        <el-input v-model="uploadForm.createYear" placeholder="请输入出版年份" />
+        <el-input
+          v-model="uploadForm.createYear"
+          placeholder="请输入出版年份"
+        />
       </el-form-item>
 
       <!-- 介绍 -->
       <el-form-item label="介绍" prop="introduction">
-        <el-input 
-          v-model="uploadForm.introduction" 
-          type="textarea" 
+        <el-input
+          v-model="uploadForm.introduction"
+          type="textarea"
           :rows="3"
           placeholder="请输入资料介绍"
         />
       </el-form-item>
 
       <!-- 视频URL（类型为video时显示） -->
-      <el-form-item 
-        label="视频URL" 
-        prop="videoURL" 
+      <el-form-item
         v-if="uploadForm.type === 'video'"
+        label="视频URL"
+        prop="videoURL"
+        required
       >
         <el-input v-model="uploadForm.videoURL" placeholder="请输入视频URL" />
       </el-form-item>
@@ -141,208 +153,295 @@
     <template #footer>
       <el-button @click="handleCancel">取消</el-button>
       <el-button type="primary" @click="submitUpload" :loading="uploading">
-        {{ uploading ? '上传中...' : '提交上传' }}
+        {{ uploading ? "上传中..." : "提交上传" }}
       </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import type { UploadFile, FormInstance, FormRules } from 'element-plus'
-import { ElMessage } from 'element-plus'
-import * as allApi from '@/api/all.ts'
-import { watch } from 'vue'
-import router from '@/router'
+import { ref, reactive, computed, watch } from "vue";
+import type { UploadFile, FormInstance, FormRules } from "element-plus";
+import { ElMessage } from "element-plus";
+import * as allApi from "@/api/all.ts";
+import router from "@/router";
 
-// Props - 修复类型定义
+// Props 定义
 interface Props {
-  visible: boolean
-  selectedCategoryName?: string | null
-  selectedCategoryId?: number | null
+  visible: boolean;
+  selectedCategoryName?: string | null;
+  selectedCategoryId?: number | null;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-// Emits
+// Emits 定义
 const emit = defineEmits<{
-  'update:visible': [value: boolean]
-  'open-category-dialog': []
-  'upload-success': []
-}>()
+  "update:visible": [value: boolean];
+  "open-category-dialog": [];
+  "upload-success": [];
+}>();
 
-// 表单数据 - 根据接口定义调整
+// 表单数据
 const uploadForm = reactive({
   file: null as File | null,
   cover: null as File | null,
   categoryId: null as number | null,
-  type: '' as 'book' | 'file' | 'video',
-  name: '',
-  ISBN: '' as string,
+  type: "" as "book" | "file" | "video",
+  name: "",
+  ISBN: "",
   tags: [] as string[],
-  author: '默认佚名',
-  createYear: '未知',
+  author: "默认佚名",
+  createYear: "未知",
   uploaderId: null as number | null,
   uploadTime: null as Date | null,
-  introduction: '无',
-  videoURL: '无'
-})
+  introduction: "无",
+  videoURL: "",
+});
 
 // 响应式数据
-const inputTag = ref('')
-const coverPreviewUrl = ref('')
-const uploadFormRef = ref<FormInstance>()
-const uploading = ref(false)
-
-// 表单验证规则
-const formRules: FormRules = {
-  categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
-  type: [{ required: true, message: '请选择资料类型', trigger: 'change' }],
-  name: [{ required: true, message: '请输入资料名称', trigger: 'blur' }],
-  author: [{ required: true, message: '请输入作者', trigger: 'blur' }],
-  createYear: [{ required: true, message: '请输入出版年份', trigger: 'blur' }],
-}
+const inputTag = ref("");
+const coverPreviewUrl = ref("");
+const uploadFormRef = ref<FormInstance>();
+const uploading = ref(false);
 
 // 计算属性
-const selectedCategoryId = computed(() => props.selectedCategoryId)
+const selectedCategoryId = computed(() => props.selectedCategoryId);
 
-// 方法
+// 动态表单验证规则
+const dynamicFormRules = computed(() => {
+  const rules: FormRules = {
+    categoryId: [{ required: true, message: "请选择分类", trigger: "change" }],
+    type: [{ required: true, message: "请选择资料类型", trigger: "change" }],
+    name: [{ required: true, message: "请输入资料名称", trigger: "blur" }],
+    author: [{ required: true, message: "请输入作者", trigger: "blur" }],
+    createYear: [
+      { required: true, message: "请输入出版年份", trigger: "blur" },
+    ],
+  };
+
+  // 根据类型动态添加验证规则
+  if (uploadForm.type === "video") {
+    // 视频类型：验证视频URL
+    rules.videoURL = [
+      { required: true, message: "请输入视频URL", trigger: "blur" },
+    ];
+    // 视频类型：文件和封面为非必选
+  } else if (uploadForm.type === "book" || uploadForm.type === "file") {
+    // 书籍和文件类型：验证文件和封面
+    rules.file = [
+      {
+        required: true,
+        message: "请上传文件",
+        trigger: "change",
+        validator: (_rule, value, callback) => {
+          if (!value) {
+            callback(new Error("请上传文件"));
+          } else {
+            callback();
+          }
+        },
+      },
+    ];
+
+    rules.cover = [
+      {
+        required: true,
+        message: "请上传封面图片",
+        trigger: "change",
+        validator: (_rule, value, callback) => {
+          if (!value) {
+            callback(new Error("请上传封面图片"));
+          } else {
+            callback();
+          }
+        },
+      },
+    ];
+  }
+
+  return rules;
+});
+
+// 事件处理函数
 const handleFileChange = (uploadFile: UploadFile) => {
   if (uploadFile.raw) {
-    uploadForm.file = uploadFile.raw
+    uploadForm.file = uploadFile.raw;
   } else {
-    // 处理 raw 为 undefined 的情况
-    ElMessage.error('文件上传失败，请重试')
+    ElMessage.error("文件上传失败，请重试");
   }
-}
+};
 
 const handleCoverChange = (uploadFile: UploadFile) => {
   if (uploadFile.raw) {
-    uploadForm.cover = uploadFile.raw
+    uploadForm.cover = uploadFile.raw;
   } else {
-    // 处理 raw 为 undefined 的情况
-    ElMessage.error('文件上传失败，请重试')
+    ElMessage.error("文件上传失败，请重试");
   }
-  if (uploadFile.raw?.type.startsWith('image/')) {
-    const reader = new FileReader()
+
+  if (uploadFile.raw?.type.startsWith("image/")) {
+    const reader = new FileReader();
     reader.onload = (e) => {
-      coverPreviewUrl.value = e.target?.result as string
-    }
-    reader.readAsDataURL(uploadFile.raw)
+      coverPreviewUrl.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(uploadFile.raw);
   }
-}
+};
 
 const addTag = () => {
-  if (inputTag.value.trim()) {
-    uploadForm.tags.push(inputTag.value.trim())
-    inputTag.value = ''
+  const tag = inputTag.value.trim();
+  if (tag && !uploadForm.tags.includes(tag)) {
+    uploadForm.tags.push(tag);
+    inputTag.value = "";
   }
-}
+};
 
 const removeTag = (index: number) => {
-  uploadForm.tags.splice(index, 1)
-}
+  uploadForm.tags.splice(index, 1);
+};
 
+// 表单提交
 const submitUpload = async () => {
-  if (!uploadFormRef.value) return
+  if (!uploadFormRef.value) return;
 
   try {
-    // 确保 categoryId 有值
-    if (selectedCategoryId.value === null || selectedCategoryId.value === undefined) {
-        alert('请选择分类');
-        return;
-    }else{
-      uploadForm.categoryId = selectedCategoryId.value;
+    // 验证分类
+    if (!selectedCategoryId.value) {
+      ElMessage.error("请选择分类");
+      return;
     }
-    // 设置上传者ID（假设从本地存储获取）
-    const userId = Number(localStorage.getItem('userId') || '0')
-    console.log('上传者ID:', userId)
-    uploadForm.uploaderId = userId
 
-    const valid = await uploadFormRef.value.validate()
-    if (!valid) return
-    uploading.value = true
+    uploadForm.categoryId = selectedCategoryId.value;
 
-    // 创建符合 API 接口定义的对象
-    const uploadData = {
-      // 使用可选链操作符，确保类型匹配
-      file: uploadForm.file ?? undefined,  // 如果是 null 就转为 undefined
-      cover: uploadForm.cover ?? undefined,
+    // 前端验证：根据类型验证必要字段
+    if (uploadForm.type === "book" || uploadForm.type === "file") {
+      if (!uploadForm.file) {
+        ElMessage.error("请上传文件");
+        return;
+      }
+      if (!uploadForm.cover) {
+        ElMessage.error("请上传封面图片");
+        return;
+      }
+    } else if (uploadForm.type === "video") {
+      if (!uploadForm.videoURL.trim()) {
+        ElMessage.error("请输入视频URL");
+        return;
+      }
+    }
+
+    // 设置上传者ID
+    const userId = Number(localStorage.getItem("userId") || "0");
+    uploadForm.uploaderId = userId;
+
+    // 表单验证
+    const valid = await uploadFormRef.value.validate();
+    if (!valid) return;
+
+    uploading.value = true;
+
+    // 构建上传数据
+    const uploadData: any = {
       categoryId: uploadForm.categoryId,
       type: uploadForm.type,
-      name: uploadForm.name,
-      ISBN: uploadForm.ISBN ?? undefined,
+      name: uploadForm.name.trim(),
       tags: uploadForm.tags,
-      author: uploadForm.author,
+      author: uploadForm.author.trim(),
       createYear: uploadForm.createYear,
       uploaderId: uploadForm.uploaderId,
       uploadTime: uploadForm.uploadTime,
-      introduction: uploadForm.introduction,
-      videoURL: uploadForm.type === 'video' ? uploadForm.videoURL : undefined
-    }
-    // 调用上传接口
-    const response = await allApi.uploadFile(uploadData)
-    console.log('上传文件成功:', response)
-    ElMessage.success('上传成功！')
-    emit('update:visible', false)
-    resetForm()
-    emit('upload-success')
+      introduction: uploadForm.introduction.trim() || "无",
+    };
 
-    if (response) {
-      router.push({
-      path: '/bookInfo',
-      query: {
-        id: (response.data as any).documentId
+    // 根据类型添加字段
+    if (uploadForm.type === "book" || uploadForm.type === "file") {
+      uploadData.file = uploadForm.file;
+      uploadData.cover = uploadForm.cover;
+      if (uploadForm.ISBN.trim()) {
+        uploadData.ISBN = uploadForm.ISBN.trim();
       }
-    })
-    } else {
-      router.push('/home')
+    } else if (uploadForm.type === "video") {
+      uploadData.videoURL = uploadForm.videoURL.trim();
+      // 视频类型可选上传文件
+      if (uploadForm.file) {
+        uploadData.file = uploadForm.file;
+      }
+      if (uploadForm.cover) {
+        uploadData.cover = uploadForm.cover;
+      }
     }
-    
-  } catch (error: any) {
-    console.error('上传失败:', error)
-    ElMessage.error(error.message || '上传失败，请重试')
-  } finally {
-    uploading.value = false
-  }
-}
 
+    // 调用上传接口
+    const response = await allApi.uploadFile(uploadData);
+    ElMessage.success("上传成功！");
+
+    emit("update:visible", false);
+    resetForm();
+    emit("upload-success");
+
+    // 跳转到文档详情页或首页
+    if (response?.data?.documentId) {
+      router.push({
+        path: "/bookInfo",
+        query: { id: response.data.documentId },
+      });
+    } else {
+      router.push("/home");
+    }
+  } catch (error: any) {
+    console.error("上传失败:", error);
+    ElMessage.error(error.message || "上传失败，请重试");
+  } finally {
+    uploading.value = false;
+  }
+};
+
+// 重置表单
 const resetForm = () => {
-  uploadFormRef.value?.resetFields()
-  // 手动重置响应式数据
+  uploadFormRef.value?.resetFields();
   Object.assign(uploadForm, {
     file: null,
     cover: null,
     categoryId: null,
-    type: '',
-    name: '',
-    ISBN: '',
+    type: "",
+    name: "",
+    ISBN: "",
     tags: [],
-    author: '默认佚名',
-    createYear: '未知',
+    author: "默认佚名",
+    createYear: "未知",
     uploaderId: null,
     uploadTime: null,
-    introduction: '无',
-    videoURL: '无'
-  })
-  inputTag.value = ''
-  coverPreviewUrl.value = ''
-}
+    introduction: "无",
+    videoURL: "",
+  });
+  inputTag.value = "";
+  coverPreviewUrl.value = "";
+};
 
+// 取消上传
 const handleCancel = () => {
-  emit('update:visible', false)
-  resetForm()
-}
+  emit("update:visible", false);
+  resetForm();
+};
 
 // 监听分类选择变化
-watch(() => props.selectedCategoryId, (newId) => {
-  if (newId) {
-    uploadForm.categoryId = newId
+watch(
+  () => props.selectedCategoryId,
+  (newId) => {
+    if (newId) {
+      uploadForm.categoryId = newId;
+    }
   }
-})
+);
 </script>
 
 <style scoped>
+.upload-dialog .el-button {
+  background-color: #b994fe;
+  color: white;
+  border: none;
+}
+
 .uploaded-file {
   margin-top: 5px;
   color: #606266;
@@ -361,24 +460,18 @@ watch(() => props.selectedCategoryId, (newId) => {
   border-radius: 4px;
 }
 
-.upload-dialog .el-button {
-  background-color: #b994fe;
-  color: white;
-  border: none;
-}
-
 .category-select-btn {
   width: 100%;
   height: 32px;
-  background-color: #ffffff; 
-  border: 1.4px solid #ddd; 
-  color: #bab9b9; 
-  border-radius: 4px; 
-  cursor: pointer; 
-  transition: all 0.2s; 
-  line-height: 0px; 
+  background-color: #ffffff;
+  border: 1.4px solid #ddd;
+  color: #bab9b9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 0px;
   text-align: left;
-  padding-left: 12px; 
+  padding-left: 12px;
 }
 
 .category-select-btn:hover {
@@ -392,12 +485,19 @@ watch(() => props.selectedCategoryId, (newId) => {
 }
 
 .tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 8px;
 }
 
 .tag-item {
-  margin-right: 8px;
-  margin-bottom: 4px;
+  margin: 0;
+}
+
+.tag-input {
+  width: 200px;
+  margin-top: 5px;
 }
 
 /* 移除焦点黑框 */

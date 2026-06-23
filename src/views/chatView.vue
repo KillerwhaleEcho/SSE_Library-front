@@ -2,10 +2,13 @@
   <topbar
     ref="topbarRef"
     class="topbar"
+    :active-session-id="currentSessionId"
     @open-upload-modal="showUploadModal = true"
     @ws-message="handleTopbarWsMessage"
     @reminder-sync="handleTopbarReminderSync"
   ></topbar>
+<!-- open-upload-modal这个事件后面直接接的赋值语句，实际上是一个简单到不需要单独表示的函数 -->
+<!-- 这里给topbar一个ref的原因是后面要await这个组件中的一些函数 -->
   <div class="chat-view">
     <aside class="chat-list">
       <div class="reminder" @click="handleReminderSelect">
@@ -15,14 +18,27 @@
           <span>{{ unreadReminderCount }}</span>
         </figure>
       </div>
-      <!-- 传给default-active一个index，那个item就会高亮，这个高亮样式就是is-active -->
-      <el-menu class="chat-menu" :default-active="currentSessionId === -1 ? '' : String(currentSessionId)
-        " @select="handleSelect">
-        <el-menu-item v-for="chatbox in appliedChatboxes" :index="chatbox.sessionId">
+      <el-menu
+        class="chat-menu"
+        :default-active="
+          currentSessionId === -1 ? '' : String(currentSessionId)
+        "
+        @select="handleSelect"
+      >
+        <!-- 传给default-active一个index，那个item就会高亮，这个高亮样式就是is-active -->
+        <el-menu-item
+          v-for="chatbox in appliedChatboxes"
+          :index="chatbox.sessionId"
+        >
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="chatbox.avatar2" alt="" />
-              <img v-if="chatbox.unreadCount > 0" :src="unreadUrl" alt="未读消息" class="contact-avatar__badge" />
+              <img
+                v-if="chatbox.unreadCount > 0"
+                :src="unreadUrl"
+                alt="未读消息"
+                class="contact-avatar__badge"
+              />
             </figure>
             <div class="chatbox-content">
               <div class="chatbox-up">
@@ -34,7 +50,9 @@
                 }}</span>
               </div>
               <div class="chatbox-down">
-                <span v-if="chatbox.unreadCount > 0" class="matchedCount">[{{ chatbox.unreadCount }}条]</span>
+                <span v-if="chatbox.unreadCount > 0" class="matchedCount"
+                  >[{{ chatbox.unreadCount }}条]</span
+                >
                 <span> {{ chatbox.lastMessage }}</span>
               </div>
             </div>
@@ -46,24 +64,56 @@
     <section class="chatview-content">
       <div class="chatview-top">
         <div class="chatview-search">
-          <el-select v-model="searchType" class="chatview-select" :teleported="false" placeholder="选择类型">
+          <el-select
+            v-model="searchType"
+            class="chatview-select"
+            :teleported="false"
+            placeholder="选择类型"
+          >
+<!-- 当 teleported 为默认的 true 时，el-select 的下拉选项面板会被 Vue 的 <Teleport> 组件「转移挂载」到整个页面的 <body> 根节点下，脱离当前 <el-select> 所在的组件 DOM 层级。 -->
             <el-option label="用户" value="user" />
             <el-option label="聊天记录" value="message" />
           </el-select>
-          <el-input v-model="searchInput" class="chatview-input" size="samll" @keyup.enter="handleSearch"
-            :placeholder="searchPlaceholder" clearable>
+          <el-input
+            v-model="searchInput"
+            class="chatview-input"
+            size="samll"
+            @keyup.enter="handleSearch"
+            :placeholder="searchPlaceholder"
+            clearable
+          >
             <template #append>
-              <el-button size="samll" class="chatview-button" @click="handleSearch">搜索</el-button>
+              <el-button
+                size="samll"
+                class="chatview-button"
+                @click="handleSearch"
+                >搜索</el-button
+              >
             </template>
           </el-input>
         </div>
-        <div v-if="currentSessionId !== -1" class="session-search" :class="{ 'is-open': localSearchExpanded }">
-          <button class="session-search__icon" @click="toggleLocalSearch" title="本会话搜索">
+        <div
+          v-if="currentSessionId !== -1"
+          class="session-search"
+          :class="{ 'is-open': localSearchExpanded }"
+        >
+          <button
+            class="session-search__icon"
+            @click="toggleLocalSearch"
+            title="本会话搜索"
+          >
+          <!-- title 是原生全局属性（并非 Vue/Element Plus 专属，所有 HTML 元素均可使用）,作用是给元素添加鼠标悬停文本提示 -->
             <img :src="localSearchIconUrl" alt="本会话搜索" />
           </button>
           <transition name="session-search-expand">
-            <input v-show="localSearchExpanded" ref="localSearchInputRef" v-model="localSearchKeyword"
-              class="session-search__input" placeholder="搜索当前会话的聊天记录" @keyup.enter="handleLocalSearch" />
+            <input
+              v-show="localSearchExpanded"
+              ref="localSearchInputRef"
+              v-model="localSearchKeyword"
+              class="session-search__input"
+              placeholder="搜索当前会话的聊天记录"
+              @keyup.enter="handleLocalSearch"
+            />
           </transition>
         </div>
       </div>
@@ -75,13 +125,21 @@
               <p class="reminder-title">通知中心</p>
             </div>
             <div class="reminder-stats">
-              <span class="reminder-chip reminder-chip__primary">未读 {{ unreadReminderCount }}</span>
-              <span class="reminder-chip reminder-chip__ghost">全部 {{ reminders.length }}</span>
+              <span class="reminder-chip reminder-chip__primary"
+                >未读 {{ unreadReminderCount }}</span
+              >
+              <span class="reminder-chip reminder-chip__ghost"
+                >全部 {{ reminders.length }}</span
+              >
             </div>
           </div>
           <div v-if="sortedReminders.length" class="reminder-list">
-            <article v-for="item in sortedReminders" :key="item.reminderId" class="reminder-card"
-              :class="{ 'is-unread': !item.isRead }">
+            <article
+              v-for="item in sortedReminders"
+              :key="item.reminderId"
+              class="reminder-card"
+              :class="{ 'is-unread': !item.isRead }"
+            >
               <div class="reminder-card__meta">
                 <span class="reminder-type" :class="`type-${item.type}`">
                   {{ getReminderLabel(item.type) }}
@@ -97,7 +155,11 @@
                 <button class="reminder-check" @click="handleCheck(item)">
                   查看详情
                 </button>
-                <button v-if="!item.isRead" class="reminder-mark" @click.stop="markReminderRead(item)">
+                <button
+                  v-if="!item.isRead"
+                  class="reminder-mark"
+                  @click.stop="markReminderRead(item)"
+                >
                   标记已读
                 </button>
               </div>
@@ -106,14 +168,36 @@
           <div v-else class="reminder-empty">暂无通知</div>
         </div>
       </div>
-      <div v-else-if="!isReminder && currentSessionId != -1" class="chat-content-main">
+      <div
+        v-else-if="!isReminder && currentSessionId != -1"
+        class="chat-content-main"
+      >
         <div class="chat-panel">
           <div class="chat-messages" ref="messageListRef">
-            <div v-if="!messages.length" class="chat-content__empty"></div>
-            <transition-group v-else name="msg-fade" :css="enableMsgAnim" tag="div" class="chat-messages__inner">
-              <div v-for="(msg, index) in messages" :key="`${msg.sessionId}-${msg.senderId}-${index}`"
-                :id="`${msg.sessionId}-${msg.sendTime}`" class="message-row" :class="{ 'is-self': isSelfMessage(msg) }">
-                <img class="message-avatar" :src="msg.senderAvatar" alt="avatar" />
+            <div v-if="!messages.length" ></div>
+            <transition-group
+              v-else
+              name="msg-fade"
+              :css="enableMsgAnim"
+              tag="div"
+              class="chat-messages__inner"
+            >
+<!-- name：专属属性，Vue 会自动生成以该前缀开头的 6 个标准过渡类名（替代默认v-xxx） -->
+<!-- css：控制是否启用 CSS 过渡/动画  -->
+<!-- tag：选择容器外层包裹的标签，默认是span，只能做行内的布局调整 -->
+<!-- class绑定的是tag指定的div -->
+              <div
+                v-for="(msg, index) in messages"
+                :key="`${msg.sessionId}-${msg.senderId}-${index}`"
+                :id="`${msg.sessionId}-${msg.sendTime}`"
+                class="message-row"
+                :class="{ 'is-self': isSelfMessage(msg) }"
+              >
+                <img
+                  class="message-avatar"
+                  :src="msg.senderAvatar"
+                  alt="avatar"
+                />
                 <div class="message-body">
                   <div class="message-bubble">
                     {{ msg.content }}
@@ -127,10 +211,21 @@
             <!-- 一组可以带过渡 / 动画效果的列表元素容器 -->
           </div>
           <div class="chat-input-area">
-            <textarea v-model="chatInput" class="chat-input" rows="3" placeholder="输入消息，Enter发送 / Shift+Enter换行"
-              @keydown.enter.exact.prevent="handleSendClick">
-      </textarea>
-            <button class="send-button" :disabled="!canSendMessage" @click="handleSendClick">
+            <textarea
+              v-model="chatInput"
+              class="chat-input"
+              rows="3"
+              placeholder="输入消息，Enter发送 / Shift+Enter换行"
+              @keydown.enter.exact.prevent="handleSendClick"
+            >
+            <!-- exact：排除shift+enter和ctrl+enter等组合键，不然由于包含enter也会触发发送 -->
+             <!-- prevent:阻止默认原生行为，对于textarea来说就是阻止文本换行，不然发送消息之后立马会在输入区添加一个换行 -->
+            </textarea>
+            <button
+              class="send-button"
+              :disabled="!canSendMessage"
+              @click="handleSendClick"
+            >
               发送
             </button>
           </div>
@@ -141,9 +236,19 @@
       </div>
     </section>
 
-    <el-dialog v-model="visible" title="搜索结果" width="560px" destroy-on-close class="chat-record-dialog">
+    <el-dialog
+      v-model="visible"
+      title="搜索结果"
+      width="560px"
+      destroy-on-close
+      class="chat-record-dialog"
+    >
       <el-menu v-if="searchResults.length" @select="handleResultSelect">
-        <el-menu-item v-for="item in searchResults" :key="item.id" :index="item.id">
+        <el-menu-item
+          v-for="item in searchResults"
+          :key="item.id"
+          :index="item.id"
+        >
           <div class="chatbox-item">
             <figure class="contact-avatar">
               <img :src="item.avatar" />
@@ -154,11 +259,17 @@
                 <span class="chatbox-tag" :class="`result-type-${item.type}`">{{
                   item.type === "message" ? "聊天记录" : "用户"
                 }}</span>
-                <span v-if="item.type === 'message'" class="chatbox-content-time">
-                  {{ item.sendTime }}</span>
+                <span
+                  v-if="item.type === 'message'"
+                  class="chatbox-content-time"
+                >
+                  {{ item.sendTime }}</span
+                >
               </div>
               <div class="chatbox-down">
-                <span v-if="item.type === 'session'" class="matchedCount">[{{ item.matchedCount }}条]</span>
+                <span v-if="item.type === 'session'" class="matchedCount"
+                  >[{{ item.matchedCount }}条]</span
+                >
                 <span>{{ item.content }}</span>
               </div>
             </div>
@@ -170,14 +281,24 @@
   </div>
 
   <!-- 使用分离的组件 -->
-  <CategoryDialog :visible="showCategoryDialog" @update:visible="showCategoryDialog = $event"
-    :all-categories="allCategories" :selected-category-name="selectedCategoryName"
-    :selected-category-id="selectedCategoryId" @category-selected="onCategorySelected" @reset-category="resetCategory"
-    @category-added="handleCategoryAdded" />
+  <CategoryDialog
+    :visible="showCategoryDialog"
+    @update:visible="showCategoryDialog = $event"
+    :all-categories="allCategories"
+    :selected-category-name="selectedCategoryName"
+    :selected-category-id="selectedCategoryId"
+    @category-selected="onCategorySelected"
+    @reset-category="resetCategory"
+    @category-added="handleCategoryAdded"
+  />
 
-  <UploadModal v-model:visible="showUploadModal" :selected-category-name="selectedUploadCategoryName"
-    :selected-category-id="selectedCategoryId" @open-category-dialog="showCategoryDialog = true"
-    @upload-success="handleUploadSuccess" />
+  <UploadModal
+    v-model:visible="showUploadModal"
+    :selected-category-name="selectedUploadCategoryName"
+    :selected-category-id="selectedCategoryId"
+    @open-category-dialog="showCategoryDialog = true"
+    @upload-success="handleUploadSuccess"
+  />
 </template>
 
 <script setup lang="ts">
@@ -247,13 +368,13 @@ const searchType = ref<"message" | "user">("user");
 const reminders = ref<Reminder[]>([]);
 const reminderIconUrl = ref(reminderIcon);
 const unreadUrl = ref(unreadIcon);
-const localSearchIconUrl = ref(localSearchIcon);
 const isReminder = ref(false);
 const messageListRef = ref<HTMLElement | null>(null);
-const enableMsgAnim = ref(true); //控制回话切换时让上一组消息被替换时不跑入场离厂动画
+const enableMsgAnim = ref(true); //控制回话切换时让上一组消息被替换时不跑入场离场动画
 const visible = ref(false);
 const searchResults = ref<SearchResultItem[]>([]);
 const isSearchJump = ref(false);
+const localSearchIconUrl = ref(localSearchIcon);
 const localSearchExpanded = ref(false);
 const localSearchKeyword = ref("");
 const localSearchInputRef = ref<HTMLInputElement | null>(null);
@@ -264,7 +385,7 @@ const searchPlaceholder = computed(() =>
     ? "请输入聊天记录的搜索关键词"
     : "请输入要搜索的用户名,点击可以直接与他聊天"
 );
-const unreadReminderCount = ref<Number|null>(null)
+const unreadReminderCount = ref<Number | null>(null);
 
 //状态控制变量
 const useMockData = ref(false);
@@ -294,7 +415,6 @@ const appliedChatboxes = computed(() => {
     return timeB - timeA;
   });
 });
-
 
 const reminderTypeDict: Record<string, string> = {
   comment: "评论",
@@ -449,8 +569,13 @@ const handleResultSelect = async (id: string) => {
   }
 
   if (target.type === "session") {
-    await fetchMessages(target.sessionId as number);
-    searchResults.value = mapMesasgesToResults(messages.value);
+    const appliedInput = searchInput.value.trim().toLowerCase();
+    const temp: message[] = [];
+    await fetchMessages(target.sessionId as number, temp);
+    const filtered = temp.filter((item) =>
+      item.content.toLowerCase().includes(appliedInput)
+    );
+    searchResults.value = mapMesasgesToResults(filtered);
     visible.value = true;
   }
 
@@ -547,7 +672,7 @@ const handleSelect = async (sessionId: number) => {
 
   try {
     laodingMessages.value = true;
-    await fetchMessages(sid);
+    await fetchMessages(sid, messages.value);
   } catch (err) {
     messages.value = [];
     ElMessage.error("获取聊天记录失败");
@@ -558,7 +683,7 @@ const handleSelect = async (sessionId: number) => {
     enableMsgAnim.value = true;
     scrollToLatest();
     //后端应该是在拉取回话消息之后将未读数置为0，所以得放到最后调用刷新函数
-    await await topbarRef.value?.refreshUnreadMessages?.();
+    await topbarRef.value?.refreshUnreadMessages?.();
   }
 };
 
@@ -618,15 +743,14 @@ const handleLocalSearch = () => {
   const keyword = localSearchKeyword.value.trim();
   if (!keyword || currentSessionId.value === -1) return;
   const lowered = keyword.toLowerCase();
-  const filtered = messages.value.filter(
-    (item) =>
-      item.sessionId === currentSessionId.value &&
-      (item.content || "").toLowerCase().includes(lowered)
+  const filtered = messages.value.filter((item) =>
+    (item.content || "").toLowerCase().includes(lowered)
   );
   searchResults.value = mapMesasgesToResults(filtered);
   visible.value = true;
 };
 
+//全局搜索
 const handleSearch = async () => {
   const appliedInput = searchInput.value.trim();
   if (!appliedInput) return;
@@ -677,7 +801,7 @@ const getReceiverIdBySession = (sessionId: number) => {
   return chatbox.userId2;
 };
 
-const fetchMessages = async (sessionId: number) => {
+const fetchMessages = async (sessionId: number, container: message[]) => {
   if (!sessionId || fetchingMessages.value) return;
   try {
     fetchingMessages.value = true;
@@ -685,7 +809,11 @@ const fetchMessages = async (sessionId: number) => {
       sessionId,
       userInfo.value?.userId as number
     );
-    messages.value = Array.isArray(res.data) ? res.data : [];
+    container.splice(
+      0,
+      container.length,
+      ...(Array.isArray(res.data) ? res.data : [])
+    );
   } catch (err) {
     // 拉取失败时提示，避免频繁轮询重复提示
     if (!laodingMessages.value) {
@@ -711,11 +839,11 @@ const updateChatboxPreview = (
   chatBoxes.value = chatBoxes.value.map((item) =>
     item.sessionId === sessionId
       ? {
-        ...item,
-        lastMessage: content ?? item.lastMessage,
-        lastTime: sendTime ?? item.lastTime,
-        unreadCount: isCurrentSession ? 0 : item.unreadCount + 1,
-      }
+          ...item,
+          lastMessage: content ?? item.lastMessage,
+          lastTime: sendTime ?? item.lastTime,
+          unreadCount: isCurrentSession ? 0 : item.unreadCount + 1,
+        }
       : item
   );
 };
@@ -759,9 +887,7 @@ const handleIncomingChatMessage = (payload: any) => {
   );
 };
 
-
-
-const handleIncomingReminder = (payload :any) => {
+const handleIncomingReminder = (payload: any) => {
   if (!payload || payload.type !== "reminder" || !payload.data) return;
   //如果和userId不匹配直接返回
   const receiverId = Number(payload.receiverId);
@@ -773,9 +899,9 @@ const handleIncomingReminder = (payload :any) => {
     return;
   }
 
-  getUnreadCountOfReminder()
-  getReminders()
-}
+  getUnreadCountOfReminder();
+  getReminders();
+};
 
 const handleTopbarReminderSync = async () => {
   await getReminders();
@@ -786,18 +912,12 @@ const handleTopbarWsMessage = async (payload: any) => {
   if (!payload || !payload.type) return;
   if (payload.type === "chat_message") {
     handleIncomingChatMessage(payload);
-    //如果是当前会话收到消息，不能让topbar的unreadCount增加，需要刷新纠正
-    const sessionId = Number(payload.data?.sessionId);
-    if (sessionId && sessionId === currentSessionId.value) {
-      await topbarRef.value?.refreshUnreadMessages?.();
-    }
     return;
   }
   if (payload.type === "reminder") {
     handleIncomingReminder(payload);
   }
 };
-
 
 const handleSendClick = async () => {
   if (!canSendMessage.value) return;
@@ -815,17 +935,17 @@ const handleSendClick = async () => {
   scrollToLatest();
 };
 
-const getUnreadCountOfReminder =async () => {
+const getUnreadCountOfReminder = async () => {
   try {
     const res = await allApi.getUnreadMessage(
-      'reminder',
+      "reminder",
       userInfo.value?.userId as number
-    )
-    unreadReminderCount.value = res.data
+    );
+    unreadReminderCount.value = res.data;
   } catch {
-    ElMessage.error('获取未读通知数失败')
+    ElMessage.error("获取未读通知数失败");
   }
-}
+};
 
 // 分类相关方法
 const onCategorySelected = (selected: allApi.Category) => {
@@ -931,7 +1051,7 @@ onMounted(async () => {
   await fetchUserInfo(); //要用await，因为得按顺序执行
   await getSessions();
   await getReminders();
-  getUnreadCountOfReminder()
+  getUnreadCountOfReminder();
   getAllCategories();
   const reminderFlag = route.query.reminder;
   if (reminderFlag === "true" || reminderFlag === "1") {
@@ -1039,6 +1159,7 @@ onMounted(async () => {
   font-size: 16px;
 }
 
+/* 这个纯属ai乱写 */
 .chat-content__empty {
   display: flex;
   justify-content: center;
@@ -1146,7 +1267,6 @@ onMounted(async () => {
   margin-left: auto;
 }
 
-
 .chatbox-down {
   display: flex;
 }
@@ -1168,7 +1288,6 @@ onMounted(async () => {
   color: #4b5563;
   background: #eef2ff;
 }
-
 
 .result-type-user {
   color: #1d4ed8;
@@ -1516,9 +1635,11 @@ onMounted(async () => {
   flex-direction: column;
   gap: 14px;
   scroll-behavior: smooth;
-  background: radial-gradient(1200px 600px at 80% -10%,
+  background: radial-gradient(
+      1200px 600px at 80% -10%,
       #eef2ff 0%,
-      transparent 60%),
+      transparent 60%
+    ),
     #f6f7fb;
 }
 
@@ -1528,16 +1649,6 @@ onMounted(async () => {
   gap: 14px;
 }
 
-/* .chat-messages::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-} */
-
-/* .chat-messages {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-} */
-
 .message-row {
   display: flex;
   gap: 10px;
@@ -1545,9 +1656,6 @@ onMounted(async () => {
   width: 100%;
 }
 
-.message-row.is-self {
-  flex-direction: row-reverse;
-}
 
 .is-self {
   width: 80%;

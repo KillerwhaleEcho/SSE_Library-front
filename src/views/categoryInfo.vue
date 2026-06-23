@@ -1,6 +1,6 @@
 <template>
     <div class="category-page">
-        <topbar class="page-topbar" />
+        <topbar class="topbar" @open-upload-modal="showUploadModal = true"></topbar>
 
         <div class="page-body">
             <section class="info-section">
@@ -8,13 +8,31 @@
                 <div v-else-if="category" class="info-card">
                     <div class="info-header">
                         <div class="title-block">
-                            <h1 class="category-name">{{ category.name }}</h1>
+                            <h1 class="category-name">
+                                <template v-if="editing">
+                                    <input v-model="editingName" class="editable-input" />
+                                </template>
+                                <template v-else>{{ category.name }}</template>
+                            </h1>
                             <p class="category-id">ID {{ category.id }}</p>
                             <p class="desc-label">简介</p>
-                            <p class="category-desc">{{ category.description || '暂无描述' }}</p>
+                            <p class="category-desc" v-if="!editing">
+                                {{ category.description || "暂无描述" }}
+                            </p>
+                            <textarea v-else v-model="editingDesc" class="editable-textarea" rows="3" />
                         </div>
-                        <div :class="['category-badge', category.isCourse ? 'course' : 'category']">
-                            {{ category.isCourse ? '课程' : '分类' }}
+                        <div class="badge-block">
+                            <p v-if="editing" class="toggle-hint">点击以切换分类/课程</p>
+                            <button v-if="editing" class="category-badge toggle"
+                                :class="viewIsCourse ? 'course' : 'category'" @click="toggleCourseType">
+                                {{ viewIsCourse ? "课程" : "分类" }}
+                            </button>
+                            <div v-else :class="[
+                                'category-badge',
+                                category.isCourse ? 'course' : 'category',
+                            ]">
+                                {{ category.isCourse ? "课程" : "分类" }}
+                            </div>
                         </div>
                     </div>
                     <div class="info-grid">
@@ -28,29 +46,49 @@
                         </div>
                     </div>
                     <div v-if="isAdminViewer" class="admin-actions">
-                        <button class="admin-btn primary" @click="handleEditCategory" disabled>
-                            修改分类信息（暂未开放）
-                        </button>
+                        <template v-if="editing">
+                            <button class="admin-btn primary solid" @click="handleSaveEdit">
+                                保存修改
+                            </button>
+                            <button class="admin-btn secondary" @click="cancelEdit">
+                                取消修改
+                            </button>
+                        </template>
+                        <template v-else>
+                            <button class="admin-btn primary" @click="startEdit">
+                                修改分类信息
+                            </button>
+                        </template>
                         <button class="admin-btn danger" :class="{ disabled: deleting }" :disabled="deleting"
                             @click="handleDeleteCategory">
                             删除该分类
                         </button>
                     </div>
                 </div>
-                <div v-else class="empty-hint">{{ categoryError || '未找到分类信息' }}</div>
+                <div v-else class="empty-hint">
+                    {{ categoryError || "未找到分类信息" }}
+                </div>
             </section>
 
-            <section class="relation-section" v-if="parentCategory || childCategories.length">
-                <div v-if="parentCategory" class="relation-block">
+            <section class="relation-section" v-if="showRelationSection">
+                <div v-if="viewIsCourse" class="relation-block">
                     <h2 class="section-title">所属分类</h2>
                     <div class="category-list">
-                        <CategoryClickToJump :category="parentCategory" />
+                        <div v-if="effectiveParent" class="category-wrapper">
+                            <CategoryClickToJump :category="effectiveParent" />
+                            <button v-if="editing" class="remove-parent" @click="removeParent">
+                                ×
+                            </button>
+                        </div>
+                        <button v-if="canAddParent" class="add-parent-btn" @click="openParentSelector">
+                            点击以添加所属分类（必需）
+                        </button>
                     </div>
                 </div>
-                <div v-if="childCategories.length" class="relation-block">
+                <div v-else-if="effectiveChildren.length" class="relation-block">
                     <h2 class="section-title">包含课程</h2>
                     <div class="category-list">
-                        <CategoryClickToJump v-for="item in childCategories" :key="item.id" :category="item" />
+                        <CategoryClickToJump v-for="item in effectiveChildren" :key="item.id" :category="item" />
                     </div>
                 </div>
             </section>
@@ -62,184 +100,398 @@
                 </div>
                 <div v-if="documentsLoading" class="loading-hint">加载文档...</div>
                 <div v-else-if="documents.length" class="book-list">
-                    <BookItem v-for="doc in documents" :key="doc.infoBrief.documentId" :document="doc"
+                    <BookListItem v-for="doc in documents" :key="doc.infoBrief.documentId" :document="doc"
                         @click="goDocument(doc)" />
                 </div>
                 <div v-else class="empty-hint">暂无文档</div>
             </section>
         </div>
     </div>
+    <!-- 使用分离的组件 -->
+    <CategoryDialog :visible="showCategoryDialog" @update:visible="showCategoryDialog = $event"
+        :all-categories="allCategories" :selected-category-name="selectedCategoryName"
+        :selected-category-id="selectedCategoryId" @category-selected="onCategorySelected"
+        @reset-category="resetCategory" @category-added="handleCategoryAdded" />
+
+    <UploadModal v-model:visible="showUploadModal" :selected-category-name="selectedUploadCategoryName"
+        :selected-category-id="selectedCategoryId" @open-category-dialog="showCategoryDialog = true"
+        @upload-success="handleUploadSuccess" />
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import topbar from '@/layout/topbar.vue'
-import CategoryClickToJump from '@/components/category/categoryClickToJump.vue'
-import BookItem from '@/components/bookItem.vue'
-import { ElMessage } from 'element-plus'
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import topbar from "@/layout/topbar.vue";
+import CategoryClickToJump from "@/components/category/categoryClickToJump.vue";
+import BookListItem from "@/components/bookListItem.vue";
+import { ElMessage } from "element-plus";
 import {
     type Category,
     type Document,
     getCategoryById,
     getBookList,
     deleteCategory,
-} from '@/api/all.ts'
+    editCategory,
+} from "@/api/all.ts";
+import * as allApi from "@/api/all";
+import CategoryDialog from "@/components/CategoryDialog.vue";
+import UploadModal from "@/components/UploadModal.vue";
 
-const props = defineProps<{ categoryId?: number }>()
-const route = useRoute()
-const router = useRouter()
+const props = defineProps<{ categoryId?: number }>();
+const route = useRoute();
+const router = useRouter();
 
-const category = ref<Category | null>(null)
-const parentCategory = ref<Category | null>(null)
-const childCategories = ref<Category[]>([])
-const documents = ref<Document[]>([])
-const loadingCategory = ref(false)
-const documentsLoading = ref(false)
-const categoryError = ref('')
-const deleting = ref(false)
+const category = ref<Category | null>(null);
+const parentCategory = ref<Category | null>(null);
+const childCategories = ref<Category[]>([]);
+const documents = ref<Document[]>([]);
+const loadingCategory = ref(false);
+const documentsLoading = ref(false);
+const categoryError = ref("");
+const deleting = ref(false);
+const showCategoryDialog = ref(false);
+const showUploadModal = ref(false);
+const parentSelectMode = ref(false);
+const editing = ref(false);
+const editingName = ref("");
+const editingDesc = ref("");
+const editingIsCourse = ref(false);
+const pendingParent = ref<Category | null>(null);
+// 分类相关数据
+const allCategories = ref<allApi.Category[]>([]);
+const selectedCategoryName = ref<string | null>(null);
+const selectedCategoryId = ref<number | null>(null);
+const selectedUploadCategoryName = ref<string | null>(null);
 
 const resolvedCategoryId = computed<number | null>(() => {
-    if (typeof props.categoryId === 'number' && Number.isFinite(props.categoryId)) return props.categoryId
-    const parsed = Number(route.query.id)
-    return Number.isFinite(parsed) ? parsed : null
-})
+    if (typeof props.categoryId === "number" && Number.isFinite(props.categoryId))
+        return props.categoryId;
+    const parsed = Number(route.query.id);
+    return Number.isFinite(parsed) ? parsed : null;
+});
 
 const userRole = computed<string | null>(() => {
     try {
-        const raw = localStorage.getItem('userBrief')
-        if (!raw) return null
-        const parsed = JSON.parse(raw)
-        const role = parsed?.role
-        return typeof role === 'string' ? role : null
+        const raw = localStorage.getItem("userBrief");
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const role = parsed?.role;
+        return typeof role === "string" ? role : null;
     } catch (error) {
-        console.warn('解析本地用户信息失败', error)
-        return null
+        console.warn("解析本地用户信息失败", error);
+        return null;
     }
-})
+});
 
-const isAdminViewer = computed(() => (userRole.value ?? '').toLowerCase() === 'admin')
+const isAdminViewer = computed(
+    () => (userRole.value ?? "").toLowerCase() === "admin"
+);
+
+const viewIsCourse = computed(() =>
+    editing.value ? editingIsCourse.value : Boolean(category.value?.isCourse)
+);
+
+const effectiveParent = computed<Category | null>(() =>
+    editing.value ? pendingParent.value : parentCategory.value
+);
+
+const canAddParent = computed(
+    () => viewIsCourse.value && editing.value && !effectiveParent.value
+);
+
+const effectiveChildren = computed<Category[]>(() =>
+    viewIsCourse.value ? [] : childCategories.value
+);
+
+const showRelationSection = computed(() => {
+    if (viewIsCourse.value) {
+        return Boolean(effectiveParent.value) || canAddParent.value;
+    }
+    return effectiveChildren.value.length > 0;
+});
 
 const normalizeCategory = (cat?: Partial<Category>): Category => {
-    const safeCat: Partial<Category> = cat ?? {}
+    const safeCat: Partial<Category> = cat ?? {};
     const normalizedChildren = Array.isArray(safeCat.children)
         ? safeCat.children.map((child) => normalizeCategory(child))
-        : []
+        : [];
     return {
         id: Number(safeCat.id ?? 0),
-        name: safeCat.name ?? '',
+        name: safeCat.name ?? "",
         isCourse: (safeCat as any).isCourse ?? (safeCat as any).is_course ?? false,
         is_course: (safeCat as any).is_course ?? false,
-        fileCounts: Number((safeCat as any).fileCounts ?? (safeCat as any).file_counts ?? 0),
-        readCounts: Number((safeCat as any).readCounts ?? (safeCat as any).read_counts ?? 0),
-        description: safeCat.description ?? '',
+        fileCounts: Number(
+            (safeCat as any).fileCounts ?? (safeCat as any).file_counts ?? 0
+        ),
+        readCounts: Number(
+            (safeCat as any).readCounts ?? (safeCat as any).read_counts ?? 0
+        ),
+        description: safeCat.description ?? "",
         parentId: (safeCat as any).parentId ?? (safeCat as any).parent_id ?? null,
         parent_id: (safeCat as any).parent_id ?? null,
         children: normalizedChildren,
-    }
-}
+    };
+};
 
 const loadParentCategory = async (parentId: number) => {
     try {
-        const res = await getCategoryById(parentId)
-        parentCategory.value = normalizeCategory(res.data)
+        const res = await getCategoryById(parentId);
+        parentCategory.value = normalizeCategory(res.data);
     } catch (error) {
-        parentCategory.value = null
-        console.warn('加载所属分类失败', error)
+        parentCategory.value = null;
+        console.warn("加载所属分类失败", error);
     }
-}
+};
 
 const loadDocuments = async (catId: number) => {
-    documentsLoading.value = true
+    documentsLoading.value = true;
     try {
-        const res = await getBookList(false, catId)
-        const payload = (res as any)?.data ?? []
-        const list = Array.isArray(payload) ? payload : (Array.isArray((payload as any).documents) ? (payload as any).documents : [])
-        documents.value = list
+        const res = await getBookList(false, catId);
+        const payload = (res as any)?.data ?? [];
+        const list = Array.isArray(payload)
+            ? payload
+            : Array.isArray((payload as any).documents)
+                ? (payload as any).documents
+                : [];
+        documents.value = list;
     } catch (error: any) {
-        documents.value = []
-        ElMessage.error(error?.message || '加载文档失败')
+        documents.value = [];
+        ElMessage.error(error?.message || "加载文档失败");
     } finally {
-        documentsLoading.value = false
+        documentsLoading.value = false;
     }
-}
+};
 
 const loadCategory = async (catId: number) => {
-    loadingCategory.value = true
-    categoryError.value = ''
-    category.value = null
-    parentCategory.value = null
-    childCategories.value = []
+    loadingCategory.value = true;
+    categoryError.value = "";
+    category.value = null;
+    parentCategory.value = null;
+    childCategories.value = [];
+    editing.value = false;
+    parentSelectMode.value = false;
     try {
-        const res = await getCategoryById(catId)
-        const normalized = normalizeCategory(res.data)
-        normalized.isCourse = Boolean((res.data as any)?.isCourse ?? (res.data as any)?.is_course)
-        normalized.parentId = (res.data as any)?.parentId ?? (res.data as any)?.parent_id ?? normalized.parentId ?? null
-        normalized.children = normalized.children ?? []
-        category.value = normalized
-        document.title = `${normalized.name} - 分类详情`
-        childCategories.value = normalized.children ?? []
+        const res = await getCategoryById(catId);
+        const normalized = normalizeCategory(res.data);
+        normalized.isCourse = Boolean(
+            (res.data as any)?.isCourse ?? (res.data as any)?.is_course
+        );
+        normalized.parentId =
+            (res.data as any)?.parentId ??
+            (res.data as any)?.parent_id ??
+            normalized.parentId ??
+            null;
+        normalized.children = normalized.children ?? [];
+        category.value = normalized;
+        document.title = `${normalized.name} - 分类详情`;
+        childCategories.value = normalized.children ?? [];
+        editingName.value = normalized.name;
+        editingDesc.value = normalized.description || "";
+        editingIsCourse.value = Boolean(normalized.isCourse);
+        pendingParent.value = normalized.parentId ? parentCategory.value : null;
 
         if (normalized.parentId !== null && normalized.parentId !== undefined) {
-            await loadParentCategory(normalized.parentId)
+            await loadParentCategory(normalized.parentId);
+            pendingParent.value = parentCategory.value;
         }
 
-        await loadDocuments(catId)
+        await loadDocuments(catId);
     } catch (error: any) {
-        category.value = null
-        categoryError.value = error?.message || '加载分类失败'
-        ElMessage.error(categoryError.value)
+        category.value = null;
+        categoryError.value = error?.message || "加载分类失败";
+        ElMessage.error(categoryError.value);
     } finally {
-        loadingCategory.value = false
+        loadingCategory.value = false;
     }
-}
+};
 
 const handleDeleteCategory = async () => {
-    if (!category.value) return
-    const hasChildren = Array.isArray(category.value.children) && category.value.children.length > 0
-    const hasFiles = Number(category.value.fileCounts ?? 0) > 0
+    if (!category.value) return;
+    const hasChildren =
+        Array.isArray(category.value.children) &&
+        category.value.children.length > 0;
+    const hasFiles = Number(category.value.fileCounts ?? 0) > 0;
     if (hasChildren || hasFiles) {
-        ElMessage.error('存在归属于该分类的项，删除失败')
-        return
+        ElMessage.error("存在归属于该分类的项，删除失败");
+        return;
     }
     if (!category.value.name) {
-        ElMessage.error('未找到分类名称，无法删除')
-        return
+        ElMessage.error("未找到分类名称，无法删除");
+        return;
     }
-    if (deleting.value) return
-    deleting.value = true
+    if (deleting.value) return;
+    deleting.value = true;
     try {
-        await deleteCategory(category.value.name)
-        ElMessage.success('删除成功')
-        router.push('/home')
+        await deleteCategory(category.value.name);
+        ElMessage.success("删除成功");
+        router.push("/home");
     } catch (error: any) {
-        ElMessage.error(error?.message || '删除分类失败')
+        ElMessage.error(error?.message || "删除分类失败");
     } finally {
-        deleting.value = false
+        deleting.value = false;
     }
-}
+};
 
-const handleEditCategory = () => {
-    ElMessage.info('修改分类信息功能暂未开放')
-}
+const startEdit = () => {
+    if (!category.value) return;
+    editing.value = true;
+    editingName.value = category.value.name || "";
+    editingDesc.value = category.value.description || "";
+    editingIsCourse.value = Boolean(category.value.isCourse);
+    pendingParent.value = category.value.parentId ? parentCategory.value : null;
+};
+
+const cancelEdit = () => {
+    editing.value = false;
+    parentSelectMode.value = false;
+    if (!category.value) return;
+    editingName.value = category.value.name || "";
+    editingDesc.value = category.value.description || "";
+    editingIsCourse.value = Boolean(category.value.isCourse);
+    pendingParent.value = category.value.parentId ? parentCategory.value : null;
+};
+
+const toggleCourseType = () => {
+    if (!editing.value) return;
+    if (!editingIsCourse.value) {
+        if (childCategories.value.length > 0) {
+            ElMessage.error("该分类下仍有课程，不能将其转化为课程");
+            return;
+        }
+        editingIsCourse.value = true;
+        pendingParent.value = null;
+    } else {
+        editingIsCourse.value = false;
+        pendingParent.value = null;
+    }
+};
+
+const openParentSelector = () => {
+    parentSelectMode.value = true;
+    showCategoryDialog.value = true;
+};
+
+const removeParent = () => {
+    pendingParent.value = null;
+};
+
+const handleSaveEdit = async () => {
+    if (!category.value) return;
+    const trimmedName = editingName.value.trim();
+    if (!trimmedName) {
+        ElMessage.error("分类名称不能为空");
+        return;
+    }
+    if (editingIsCourse.value && !pendingParent.value) {
+        ElMessage.error("请选择所属分类");
+        return;
+    }
+    try {
+        await editCategory({
+            id: category.value.id,
+            name: trimmedName,
+            description: editingDesc.value,
+            isCourse: editingIsCourse.value,
+            parentId: editingIsCourse.value ? pendingParent.value?.id : undefined,
+        });
+        ElMessage.success("修改成功");
+        await loadCategory(category.value.id);
+        editing.value = false;
+    } catch (error: any) {
+        ElMessage.error(error?.message || "修改分类失败");
+    }
+};
 
 const goDocument = (doc: Document) => {
-    const docId = doc?.infoBrief?.documentId
-    if (!docId) return
-    router.push({ path: '/bookInfo', query: { id: docId } })
-}
+    const docId = doc?.infoBrief?.documentId;
+    if (!docId) return;
+    router.push({ path: "/bookInfo", query: { id: docId } });
+};
 
-onMounted(() => {
-    if (resolvedCategoryId.value !== null) {
-        loadCategory(resolvedCategoryId.value)
+// 分类相关方法
+const onCategorySelected = (selected: allApi.Category) => {
+    console.log("选中的分类：", selected);
+    if (parentSelectMode.value) {
+        if (selected.isCourse) {
+            ElMessage.error("错误：不能选择课程作为课程的所属分类");
+            return;
+        }
+        if (category.value && selected.id === category.value.id) {
+            ElMessage.error("该分类正被改为课程，不允许选择自身作为所属分类");
+            return;
+        }
+        pendingParent.value = selected;
+        parentSelectMode.value = false;
+        showCategoryDialog.value = false;
+        return;
     }
-})
+
+    showCategoryDialog.value = false;
+    selectedCategoryId.value = selected.id;
+
+    if (showUploadModal.value === false) {
+        selectedCategoryName.value = selected.name;
+    } else {
+        selectedUploadCategoryName.value = selected.name;
+    }
+};
+
+// 重置分类
+const resetCategory = () => {
+    selectedCategoryName.value = null;
+    selectedUploadCategoryName.value = null;
+    selectedCategoryId.value = null;
+    parentSelectMode.value = false;
+};
+
+// 获取所有分类
+const getAllCategories = async () => {
+    try {
+        const response = await allApi.getAllCategories();
+        if (response.data) {
+            allCategories.value = response.data;
+        } else {
+            allCategories.value = [];
+            console.warn("获取分类数据格式不正确");
+        }
+        return allCategories.value;
+    } catch (error) {
+        console.error("获取所有分类失败:", error);
+        allCategories.value = [];
+        throw error;
+    }
+};
+
+// 上传成功处理
+const handleUploadSuccess = () => {
+    console.log("上传成功，可以刷新数据");
+};
+
+const handleCategoryAdded = async () => {
+    console.log("分类添加成功，重新加载分类数据");
+
+    try {
+        await getAllCategories();
+
+        ElMessage.success("分类数据已更新");
+    } catch (error) {
+        console.error("刷新分类数据失败:", error);
+        ElMessage.error("刷新数据失败");
+    }
+};
+
+onMounted(async () => {
+    getAllCategories(); // 初始化时加载分类数据
+    if (resolvedCategoryId.value !== null) {
+        loadCategory(resolvedCategoryId.value);
+    }
+});
 
 watch(resolvedCategoryId, (next) => {
     if (next !== null) {
-        loadCategory(next)
+        loadCategory(next);
     }
-})
+});
 </script>
 
 <style scoped>
@@ -331,6 +583,25 @@ watch(resolvedCategoryId, (next) => {
     background: linear-gradient(135deg, #26c6da, #00acc1);
 }
 
+.badge-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.toggle-hint {
+    margin: 0;
+    color: #9aa0aa;
+    font-size: 12px;
+}
+
+.category-badge.toggle {
+    border: none;
+    cursor: pointer;
+    color: #fff;
+}
+
 .info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -356,6 +627,12 @@ watch(resolvedCategoryId, (next) => {
 .admin-btn.primary {
     background: linear-gradient(135deg, #7c4dff, #5c6bc0);
     opacity: 0.75;
+}
+
+.admin-btn.secondary {
+    background: #4b5563;
+    color: #fff;
+    opacity: 0.9;
 }
 
 .admin-btn.danger {
@@ -404,6 +681,37 @@ watch(resolvedCategoryId, (next) => {
     gap: 12px;
 }
 
+.category-wrapper {
+    position: relative;
+}
+
+.remove-parent {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: #f0645a;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.add-parent-btn {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px dashed #b994fe;
+    background: #f8f7ff;
+    color: #7c4dff;
+    cursor: pointer;
+}
+
 .doc-section .section-header {
     display: flex;
     align-items: center;
@@ -416,14 +724,36 @@ watch(resolvedCategoryId, (next) => {
 }
 
 .book-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    display: flex;
     gap: 16px;
+    flex-wrap: wrap;
 }
 
 .loading-hint,
 .empty-hint {
     color: #888;
     padding: 12px 0;
+}
+
+.editable-input {
+    width: 100%;
+    font-size: 28px;
+    font-weight: 700;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+.editable-textarea {
+    width: 100%;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+    resize: vertical;
+}
+
+.admin-btn.solid {
+    opacity: 1;
 }
 </style>

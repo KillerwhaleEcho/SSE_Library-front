@@ -2,27 +2,38 @@
   <!-- 顶栏容器 -->
   <header class="app-header">
     <!-- 左侧标题 -->
-    <router-link to="/home" class="header-title" data-tooltip="首页">
-      <h1>SSE-Library</h1>
-    </router-link>
-    
+    <div class="header-left">
+      <router-link to="/home" class="header-title" data-tooltip="首页">
+        <h1>SSE-Library</h1>
+      </router-link>
+      <button
+        class="icon-container icon-button-reset ai-entry"
+        type="button"
+        data-tooltip="AI 助手"
+        @click="showAIChat = true"
+      >
+        <img :src="aiRobotIcon" alt="AI 助手" />
+      </button>
+    </div>
+
     <!-- 右侧用户区域 -->
     <div class="header-user">
       <router-link to="/posts" class="icon-container" data-tooltip="论坛">
-        <img src="@/assets/147_地址.png" alt="论坛">
+        <img src="@/assets/147_地址.png" alt="论坛" />
       </router-link>
       <router-link to="/chat" class="icon-container" data-tooltip="聊天">
-           <img src="@/assets/147_对话-08.png" alt="聊天">
-           <div class="badge" v-if="unreadChatMessage>0">{{ unreadChatMessage }}</div>
+        <img src="@/assets/147_对话-08.png" alt="聊天" />
+        <div class="badge" v-if="unreadChatMessage > 0">
+          {{ unreadChatMessage }}
+        </div>
       </router-link>
-
-      <ReminderBox 
+      <ReminderBox
         :reminders="reminders"
         :unread-reminder="unreadReminder"
         @clear-all="handleClearAll"
         @mark-read="handleMarkRead"
       />
-      
+
       <el-popover
         placement="bottom-end"
         trigger="click"
@@ -32,62 +43,79 @@
         <!-- Popover 内容：两个选项 -->
         <template #default>
           <div class="popover-option" @click="handleUploadClick">
-            <i class="el-icon-upload" style="margin-right: 8px;"></i>
+            <i class="el-icon-upload" style="margin-right: 8px"></i>
             上传文件
           </div>
           <div class="popover-option" @click="handlePostClick">
-            <i class="el-icon-edit" style="margin-right: 8px;"></i>
+            <i class="el-icon-edit" style="margin-right: 8px"></i>
             发帖
           </div>
         </template>
-        
+
         <!-- 触发按钮：原上传文件图标 -->
         <template #reference>
           <div class="icon-container" data-tooltip="上传/发帖">
-            <img src="@/assets/147_添加.png" alt="上传/发帖">
+            <img src="@/assets/147_添加.png" alt="上传/发帖" />
           </div>
         </template>
       </el-popover>
 
-      <router-link :to="role ? `/${role}` : '/login'" class="icon-container" data-tooltip="个人主页">
-        <img src="@/assets/147_联系人.png" alt="个人主页">
+      <router-link
+        :to="role ? `/${role}` : '/login'"
+        class="icon-container"
+        data-tooltip="个人主页"
+      >
+        <img src="@/assets/147_联系人.png" alt="个人主页" />
       </router-link>
     </div>
+    <AIChatPanel v-model="showAIChat" />
   </header>
 </template>
 
 <script setup lang="ts">
-import ReminderBox from '@/components/reminderBox.vue';
-import 'element-plus/dist/index.css';
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
-import * as allApi from '@/api/all.ts'
-import router from '@/router';
+import ReminderBox from "@/components/reminderBox.vue";
+import AIChatPanel from "@/views/AIChatPanel.vue";
+import aiRobotIcon from "@/assets/聊天机器人L.png";
+import "element-plus/dist/index.css";
+import { ref, onMounted, watch, onUnmounted } from "vue";
+import * as allApi from "@/api/all.ts";
+import router from "@/router";
 
-const userId = Number(localStorage.getItem('userId') || '0'); 
-const role = localStorage.getItem('role') ||'user'
+const props = defineProps<{
+  activeSessionId?: number | null;
+}>();
+
+const userId = Number(localStorage.getItem("userId") || "0");
+const role = localStorage.getItem("role") || "user";
 const reminders = ref<allApi.Reminder[]>([]);
-const showCategoryDialog = ref(false)
-const allCategories = ref<any[]>([])
-const selectedCategoryName = ref<string | null>(null)
-const selectedCategoryId = ref<number | null>(null)
-const unreadChatMessage = ref(0)
-const unreadReminder=ref(0)
-const socket=ref<WebSocket|null>(null)
+const showCategoryDialog = ref(false);
+const unreadChatMessage = ref(0);
+const unreadReminder = ref(0);
+const socket = ref<WebSocket | null>(null);
+const showAIChat = ref(false);
+
+const unwrapApiData = <T,>(response: unknown): T => {
+  const maybeResponse = response as { data?: unknown };
+  const data = maybeResponse.data;
+  if (data && typeof data === "object" && "data" in data) {
+    return (data as { data: T }).data;
+  }
+  return data as T;
+};
 
 // 定义事件发射器，用于向父组件发送事件
-const emit = defineEmits(['open-upload-modal', 'ws-message', 'reminder-sync']);
+const emit = defineEmits(["open-upload-modal", "ws-message", "reminder-sync"]);
 
 const handleUploadClick = () => {
-  emit('open-upload-modal'); // 触发事件，通知父组件打开弹窗
+  emit("open-upload-modal"); // 触发事件，通知父组件打开弹窗
 };
 
 const handlePostClick = () => {
-  router.push('/sendPost');
+  router.push("/sendPost");
 };
 
-
 watch(showCategoryDialog, (newVal, oldVal) => {
-  console.log('showCategoryDialog 变化:', {
+  console.log("showCategoryDialog 变化:", {
     旧值: oldVal,
     新值: newVal, // true 表示弹窗显示，false 表示弹窗隐藏
   });
@@ -95,72 +123,77 @@ watch(showCategoryDialog, (newVal, oldVal) => {
 
 const handleClearAll = async () => {
   const unreadIds = reminders.value
-    .filter(item => !item.isRead)
-    .map(item => item.reminderId);
+    .filter((item) => !item.isRead)
+    .map((item) => item.reminderId);
 
   if (unreadIds.length) {
     await Promise.all(
-      unreadIds.map(id => allApi.markReminderAsRead(id).catch(() => null))
+      unreadIds.map((id) => allApi.markReminderAsRead(id).catch(() => null))
     );
   }
 
   reminders.value = [];
   await getUnreadCountOfReminder();
-  emit('reminder-sync');
+  emit("reminder-sync");
 };
 
 const handleMarkRead = async (reminderId: number) => {
-  reminders.value = reminders.value.map(item => 
+  reminders.value = reminders.value.map((item) =>
     item.reminderId === reminderId ? { ...item, isRead: true } : item
   );
   try {
     await allApi.markReminderAsRead(reminderId);
-    console.log('通知已标记为已读');
+    console.log("通知已标记为已读");
   } finally {
     await getUnreadCountOfReminder();
-    emit('reminder-sync');
+    emit("reminder-sync");
   }
 };
 
 const fetchReminders = async () => {
   try {
-    const response = await allApi.getReminders( userId );
+    const response = await allApi.getReminders(userId);
     console.log("获取提醒成功", response);
-    reminders.value = response.data;
+    reminders.value = unwrapApiData<{ reminders: allApi.Reminder[] }>(response).reminders || [];
   } catch (error) {
-    console.error('获取通知失败：', error);
+    console.error("获取通知失败：", error);
   }
 };
 
-
-const getUnreadCountOfMessages = async() => {
+const getUnreadCountOfMessages = async () => {
   try {
-    const res= await allApi.getUnreadMessage('message',userId);
-    unreadChatMessage.value=res.data
+    const res = await allApi.getUnreadMessage("message", userId);
+    unreadChatMessage.value = unwrapApiData<number>(res);
   } catch {
-    console.log('获取未读聊天数量失败')
+    console.log("获取未读聊天数量失败");
   }
-}
+};
 
 const getUnreadCountOfReminder = async () => {
   try {
-    const res = await allApi.getUnreadMessage('reminder', userId);
-    unreadReminder.value=res.data
+    const res = await allApi.getUnreadMessage("reminder", userId);
+    unreadReminder.value = unwrapApiData<number>(res);
   } catch {
-    console.log('获取未读聊天数量失败')
+    console.log("获取未读聊天数量失败");
   }
-}
+};
 
 const refreshUnreadMessages = async () => {
-  await getUnreadCountOfMessages()
-}
+  await getUnreadCountOfMessages();
+};
 
 const refreshUnreadReminder = async () => {
-  await fetchReminders()
+  await fetchReminders();
   await getUnreadCountOfReminder();
 };
 
-
+const markSessionRead = async (sessionId: number) => {
+  try {
+    await allApi.markSessionAsRead(sessionId);
+  } catch {
+    console.log("标记会话已读失败");
+  }
+};
 
 const initWebSocket = () => {
   const token = localStorage.getItem("token");
@@ -176,12 +209,22 @@ const initWebSocket = () => {
   ws.onmessage = (event: MessageEvent) => {
     try {
       const payload = JSON.parse(event.data);
-      if (payload.type === 'chat_message') {
-        unreadChatMessage.value++
+      if (payload.type === "chat_message") {
+        const sessionId = Number(payload.data?.sessionId);
+        const senderId = Number(payload.data?.senderId);
+        const activeSessionId = Number(props.activeSessionId ?? -1);
+        if (senderId !== Number(userId)) {
+          if (sessionId === activeSessionId) {
+            markSessionRead(sessionId);
+            emit("ws-message", payload);
+            return;
+          }
+          unreadChatMessage.value++;6
+        }
       } else {
-        unreadReminder.value++
+        unreadReminder.value++;
       }
-      emit('ws-message', payload);
+      emit("ws-message", payload);
     } catch (error) {
       console.error("解析 WebSocket 消息失败", error);
     }
@@ -198,22 +241,21 @@ const initWebSocket = () => {
   };
 };
 
-
 onMounted(() => {
   fetchReminders();
-  getUnreadCountOfMessages()
-  getUnreadCountOfReminder()
-  initWebSocket()
-})
+  getUnreadCountOfMessages();
+  getUnreadCountOfReminder();
+  initWebSocket();
+});
 
 onUnmounted(() => {
   if (socket.value) {
-    socket.value.close()
-    socket.value=null
+    socket.value.close();
+    socket.value = null;
   }
-})
+});
 
-defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
+defineExpose({ refreshUnreadReminder, refreshUnreadMessages });
 </script>
 
 <style scoped>
@@ -226,13 +268,13 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
   justify-content: space-between;
   align-items: center;
   height: 60px;
-  box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.10);
+  box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.1);
   position: sticky;
   z-index: 10000;
 }
 
 .header-title h1 {
-  margin-left: 20px;
+  margin-left: 0;
   font-size: 1.5rem;
   font-weight: 600;
   color: #b994fe;
@@ -241,7 +283,7 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
 }
 
 .header-title h1:hover {
-  color: #916ad9ff; 
+  color: #916ad9ff;
 }
 
 .header-user {
@@ -260,7 +302,7 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
   bottom: -30px; /* 控制文字出现的位置 */
   left: 50%;
   transform: translateX(-50%);
-  background-color: rgba(185,148,254, 0.7);
+  background-color: rgba(185, 148, 254, 0.7);
   color: white;
   padding: 5px 10px;
   border-radius: 5px;
@@ -275,7 +317,7 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
   opacity: 1;
 }
 
-.icon-container img{
+.icon-container img {
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -284,7 +326,7 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
   transition: filter 0.3s ease-in-out, opacity 0.3s ease-in-out;
 }
 /* 悬停时放大效果 */
-.icon-container img:hover{
+.icon-container img:hover {
   transform: scale(1.1);
 }
 
@@ -315,13 +357,13 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
   justify-content: space-between;
   align-items: center;
   height: 60px;
-  box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.10);
+  box-shadow: 0 2px 8px hsla(0, 0%, 0%, 0.1);
   position: sticky;
   z-index: 10000;
 }
 
 .header-title h1 {
-  margin-left: 20px;
+  margin-left: 0;
   font-size: 1.5rem;
   font-weight: 600;
   color: #b994fe;
@@ -330,7 +372,7 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
 }
 
 .header-title h1:hover {
-  color: #916ad9ff; 
+  color: #916ad9ff;
 }
 
 .header-user {
@@ -345,6 +387,30 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
   margin: 0 8px; /* 图标间距优化 */
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 20px;
+}
+
+.icon-button-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ai-entry {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f1ecff;
+  box-shadow: 0 6px 16px rgba(145, 106, 217, 0.18);
+}
+
 /* 图标提示 tooltip 样式（原有逻辑保留） */
 .icon-container::after {
   content: attr(data-tooltip);
@@ -352,7 +418,7 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
   bottom: -30px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: rgba(185,148,254, 0.7);
+  background-color: rgba(185, 148, 254, 0.7);
   color: white;
   padding: 5px 10px;
   border-radius: 5px;
@@ -379,6 +445,13 @@ defineExpose({ refreshUnreadReminder ,refreshUnreadMessages})
 
 .icon-container img:hover {
   transform: scale(1.1); /*  hover放大效果 */
+}
+
+.icon-container.ai-entry img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 0;
 }
 
 .upload-post-popover {

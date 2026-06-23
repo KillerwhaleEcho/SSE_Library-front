@@ -1,7 +1,12 @@
 <template>
-  <div class="book-item" @click="goToBookInfo">
+  <div class="book-item">
     <!-- 图书封面 -->
-    <img :src="document.infoBrief.cover || defaultCover" alt="book cover" class="book-cover" @error="handleImgError">
+    <img
+      :src="document.infoBrief.cover || defaultCover"
+      alt="book cover"
+      class="book-cover"
+      @error="handleImgError"
+    />
 
     <!-- 图书信息 -->
     <div class="book-info">
@@ -21,11 +26,19 @@
       <!-- 统计信息（收藏、阅读量） -->
       <div class="book-stats">
         <div class="book-stat-item">
-          <img src="@/assets/147_喜欢.png" alt="File Icon" style="width:25px; height:25px; margin-right:4px;" />
+          <img
+            src="@/assets/147_喜欢.png"
+            alt="File Icon"
+            style="width: 25px; height: 25px; margin-right: 4px"
+          />
           <span>{{ document.infoBrief.collections || 0 }} 收藏</span>
         </div>
         <div class="book-stat-item">
-          <img src="@/assets/Fire (火热).png" alt="File Icon" style="width:20px; height:20px; margin-right:4px;" />
+          <img
+            src="@/assets/Fire (火热).png"
+            alt="File Icon"
+            style="width: 20px; height: 20px; margin-right: 4px"
+          />
           <span>{{ document.infoBrief.readCounts || 0 }} 阅读</span>
         </div>
       </div>
@@ -47,22 +60,13 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
-import defaultCover from '@/assets/coverexp.png'; // 引入默认封面图
-import * as allApi from '@/api/all.ts'
+import defaultCover from "@/assets/coverexp.png"; // 引入默认封面图
+import * as allApi from "@/api/all.ts";
 
 // 接收父组件传入的图书数据
 const props = defineProps<{
   document: allApi.Document;
 }>();
-
-const router = useRouter();
-
-const goToBookInfo = () => {
-  const documentId = props.document?.infoBrief?.documentId;
-  if (typeof documentId !== 'number') return;
-  router.push({ path: '/bookInfo', query: { id: documentId } });
-};
 
 // 封面图加载失败时使用默认图
 const handleImgError = (e: Event) => {
