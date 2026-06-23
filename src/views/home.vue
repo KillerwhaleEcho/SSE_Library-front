@@ -1096,4 +1096,135 @@ const collapseAIBooks = () => {
   gap: 16px;
   flex-wrap: wrap;
 }
+
+/* ========== 紫粉炫彩按钮 - 重新设计 ========== */
+.ai-glow-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    background-size: 200% 200%;
+    color: white;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    padding: 0.6rem 1.8rem;
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
+    /* 移除旧的多色渐变背景，使用简洁紫 */
+}
+
+/* 悬浮效果：渐变位移 + 轻微上浮 + 光晕加深 */
+.ai-glow-btn:hover {
+    background-position: right top;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.5);
+}
+
+/* 点击 / 聚焦 */
+.ai-glow-btn:is(:focus, :focus-visible, :active) {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.4), 0 8px 28px rgba(124, 58, 237, 0.4);
+}
+
+/* 炫彩外圈光晕 - 更柔和、有呼吸感 */
+.ai-glow-btn::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    background: linear-gradient(135deg, #a78bfa, #7c3aed, #6d28d9, #8b5cf6);
+    background-size: 300% 300%;
+    border-radius: 28px;
+    z-index: -1;
+    opacity: 0.3;
+    filter: blur(10px);
+    animation: glowPulse 3s ease-in-out infinite;
+    transition: opacity 0.4s;
+}
+
+.ai-glow-btn:hover::before {
+    opacity: 0.6;
+}
+
+/* 光晕呼吸动画 */
+@keyframes glowPulse {
+    0% { background-position: 0% 50%; opacity: 0.25; filter: blur(8px); }
+    50% { background-position: 100% 50%; opacity: 0.5; filter: blur(14px); }
+    100% { background-position: 0% 50%; opacity: 0.25; filter: blur(8px); }
+}
+
+/* 按钮内部小光效 - 增加精致感 */
+.ai-glow-btn::after {
+    content: "";
+    position: absolute;
+    top: 10%;
+    left: 18%;
+    width: 30%;
+    height: 25%;
+    background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.6;
+    transition: opacity 0.4s;
+}
+
+.ai-glow-btn:hover::after {
+    opacity: 1;
+}
+
+/* 文字微光 */
+.ai-glow-btn span {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* 如果按钮内有图标，可以加个小星星或箭头 */
+.ai-glow-btn .icon {
+    font-size: 1.1em;
+    transition: transform 0.3s;
+}
+
+.ai-glow-btn:hover .icon {
+    transform: translateX(2px) scale(1.05);
+}
+
+/* 减少动画偏好适配 */
+@media (prefers-reduced-motion: reduce) {
+    .ai-glow-btn,
+    .ai-glow-btn::before,
+    .ai-glow-btn::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* ========================================== */
+/* 折叠按钮 - 保持原有风格，略微优化 */
+.collapse-btn {
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 4px 14px;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 12px;
+    transition: all 0.25s ease;
+    font-weight: 500;
+}
+
+.collapse-btn:hover {
+    border-color: #8b5cf6;
+    color: #7c3aed;
+    background: #f5f3ff;
+    transform: scale(1.02);
+}
+
+.collapse-btn:active {
+    transform: scale(0.96);
+}
 </style>
