@@ -667,81 +667,134 @@ const collapseAIBooks = () => {
   flex-wrap: wrap;
 }
 
-/* 紫粉炫彩按钮样式 - 可直接应用于您的按钮元素 */
+/* ========== 紫粉炫彩按钮 - 重新设计 ========== */
 .ai-glow-btn {
     display: inline-block;
-    background: linear-gradient(135deg, #ff4d9e, #c43ad6, #a83ef0, #ff66cc);
-    background-size: 300% 300%;
-    background-position: left top;
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    background-size: 200% 200%;
     color: white;
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 0.5px;
-    padding: 0.75rem 1.8rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    padding: 0.6rem 1.8rem;
     border: none;
-    border-radius: 56px;
+    border-radius: 24px;
     cursor: pointer;
-    box-shadow: 0 8px 20px rgba(199, 36, 177, 0.4), 0 0 10px rgba(255, 105, 180, 0.5);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    transition: background-position 0.3s ease;
+    position: relative;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
+    /* 移除旧的多色渐变背景，使用简洁紫 */
 }
 
+/* 悬浮效果：渐变位移 + 轻微上浮 + 光晕加深 */
 .ai-glow-btn:hover {
     background-position: right top;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.5);
 }
 
+/* 点击 / 聚焦 */
 .ai-glow-btn:is(:focus, :focus-visible, :active) {
     outline: none;
-    box-shadow: 0 0 0 3px #ff4d9e, 0 0 0 6px #c43ad6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.4), 0 8px 28px rgba(124, 58, 237, 0.4);
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .ai-glow-btn {
-        transition: linear;
-    }
+/* 炫彩外圈光晕 - 更柔和、有呼吸感 */
+.ai-glow-btn::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    background: linear-gradient(135deg, #a78bfa, #7c3aed, #6d28d9, #8b5cf6);
+    background-size: 300% 300%;
+    border-radius: 28px;
+    z-index: -1;
+    opacity: 0.3;
+    filter: blur(10px);
+    animation: glowPulse 3s ease-in-out infinite;
+    transition: opacity 0.4s;
 }
 
-/* 外圈光晕（保留炫彩感） */
-.ai-glow-btn {
-    position: relative;
+.ai-glow-btn:hover::before {
+    opacity: 0.6;
 }
 
+/* 光晕呼吸动画 */
+@keyframes glowPulse {
+    0% { background-position: 0% 50%; opacity: 0.25; filter: blur(8px); }
+    50% { background-position: 100% 50%; opacity: 0.5; filter: blur(14px); }
+    100% { background-position: 0% 50%; opacity: 0.25; filter: blur(8px); }
+}
+
+/* 按钮内部小光效 - 增加精致感 */
 .ai-glow-btn::after {
     content: "";
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(125deg, #ff99e6, #c542f5, #ff80cc, #e066ff);
-    background-size: 200% 200%;
-    border-radius: 60px;
-    z-index: -1;
-    opacity: 0.25;
-    filter: blur(6px);
-    animation: borderGlowShift 4s linear infinite;
+    top: 10%;
+    left: 18%;
+    width: 30%;
+    height: 25%;
+    background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.6;
+    transition: opacity 0.4s;
 }
 
-@keyframes borderGlowShift {
-    0% { background-position: 0% 0%; opacity: 0.25; }
-    50% { background-position: 100% 100%; opacity: 0.4; }
-    100% { background-position: 0% 0%; opacity: 0.25; }
+.ai-glow-btn:hover::after {
+    opacity: 1;
 }
 
+/* 文字微光 */
+.ai-glow-btn span {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* 如果按钮内有图标，可以加个小星星或箭头 */
+.ai-glow-btn .icon {
+    font-size: 1.1em;
+    transition: transform 0.3s;
+}
+
+.ai-glow-btn:hover .icon {
+    transform: translateX(2px) scale(1.05);
+}
+
+/* 减少动画偏好适配 */
+@media (prefers-reduced-motion: reduce) {
+    .ai-glow-btn,
+    .ai-glow-btn::before,
+    .ai-glow-btn::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* ========================================== */
+/* 折叠按钮 - 保持原有风格，略微优化 */
 .collapse-btn {
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  padding: 4px 12px;
-  cursor: pointer;
-  color: #666;
-  font-size: 12px;
-  transition: all 0.2s;
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 4px 14px;
+    cursor: pointer;
+    color: #9ca3af;
+    font-size: 12px;
+    transition: all 0.25s ease;
+    font-weight: 500;
 }
 
 .collapse-btn:hover {
-  border-color: #b994fe;
-  color: #b994fe;
-  background: #f9f5ff;
+    border-color: #8b5cf6;
+    color: #7c3aed;
+    background: #f5f3ff;
+    transform: scale(1.02);
+}
+
+.collapse-btn:active {
+    transform: scale(0.96);
 }
 </style>
