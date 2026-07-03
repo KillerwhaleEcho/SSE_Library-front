@@ -105,8 +105,7 @@ export const sendAndReceive = (
       let dataLines: string[] = [];
 
       const getDataPayload = (line: string) => {
-        const raw = line.slice(5);
-        return raw.startsWith(" ") ? raw.slice(1) : raw;
+        return line.slice(5);
       };
 
       const emitEvent = () => {
@@ -146,7 +145,7 @@ export const sendAndReceive = (
       }
 
       const remaining = buffer + decoder.decode();
-      if (remaining.trim()) {
+      if (remaining) {
         if (remaining.startsWith("data:")) {
           dataLines.push(getDataPayload(remaining));
         } else if (remaining.startsWith("event:")) {

@@ -98,7 +98,10 @@
                 <div class="message-bubble">
                   <details v-if="message.thought" class="message-thought">
                     <summary>思考过程</summary>
-                    <p>{{ message.thought }}</p>
+                    <div
+                      class="message-content message-thought-content"
+                      v-html="renderMarkdown(message.thought)"
+                    ></div>
                   </details>
                   <!-- details是HTML的原生折叠容器，点击summary标签时才会展开；summary是折叠块的标题-->
                   <p v-if="message.role === 'user'">{{ message.content }}</p>
@@ -867,8 +870,9 @@ onBeforeUnmount(() => {
   user-select: none;
 }
 
-.message-thought p {
+.message-thought-content {
   margin-top: 8px;
+  font-size: 13px;
 }
 
 .message-content {
